@@ -89,6 +89,7 @@ Follow these steps in order.
 
 3. Planning with Deepthink
    - Ask `execution-planner-specialist` to generate the detailed action plan using deepthink principles.
+   - Capture the plan file path returned by `execution-planner-specialist` and store it for use in implementation.
 
 4. Status Update - Start
    - Ask `taskmaster-specialist` to mark current task or subtask as `in-progress`.
@@ -96,18 +97,21 @@ Follow these steps in order.
 
 5. Implementation
    - Ask `implementation-specialist` to implement using task details and deepthink plan.
+   - Always pass the plan file path (from step 3) to `implementation-specialist` for all task/subtask implementations.
 
 6. Task Quality Verification
    - Ask `qa-gate-specialist` to run all defined QA checks.
 
 7. Code Review
    - Ask `code-review-specialist` to perform full review of implemented changes.
+   - Always pass the plan file path (from step 3) to `code-review-specialist` for all reviews.
 
 8. Fix and Re-verify Loop
    - If QA fails or review recommends action:
      - Delegate fixes to the correct specialist (`implementation-specialist` or `testing-automation-specialist`).
+     - Always pass the plan file path (from step 3) when delegating to `implementation-specialist`.
      - Re-run `qa-gate-specialist`.
-     - Re-run `code-review-specialist`.
+     - Always pass the plan file path (from step 3) when re-running `code-review-specialist`.
    - Repeat until QA passes and review outcome is acceptable.
 
 9. Task Status Update - Completion

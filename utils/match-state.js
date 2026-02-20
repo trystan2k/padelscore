@@ -6,7 +6,7 @@ import { SCORE_POINTS } from './scoring-constants.js'
 
 /**
  * @typedef TeamScore
- * @property {0 | 15 | 30 | 40 | 'Ad' | 'Game'} points
+ * @property {number | 'Ad' | 'Game'} points
  * @property {number} games
  */
 

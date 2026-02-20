@@ -175,17 +175,85 @@
         "id": "4",
         "title": "Padel Scoring Logic Engine",
         "description": "Develop the core state machine logic for handling points, games, sets, and tie-breaks.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "2"
         ],
         "priority": "high",
         "details": "Implement the `addPoint(team)` function. Logic must handle: standard progression (0->15->30->40->Game), Deuce/Advantage rules (40-40 -> Ad -> Game or Deuce), and Game/Set increments. Implement Set logic: win at 6 games (margin of 2) or Tie-break at 6-6 (first to 7, margin of 2). Every state change must be pushed to the history stack before updating the current state to support Undo.",
         "testStrategy": "Write test cases for standard scoring, deuce scenarios (winning/losing from advantage), set wins (6-0, 6-4), and tie-break entry (6-6). Validate that the history stack grows with every point.",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement standard point progression logic",
+            "description": "Create the basic logic to handle point increments from 0 to 15, 30, 40, and Game for a winning team.",
+            "dependencies": [],
+            "details": "Define the mapping of internal point counters (0, 1, 2, 3) to display strings ('0', '15', '30', '40'). In the `addPoint(team)` function, increment the team's point counter. If the team reaches 4 points and the opponent has 3 or fewer points, award the Game.",
+            "status": "done",
+            "testStrategy": "Verify that calling `addPoint` updates the score from '0' to '15', '30', '40', and finally results in a Game win when the opponent is below 40.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T15:35:54.081Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement deuce and advantage state handling",
+            "description": "Develop logic to manage the 40-40 (Deuce) state and the subsequent Advantage transitions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify `addPoint` to detect when both teams reach 3 points (40-40). If scores are equal (3-3) or higher and equal, the next point puts the scorer at 'Advantage'. If a team is at 'Advantage' and scores, they win the Game. If they lose the point, revert to 'Deuce'.",
+            "status": "done",
+            "testStrategy": "Test scenarios reaching 40-40, winning a point to get Advantage, and then both winning and losing the subsequent point to ensure correct Game or Deuce results.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T15:35:54.083Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement game counting and set win conditions",
+            "description": "Handle game score increments within a set and determine when a set is won based on game margins.",
+            "dependencies": [
+              2
+            ],
+            "details": "When a Game is won (from Task 1 or 2), increment the game counter for the winning team and reset points. Check set win conditions: A team wins the set if they reach 6 games and lead by at least 2 games (e.g., 6-4, 6-3, 6-0). Handle the transition to a new set or match end.",
+            "status": "done",
+            "testStrategy": "Test game progression to 6-0, 6-4. Verify that a score of 6-5 does not end the set. Confirm that reaching 7-5 (if allowed by logic flow) ends the set.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T15:35:54.085Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement tie-break logic",
+            "description": "Develop the specific scoring rules for a tie-break game triggered at a 6-6 game score.",
+            "dependencies": [
+              3
+            ],
+            "details": "Detect when the set score reaches 6-6. Switch to tie-break mode where points are counted as 1, 2, 3, etc., instead of 15/30/40. The first team to reach 7 points wins the tie-break and the set, provided they have a margin of at least 2 points (e.g., 7-5, 8-6). Reset points/games correctly upon completion.",
+            "status": "done",
+            "testStrategy": "Simulate a 6-6 set score. Verify tie-break points increment numerically. Test winning scenarios at 7-0, 7-5, and 8-6. Ensure the set concludes correctly upon winning the tie-break.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T15:35:54.086Z"
+          },
+          {
+            "id": 5,
+            "title": "Integrate history stack for state changes",
+            "description": "Implement the mechanism to push deep copies of the state to the history stack before any score update.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "At the beginning of the `addPoint(team)` function, create a deep copy of the current match state object. Push this copy onto the `historyStack` array. This ensures that every modification to points, games, sets, or tie-break status is captured to support the Undo functionality.",
+            "status": "done",
+            "testStrategy": "Verify that the history stack length increases by exactly 1 for every point added. Check that popping the history restores the exact previous state without reference issues.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T15:35:54.087Z"
+          }
+        ],
         "complexity": 9,
         "recommendedSubtasks": 5,
-        "expansionPrompt": "Break down into: 1) Standard point progression logic (0-15-30-40-Game), 2) Deuce and Advantage state handling, 3) Game counting and set win conditions, 4) Tie-break logic implementation, and 5) Integration of history stack pushing on every state change."
+        "expansionPrompt": "Break down into: 1) Standard point progression logic (0-15-30-40-Game), 2) Deuce and Advantage state handling, 3) Game counting and set win conditions, 4) Tie-break logic implementation, and 5) Integration of history stack pushing on every state change.",
+        "updatedAt": "2026-02-20T15:35:54.087Z"
       },
       {
         "id": "5",
@@ -290,9 +358,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-20T14:42:51.982Z",
+      "lastModified": "2026-02-20T15:35:54.087Z",
       "taskCount": 10,
-      "completedCount": 3,
+      "completedCount": 4,
       "tags": [
         "master"
       ]
