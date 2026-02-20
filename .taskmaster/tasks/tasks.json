@@ -393,23 +393,63 @@
         "id": "7",
         "title": "Game Screen Layout Construction",
         "description": "Create the layout for the Game Screen displaying scores and control buttons.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "1"
         ],
         "priority": "medium",
         "details": "Create `page/game`. Layout the top section for Set Scores (Games won) and the middle section for Current Game Points (0, 15, 30...). Ensure high contrast and large typography for readability. Place Team A and Team B action buttons (Add/Remove) at the bottom. Ensure layout adapts to Round vs Square screens using relative positioning or flexbox.",
         "testStrategy": "Visual inspection on Round and Square simulators to ensure elements do not overlap or get cut off. Verify text size is readable as per accessibility requirements.",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Layout Set Score Section",
+            "description": "Create the top section UI to display Set Scores (games won) for both teams.",
+            "dependencies": [],
+            "details": "Construct the top container in `page/game` to show Team A and Team B Set Scores. Use flexbox or relative positioning for alignment and apply high contrast colors for readability.",
+            "status": "done",
+            "testStrategy": "Inspect layout on simulator to ensure scores are positioned at the top and legible.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T18:09:24.009Z"
+          },
+          {
+            "id": 2,
+            "title": "Layout Current Game Point Section",
+            "description": "Create the middle section UI displaying current game points (0, 15, 30, etc.) with large, readable typography.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the middle container in `page/game` for Current Game Points. Define large typography styles for visibility. Ensure high contrast text is used for the point values.",
+            "status": "done",
+            "testStrategy": "Verify text size is sufficient for readability and contrast meets accessibility standards.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T18:09:24.011Z"
+          },
+          {
+            "id": 3,
+            "title": "Layout Control Buttons and Responsive Adaptation",
+            "description": "Create bottom control buttons for scoring and ensure the full layout is responsive for Round and Square screens.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Add Team A and Team B action buttons (Add/Remove) at the bottom of `page/game`. Apply responsive layout logic (flexbox/relative) to ensure elements fit correctly on both Round and Square screen shapes without overlap.",
+            "status": "done",
+            "testStrategy": "Visual inspection on Round and Square simulators. Ensure no elements are cut off and buttons are accessible.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T18:09:24.012Z"
+          }
+        ],
         "complexity": 5,
         "recommendedSubtasks": 3,
-        "expansionPrompt": "Split into: 1) Layout of the Set Score section (top), 2) Layout of the Current Game Point section (middle) with large typography, and 3) Layout of control buttons (bottom) and responsive adaptation for Round/Square screens."
+        "expansionPrompt": "Split into: 1) Layout of the Set Score section (top), 2) Layout of the Current Game Point section (middle) with large typography, and 3) Layout of control buttons (bottom) and responsive adaptation for Round/Square screens.",
+        "updatedAt": "2026-02-20T18:09:24.012Z"
       },
       {
         "id": "8",
         "title": "Game Screen Interaction & Binding",
         "description": "Connect the UI buttons to the Scoring Logic and update the view dynamically.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "4",
           "5",
@@ -418,10 +458,36 @@
         "priority": "high",
         "details": "Bind the 'Add Point' (+) and 'Remove Point' (-) buttons for both teams to the logic engine. On click: 1. Execute logic, 2. Update the UI state (re-render or update text widgets), 3. Trigger `saveState`. Ensure the UI updates within 100ms of the tap.",
         "testStrategy": "Integration test: Tap buttons and observe UI changes immediately. Verify that adding a point updates the Game Point score, and winning a game updates the Set Score. Verify persistence by closing and reopening the app.",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Bind Game Controls to Scoring Logic",
+            "description": "Attach click event listeners to the UI buttons (+/-) and invoke the scoring logic to update the game state.",
+            "dependencies": [],
+            "details": "Implement event handlers for Team A and Team B 'Add Point' and 'Remove Point' buttons defined in Task 7. On click, invoke the scoring engine functions (from Task 4/5) to calculate the new score. Update the specific UI widgets (Text/Score views) immediately after logic execution to reflect the new state.",
+            "status": "done",
+            "testStrategy": "Unit/Manual test: Click buttons and verify the displayed score changes correctly according to tennis rules. Check that removing points works correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T18:47:04.475Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Auto-Save and Performance Verification",
+            "description": "Integrate state persistence into the click handlers and ensure UI rendering meets latency requirements.",
+            "dependencies": [
+              1
+            ],
+            "details": "Call `saveState` (from Task 3) within the button click handlers immediately after logic execution and UI update. Implement or verify logic to measure rendering latency from tap to screen update. Optimize the update loop if necessary to guarantee the UI updates within the 100ms requirement.",
+            "status": "done",
+            "testStrategy": "Performance test: Use console logging or profiling tools to ensure time delta between event trigger and UI paint is < 100ms. Persistence test: Close and reopen app to verify the last state is saved correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T18:47:05.999Z"
+          }
+        ],
         "complexity": 6,
         "recommendedSubtasks": 2,
-        "expansionPrompt": "Expand into: 1) Binding Add/Remove buttons to the logic engine and triggering state updates, and 2) Implementing auto-save on state change and verifying UI update latency."
+        "expansionPrompt": "Expand into: 1) Binding Add/Remove buttons to the logic engine and triggering state updates, and 2) Implementing auto-save on state change and verifying UI update latency.",
+        "updatedAt": "2026-02-20T18:47:05.999Z"
       },
       {
         "id": "9",
@@ -459,9 +525,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-20T17:12:16.550Z",
+      "lastModified": "2026-02-20T18:47:05.999Z",
       "taskCount": 10,
-      "completedCount": 6,
+      "completedCount": 8,
       "tags": [
         "master"
       ]

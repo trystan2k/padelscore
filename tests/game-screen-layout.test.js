@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+import { createScoreViewModel } from '../page/score-view-model.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
@@ -232,6 +233,42 @@ function findButtonByText(buttons, text) {
   return buttons.find((button) => button.properties.text === text)
 }
 
+function isNumericText(value) {
+  return typeof value === 'string' && /^[0-9]+$/.test(value)
+}
+
+function getRenderedScoreTextValues(createdWidgets) {
+  const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT').filter(hasVisibleRect)
+  const setScoreWidgets = textWidgets
+    .filter((widget) => isNumericText(widget.properties.text))
+    .sort((left, right) => left.properties.x - right.properties.x)
+  const gamePointsWidget = textWidgets.find(
+    (widget) =>
+      typeof widget.properties.text === 'string' &&
+      widget.properties.text.includes(' - ')
+  )
+
+  assert.equal(setScoreWidgets.length >= 2, true)
+  assert.equal(Boolean(gamePointsWidget), true)
+
+  return {
+    teamASetGames: setScoreWidgets[0].properties.text,
+    teamBSetGames: setScoreWidgets[1].properties.text,
+    gamePoints: gamePointsWidget.properties.text
+  }
+}
+
+function assertRenderedScoresMatchState(createdWidgets, matchState) {
+  const viewModel = createScoreViewModel(matchState)
+  const renderedScores = getRenderedScoreTextValues(createdWidgets)
+
+  assert.deepEqual(renderedScores, {
+    teamASetGames: String(viewModel.currentSetGames.teamA),
+    teamBSetGames: String(viewModel.currentSetGames.teamB),
+    gamePoints: `${viewModel.teamA.points} - ${viewModel.teamB.points}`
+  })
+}
+
 test('game screen keeps set, points, and controls in top-to-bottom layout order', async () => {
   const { createdWidgets } = await renderGameScreenForDimensions(390, 450)
   const fillRects = getVisibleWidgets(createdWidgets, 'FILL_RECT')
@@ -323,24 +360,34 @@ test('game screen renders expected bottom control button labels', async () => {
   ])
 })
 
-test('game screen remove controls call team-specific handlers', async () => {
+test('game screen controls call team-specific handlers for add and remove', async () => {
   await runWithRenderedGamePage(390, 450, ({ createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
     const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
     const removeTeamBButton = findButtonByText(buttons, 'game.teamBRemovePoint')
     const calls = []
 
+    assert.equal(typeof addTeamAButton?.properties.click_func, 'function')
+    assert.equal(typeof addTeamBButton?.properties.click_func, 'function')
     assert.equal(typeof removeTeamAButton?.properties.click_func, 'function')
     assert.equal(typeof removeTeamBButton?.properties.click_func, 'function')
 
-    page.handleRemovePointForTeam = (team) => {
-      calls.push(team)
+    page.handleAddPointForTeam = (team) => {
+      calls.push(`add:${team}`)
     }
 
+    page.handleRemovePointForTeam = (team) => {
+      calls.push(`remove:${team}`)
+    }
+
+    addTeamAButton.properties.click_func()
+    addTeamBButton.properties.click_func()
     removeTeamAButton.properties.click_func()
     removeTeamBButton.properties.click_func()
 
-    assert.deepEqual(calls, ['teamA', 'teamB'])
+    assert.deepEqual(calls, ['add:teamA', 'add:teamB', 'remove:teamA', 'remove:teamB'])
   })
 })
 
@@ -352,23 +399,186 @@ test('team-specific remove buttons remove latest point scored by selected team',
     const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
     const removeTeamBButton = findButtonByText(buttons, 'game.teamBRemovePoint')
 
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+
     addTeamAButton.properties.click_func()
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+
     addTeamBButton.properties.click_func()
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+
     addTeamAButton.properties.click_func()
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
 
     assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.THIRTY)
     assert.equal(app.globalData.matchState.teamB.points, SCORE_POINTS.FIFTEEN)
 
     removeTeamBButton.properties.click_func()
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
 
     assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.THIRTY)
     assert.equal(app.globalData.matchState.teamB.points, SCORE_POINTS.LOVE)
     assert.equal(app.globalData.matchHistory.size(), 2)
 
     removeTeamAButton.properties.click_func()
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
 
     assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
     assert.equal(app.globalData.matchState.teamB.points, SCORE_POINTS.LOVE)
     assert.equal(app.globalData.matchHistory.size(), 1)
+  })
+})
+
+test('game controls update visible game and set scores after winning a game', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+
+    for (let index = 0; index < 4; index += 1) {
+      addTeamAButton.properties.click_func()
+      assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+    }
+
+    assert.equal(app.globalData.matchState.currentSetStatus.teamAGames, 1)
+    assert.equal(app.globalData.matchState.currentSetStatus.teamBGames, 0)
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.LOVE)
+    assert.equal(app.globalData.matchState.teamB.points, SCORE_POINTS.LOVE)
+  })
+})
+
+test('game scoring updates runtime state, rerenders UI, and then persists', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const interactionEvents = []
+  let persistedStatePayload = null
+
+  globalThis.settingsStorage = {
+    setItem(_key, value) {
+      interactionEvents.push('save')
+      persistedStatePayload = value
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+      const originalUpdateRuntimeMatchState = page.updateRuntimeMatchState.bind(page)
+      const originalRenderGameScreen = page.renderGameScreen.bind(page)
+
+      page.updateRuntimeMatchState = (nextState) => {
+        interactionEvents.push('update')
+        return originalUpdateRuntimeMatchState(nextState)
+      }
+
+      page.renderGameScreen = () => {
+        interactionEvents.push('render')
+        return originalRenderGameScreen()
+      }
+
+      addTeamAButton.properties.click_func()
+
+      assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
+      assert.equal(typeof persistedStatePayload, 'string')
+      assert.deepEqual(JSON.parse(persistedStatePayload), app.globalData.matchState)
+      assert.deepEqual(interactionEvents.slice(-3), ['update', 'render', 'save'])
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
+})
+
+test('game interaction performance metrics cover realistic add/remove flow under target budget', async () => {
+  await runWithRenderedGamePage(390, 450, ({ createdWidgets, page }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
+    const removeTeamBButton = findButtonByText(buttons, 'game.teamBRemovePoint')
+    const timeSamples = [1000, 1012, 1044, 2000, 2016, 2052, 3000, 3018, 3070]
+    const measuredMetrics = []
+
+    page.getCurrentTimeMs = () => timeSamples.shift()
+    page.onInteractionPerformanceMeasured = (metrics) => {
+      measuredMetrics.push(metrics)
+    }
+
+    addTeamAButton.properties.click_func()
+    addTeamBButton.properties.click_func()
+    removeTeamBButton.properties.click_func()
+
+    assert.equal(measuredMetrics.length, 3)
+    assert.deepEqual(measuredMetrics, [
+      {
+        interactionLatencyMs: 44,
+        renderLatencyMs: 32,
+        latencyBudgetMs: 100,
+        exceededLatencyBudget: false
+      },
+      {
+        interactionLatencyMs: 52,
+        renderLatencyMs: 36,
+        latencyBudgetMs: 100,
+        exceededLatencyBudget: false
+      },
+      {
+        interactionLatencyMs: 70,
+        renderLatencyMs: 52,
+        latencyBudgetMs: 100,
+        exceededLatencyBudget: false
+      }
+    ])
+    assert.deepEqual(page.lastInteractionPerformanceMetrics, {
+      interactionLatencyMs: 70,
+      renderLatencyMs: 52,
+      latencyBudgetMs: 100,
+      exceededLatencyBudget: false
+    })
+  })
+})
+
+test('game interaction performance metrics flag over-budget high-history team remove path', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
+    const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
+    const highHistoryInteractionCount = 48
+
+    for (let index = 0; index < highHistoryInteractionCount; index += 1) {
+      const addButton = index % 2 === 0 ? addTeamAButton : addTeamBButton
+      addButton.properties.click_func()
+    }
+
+    const historyDepthBeforeRemove = app.globalData.matchHistory.size()
+
+    assert.equal(historyDepthBeforeRemove >= highHistoryInteractionCount, true)
+
+    const timeSamples = [2000, 2105, 2140]
+    const measuredMetrics = []
+
+    page.getCurrentTimeMs = () => timeSamples.shift()
+    page.onInteractionPerformanceMeasured = (metrics) => {
+      measuredMetrics.push(metrics)
+    }
+
+    removeTeamAButton.properties.click_func()
+
+    assert.equal(measuredMetrics.length, 1)
+    assert.equal(measuredMetrics[0].interactionLatencyMs, 140)
+    assert.equal(measuredMetrics[0].latencyBudgetMs, 100)
+    assert.equal(measuredMetrics[0].exceededLatencyBudget, true)
+    assert.equal(page.lastInteractionPerformanceMetrics.exceededLatencyBudget, true)
+    assert.equal(app.globalData.matchHistory.size(), historyDepthBeforeRemove - 1)
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
   })
 })

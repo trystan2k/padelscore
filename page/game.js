@@ -34,6 +34,8 @@ const GAME_TOKENS = Object.freeze({
   }
 })
 
+const INTERACTION_LATENCY_TARGET_MS = 100
+
 function cloneMatchState(matchState) {
   try {
     return JSON.parse(JSON.stringify(matchState))
@@ -83,6 +85,22 @@ function calculateRoundSafeSectionSideInset(
 
 function isRecord(value) {
   return typeof value === 'object' && value !== null
+}
+
+function getCurrentTimestampMs() {
+  if (
+    typeof globalThis !== 'undefined' &&
+    isRecord(globalThis.performance) &&
+    typeof globalThis.performance.now === 'function'
+  ) {
+    return globalThis.performance.now()
+  }
+
+  if (typeof Date !== 'undefined' && typeof Date.now === 'function') {
+    return Date.now()
+  }
+
+  return 0
 }
 
 function isValidRuntimeMatchState(matchState) {
@@ -271,6 +289,56 @@ Page({
     app.globalData.matchState = nextState
   },
 
+  getCurrentTimeMs() {
+    return getCurrentTimestampMs()
+  },
+
+  emitInteractionPerformanceMetrics(metrics) {
+    if (!isRecord(metrics)) {
+      return
+    }
+
+    this.lastInteractionPerformanceMetrics = metrics
+
+    if (typeof this.onInteractionPerformanceMeasured === 'function') {
+      try {
+        this.onInteractionPerformanceMeasured(metrics)
+      } catch {
+        // Ignore callback errors so scoring interactions stay resilient.
+      }
+    }
+
+    if (!metrics.exceededLatencyBudget) {
+      return
+    }
+
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(
+        `[game-screen] interaction latency ${metrics.interactionLatencyMs}ms exceeded ${metrics.latencyBudgetMs}ms target`
+      )
+    }
+  },
+
+  measureInteractionPerformance(interactionStartedAt, renderStartedAt, uiUpdatedAt) {
+    if (
+      !Number.isFinite(interactionStartedAt) ||
+      !Number.isFinite(renderStartedAt) ||
+      !Number.isFinite(uiUpdatedAt)
+    ) {
+      return
+    }
+
+    const interactionLatencyMs = Math.max(0, Math.round(uiUpdatedAt - interactionStartedAt))
+    const renderLatencyMs = Math.max(0, Math.round(uiUpdatedAt - renderStartedAt))
+
+    this.emitInteractionPerformanceMetrics({
+      interactionLatencyMs,
+      renderLatencyMs,
+      latencyBudgetMs: INTERACTION_LATENCY_TARGET_MS,
+      exceededLatencyBudget: interactionLatencyMs >= INTERACTION_LATENCY_TARGET_MS
+    })
+  },
+
   addPointForTeam(team) {
     const app = this.getAppInstance()
 
@@ -369,44 +437,47 @@ Page({
     return rebuiltState
   },
 
-  persistAndRender(nextState) {
+  persistAndRender(nextState, interactionStartedAt) {
     if (!isValidRuntimeMatchState(nextState)) {
       return
     }
 
     this.updateRuntimeMatchState(nextState)
-    saveState(nextState)
+
+    const renderStartedAt = this.getCurrentTimeMs()
     this.renderGameScreen()
+    const uiUpdatedAt = this.getCurrentTimeMs()
+
+    this.measureInteractionPerformance(interactionStartedAt, renderStartedAt, uiUpdatedAt)
+    saveState(nextState)
+  },
+
+  executeScoringAction(action) {
+    if (typeof action !== 'function') {
+      return
+    }
+
+    const interactionStartedAt = this.getCurrentTimeMs()
+    const previousState = cloneMatchState(this.getRuntimeMatchState())
+    const nextState = action()
+
+    if (!isValidRuntimeMatchState(nextState) || isSameMatchState(previousState, nextState)) {
+      return
+    }
+
+    this.persistAndRender(nextState, interactionStartedAt)
   },
 
   handleAddPointForTeam(team) {
-    const nextState = this.addPointForTeam(team)
-
-    if (!nextState) {
-      return
-    }
-
-    this.persistAndRender(nextState)
+    this.executeScoringAction(() => this.addPointForTeam(team))
   },
 
   handleRemovePoint() {
-    const nextState = this.removePoint()
-
-    if (!nextState) {
-      return
-    }
-
-    this.persistAndRender(nextState)
+    this.executeScoringAction(() => this.removePoint())
   },
 
   handleRemovePointForTeam(team) {
-    const nextState = this.removePointForTeam(team)
-
-    if (!nextState) {
-      return
-    }
-
-    this.persistAndRender(nextState)
+    this.executeScoringAction(() => this.removePointForTeam(team))
   },
 
   renderGameScreen() {
