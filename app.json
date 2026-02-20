@@ -2,17 +2,19 @@
   "configVersion": "v2",
   "app": {
     "appId": 20000,
-    "appName": "Empty",
+    "appName": "Padel Score",
     "appType": "app",
     "version": {
       "code": 1,
-      "name": "1.0.1"
+      "name": "1.0.0"
     },
     "icon": "icon.png",
     "vender": "zepp",
-    "description": "empty app"
+    "description": "Track padel match scores on your Amazfit watch."
   },
-  "permissions": [],
+  "permissions": [
+    "device:os.local_storage"
+  ],
   "runtime": {
     "apiVersion": {
       "compatible": "1.0.0",
@@ -21,6 +23,32 @@
     }
   },
   "targets": {
+    "454x454-amazfit-gtr-3": {
+      "module": {
+        "page": {
+          "pages": [
+            "page/index"
+          ]
+        },
+        "app-side": {
+          "path": "app-side/index"
+        },
+        "setting": {
+          "path": "setting/index"
+        }
+      },
+      "platforms": [
+        {
+          "name": "gtr3",
+          "deviceSource": 226
+        },
+        {
+          "name": "gtr3-w",
+          "deviceSource": 227
+        }
+      ],
+      "designWidth": 454
+    },
     "390x450-amazfit-gts-3": {
       "module": {
         "page": {
@@ -50,7 +78,7 @@
   },
   "i18n": {
     "en-US": {
-      "appName": "Empty"
+      "appName": "Padel Score"
     }
   },
   "defaultLanguage": "en-US"

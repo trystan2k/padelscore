@@ -259,6 +259,8 @@ IF style == SHORT:
 1. Does message match detected style?
 2. Does language match detected language?
 3. Is it similar to examples from git log?
+4. Does it avoid task IDs/task numbers (for example, PAD-001, Task 1, Task #1) unless explicitly requested?
+5. Do NOT include any reference to LLM, Models, Opencode, etc. in the message.
 
 If ANY check fails -> REWRITE message.
 
@@ -355,6 +357,7 @@ Is history messy?
 5. **NEVER leave working directory dirty** - complete all changes
 6. **NEVER skip JUSTIFICATION** - explain why files are grouped
 7. **NEVER use vague grouping reasons** - "related to X" is NOT valid
+8. **NEVER include task IDs/task numbers in commit messages** unless explicitly requested
 
 ---
 

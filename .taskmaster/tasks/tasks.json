@@ -2,18 +2,86 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Project Initialization & Configuration",
         "description": "Set up the Zepp OS project structure, configuration files, and base directories.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [],
         "priority": "high",
         "details": "Initialize a new Zepp OS Mini Program project. Configure `app.json` with the project ID, version, and necessary permissions (e.g., storage). Set up the folder structure (pages, utils, assets). Ensure the project is configured to support both round and square screen resolutions by defining viewport settings or using responsive units (px/rpx).",
         "testStrategy": "Verify the project compiles successfully using the Zepp developer tools. Confirm that the app launches on the simulator (round and square) without crashing and displays a blank page or default index.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Zepp OS Project and Directory Structure",
+            "description": "Create the base project using the CLI and establish the folder scaffolding.",
+            "dependencies": [],
+            "details": "Execute the Zepp OS project initialization command to generate the boilerplate. Manually create the required directory structure including folders for 'pages', 'utils', and 'assets' to organize the codebase.",
+            "status": "done",
+            "testStrategy": "Verify that the project command executes without errors and all required folders exist in the file system.",
+            "parentId": "1",
+            "updatedAt": "2026-02-20T07:17:14.785Z"
+          },
+          {
+            "id": 2,
+            "title": "Configure Core App Metadata in app.json",
+            "description": "Set the project identification and version information in the configuration file.",
+            "dependencies": [
+              1
+            ],
+            "details": "Edit the root `app.json` file to input the correct `appId`, `versionName`, `versionCode`, and `appName`. Ensure the JSON syntax is valid to prevent build errors.",
+            "status": "done",
+            "testStrategy": "Validate the JSON structure using a linter or the Zepp developer tools to ensure no syntax errors exist.",
+            "parentId": "1",
+            "updatedAt": "2026-02-20T07:17:14.791Z"
+          },
+          {
+            "id": 3,
+            "title": "Define Storage Permissions in app.json",
+            "description": "Configure necessary permissions for local data access.",
+            "dependencies": [
+              2
+            ],
+            "details": "Add the appropriate permission keys to `app.json` to enable access to `storage` APIs. This is required for the subsequent implementation of local state persistence.",
+            "status": "done",
+            "testStrategy": "Review the configuration file to confirm permission keys are present and formatted according to Zepp OS documentation.",
+            "parentId": "1",
+            "updatedAt": "2026-02-20T07:17:14.794Z"
+          },
+          {
+            "id": 4,
+            "title": "Set Viewport Configuration for Round Screens",
+            "description": "Configure the project settings to support circular screen resolutions.",
+            "dependencies": [
+              2
+            ],
+            "details": "Update the `app.json` or global configuration files to define the `designWidth` and viewport settings specifically tailored for round screen devices (e.g., 454px). Configure the design system to handle circular clipping zones.",
+            "status": "done",
+            "testStrategy": "Deploy the project to a round screen simulator and verify that the default page renders within the circular bounds without overflow.",
+            "parentId": "1",
+            "updatedAt": "2026-02-20T07:17:14.795Z"
+          },
+          {
+            "id": 5,
+            "title": "Set Viewport Configuration for Square Screens and Responsive Units",
+            "description": "Ensure compatibility with square screens and implement responsive units.",
+            "dependencies": [
+              4
+            ],
+            "details": "Adjust configuration to support square screen resolutions. Enforce the use of responsive units (px/rpx) in the global settings or style guide to ensure layouts scale correctly across both round and square form factors.",
+            "status": "done",
+            "testStrategy": "Deploy to a square screen simulator. Verify elements are positioned correctly and that the layout adapts without distortion compared to the round screen view.",
+            "parentId": "1",
+            "updatedAt": "2026-02-20T07:17:14.797Z"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Break this task down into subtasks covering: 1) Project creation and folder scaffolding, 2) Configuration of app.json (permissions, project ID), and 3) Viewport setup for round and square screens.",
+        "updatedAt": "2026-02-20T07:17:14.797Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Data Model & State Management Design",
         "description": "Define the data structures for the game state, scoring history, and team configurations.",
         "status": "pending",
@@ -21,121 +89,152 @@
         "priority": "high",
         "details": "Create JavaScript/TypeScript interfaces for `MatchState` including: Team A/B scores (points, games), current set status, and match status (active/finished). Implement a history stack structure to store past states for the Undo functionality (as per 'Option 2' state machine approach). Define constants for scoring sequences (0, 15, 30, 40, Ad, Game).",
         "testStrategy": "Unit tests to verify that the state object initializes correctly with zero values and that the history stack can push and pop deep copies of the state without reference errors.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Expand into: 1) Defining TypeScript interfaces for MatchState and related entities, 2) Implementing the history stack structure with deep copy logic, and 3) Defining scoring constants and enumerations."
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Local Storage & Persistence Layer",
         "description": "Implement the mechanism to save and load the game state using the device's local storage.",
         "status": "pending",
         "dependencies": [
-          2
+          "2"
         ],
         "priority": "high",
         "details": "Utilize Zepp OS `settingsStorage` API to persist the `MatchState` object as a JSON string. Implement `saveState(state)` and `loadState()` functions. Ensure data is serialized correctly and handle potential JSON parsing errors. The load function should return `null` if no saved game exists.",
         "testStrategy": "Manually save a state, restart the app/simulator, and verify the data is retrieved accurately. Test with invalid/corrupted storage data to ensure the app handles it gracefully (e.g., defaults to new game).",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Split into: 1) Implementing the saveState function with JSON serialization, and 2) Implementing the loadState function with error handling and null checks."
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Padel Scoring Logic Engine",
         "description": "Develop the core state machine logic for handling points, games, sets, and tie-breaks.",
         "status": "pending",
         "dependencies": [
-          2
+          "2"
         ],
         "priority": "high",
         "details": "Implement the `addPoint(team)` function. Logic must handle: standard progression (0->15->30->40->Game), Deuce/Advantage rules (40-40 -> Ad -> Game or Deuce), and Game/Set increments. Implement Set logic: win at 6 games (margin of 2) or Tie-break at 6-6 (first to 7, margin of 2). Every state change must be pushed to the history stack before updating the current state to support Undo.",
         "testStrategy": "Write test cases for standard scoring, deuce scenarios (winning/losing from advantage), set wins (6-0, 6-4), and tie-break entry (6-6). Validate that the history stack grows with every point.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 9,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down into: 1) Standard point progression logic (0-15-30-40-Game), 2) Deuce and Advantage state handling, 3) Game counting and set win conditions, 4) Tie-break logic implementation, and 5) Integration of history stack pushing on every state change."
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Undo & Remove Point Logic",
         "description": "Implement the logic to reverse the last score action using the history stack.",
         "status": "pending",
         "dependencies": [
-          4
+          "4"
         ],
         "priority": "high",
         "details": "Implement `removePoint()` function. This function should pop the previous state from the history stack and set it as the current state. If the history is empty or score is at start (0-0, 0-0), the function should be a no-op. Ensure this effectively restores game points, set scores, and tie-break statuses.",
         "testStrategy": "Verify that pressing Undo after scoring reverts the score exactly to the previous state. Test rapid Undo presses until the score reaches 0-0 and ensure no errors occur or negative scores appear.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 3,
+        "recommendedSubtasks": 1,
+        "expansionPrompt": "Create a subtask to implement the removePoint function, focusing on popping from history, validation checks (empty stack), and state restoration."
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Home Screen UI Implementation",
         "description": "Build the Home Screen with Start and Resume functionality based on the design reference.",
         "status": "pending",
         "dependencies": [
-          1,
-          3
+          "1",
+          "3"
         ],
         "priority": "medium",
         "details": "Create `page/index` using Zepp UI components. Implement the App Title/Logo. Add 'Start New Game' and 'Resume Game' buttons. Use the `loadState` result to conditionally render the 'Resume Game' button (only if a saved game exists). Apply design tokens (colors, fonts) from the Lovable reference.",
         "testStrategy": "UI Test: Verify button placement and text match the 'Game Start' design. Functional Test: With no data, only 'Start' is shown. With data, both are shown. Clicking 'Start' clears storage and navigates. Clicking 'Resume' navigates without clearing.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Expand into: 1) Creating the basic page structure and adding App Title/Logo, 2) Implementing the 'Start New Game' button and logic, and 3) Implementing the conditional 'Resume Game' button and data fetching."
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Game Screen Layout Construction",
         "description": "Create the layout for the Game Screen displaying scores and control buttons.",
         "status": "pending",
         "dependencies": [
-          1
+          "1"
         ],
         "priority": "medium",
         "details": "Create `page/game`. Layout the top section for Set Scores (Games won) and the middle section for Current Game Points (0, 15, 30...). Ensure high contrast and large typography for readability. Place Team A and Team B action buttons (Add/Remove) at the bottom. Ensure layout adapts to Round vs Square screens using relative positioning or flexbox.",
         "testStrategy": "Visual inspection on Round and Square simulators to ensure elements do not overlap or get cut off. Verify text size is readable as per accessibility requirements.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Split into: 1) Layout of the Set Score section (top), 2) Layout of the Current Game Point section (middle) with large typography, and 3) Layout of control buttons (bottom) and responsive adaptation for Round/Square screens."
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Game Screen Interaction & Binding",
         "description": "Connect the UI buttons to the Scoring Logic and update the view dynamically.",
         "status": "pending",
         "dependencies": [
-          4,
-          5,
-          7
+          "4",
+          "5",
+          "7"
         ],
         "priority": "high",
         "details": "Bind the 'Add Point' (+) and 'Remove Point' (-) buttons for both teams to the logic engine. On click: 1. Execute logic, 2. Update the UI state (re-render or update text widgets), 3. Trigger `saveState`. Ensure the UI updates within 100ms of the tap.",
         "testStrategy": "Integration test: Tap buttons and observe UI changes immediately. Verify that adding a point updates the Game Point score, and winning a game updates the Set Score. Verify persistence by closing and reopening the app.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 6,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Expand into: 1) Binding Add/Remove buttons to the logic engine and triggering state updates, and 2) Implementing auto-save on state change and verifying UI update latency."
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Navigation & Lifecycle Handling",
         "description": "Manage navigation between screens and handle app backgrounding/foregrounding events.",
         "status": "pending",
         "dependencies": [
-          6,
-          8
+          "6",
+          "8"
         ],
         "priority": "medium",
         "details": "Implement the 'Back/Home' button logic in the Game Screen to return to the Home Screen. Add event listeners for lifecycle events (e.g., `app.on('pause')` or page hide events) to trigger `saveState` automatically, ensuring no data is lost if the user receives a call or locks the screen.",
         "testStrategy": "Navigate from Game to Home and verify save is triggered. Background the app while in a game state (simulate via tools or OS gesture) and foreground it to verify the state persists exactly as left.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Break into: 1) Implementing navigation logic (Back/Home button) and 2) Adding lifecycle event listeners (pause/hide) for automatic state persistence."
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Styling Refinement, Input Debouncing & Polish",
         "description": "Apply final design styles, implement input debouncing, and optimize performance.",
         "status": "pending",
         "dependencies": [
-          9
+          "9"
         ],
         "priority": "low",
         "details": "Refine the UI to strictly match the Lovable design (Game Finish, Score colors, button styles). Implement a debounce mechanism (e.g., ignore input for 300ms after a valid tap) on scoring buttons to prevent double-tap errors. Ensure touch targets are large enough (min 48px) for sports usage.",
         "testStrategy": "Perform rapid tapping tests to ensure debounce prevents double scoring. Conduct a final design audit against the provided images. Measure UI update latency to ensure <100ms compliance.",
-        "subtasks": []
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Split into: 1) Applying final design styles and ensuring accessibility (touch targets), and 2) Implementing input debouncing logic to prevent double-tap errors."
       }
     ],
     "metadata": {
-      "created": "2026-02-19T23:59:14.786Z",
-      "updated": "2026-02-19T23:59:14.786Z",
-      "description": "Tasks for master context"
+      "version": "1.0.0",
+      "lastModified": "2026-02-20T07:17:14.797Z",
+      "taskCount": 10,
+      "completedCount": 1,
+      "tags": [
+        "master"
+      ]
     }
   }
 }
