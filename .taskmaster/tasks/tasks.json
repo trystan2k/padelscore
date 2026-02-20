@@ -135,17 +135,41 @@
         "id": "3",
         "title": "Local Storage & Persistence Layer",
         "description": "Implement the mechanism to save and load the game state using the device's local storage.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "2"
         ],
         "priority": "high",
         "details": "Utilize Zepp OS `settingsStorage` API to persist the `MatchState` object as a JSON string. Implement `saveState(state)` and `loadState()` functions. Ensure data is serialized correctly and handle potential JSON parsing errors. The load function should return `null` if no saved game exists.",
         "testStrategy": "Manually save a state, restart the app/simulator, and verify the data is retrieved accurately. Test with invalid/corrupted storage data to ensure the app handles it gracefully (e.g., defaults to new game).",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement saveState function with JSON serialization",
+            "description": "Create the saveState function to serialize the MatchState object into a JSON string and persist it using the Zepp OS settingsStorage API.",
+            "dependencies": [],
+            "details": "Implement the `saveState(state)` function. This function takes a `MatchState` object as input, serializes it using `JSON.stringify()`, and saves the resulting string to a specific key in the Zepp OS `settingsStorage`.",
+            "status": "done",
+            "testStrategy": "Test by calling the function with a valid MatchState object and verifying the data is written to storage. Ensure valid JSON stringification.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T14:42:51.978Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement loadState function with error handling",
+            "description": "Create the loadState function to retrieve and parse the game state, including robust error handling for missing or corrupted data.",
+            "dependencies": [],
+            "details": "Implement the `loadState()` function. Retrieve the raw string from `settingsStorage` using the defined key. Parse the string using `JSON.parse()` inside a try-catch block. Handle potential errors by returning `null` if data is missing or if parsing fails.",
+            "status": "done",
+            "testStrategy": "Test scenarios: empty storage (expect null), valid storage (expect state object), and corrupted JSON string (expect null without crashing).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T14:42:51.982Z"
+          }
+        ],
         "complexity": 4,
         "recommendedSubtasks": 2,
-        "expansionPrompt": "Split into: 1) Implementing the saveState function with JSON serialization, and 2) Implementing the loadState function with error handling and null checks."
+        "expansionPrompt": "Split into: 1) Implementing the saveState function with JSON serialization, and 2) Implementing the loadState function with error handling and null checks.",
+        "updatedAt": "2026-02-20T14:42:51.982Z"
       },
       {
         "id": "4",
@@ -266,9 +290,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-20T13:23:14.673Z",
+      "lastModified": "2026-02-20T14:42:51.982Z",
       "taskCount": 10,
-      "completedCount": 2,
+      "completedCount": 3,
       "tags": [
         "master"
       ]
