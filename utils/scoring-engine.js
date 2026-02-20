@@ -187,6 +187,119 @@ function assertValidHistoryStack(historyStack) {
 }
 
 /**
+ * @param {unknown} historyStack
+ */
+function assertValidUndoHistoryStack(historyStack) {
+  if (historyStack === undefined) {
+    return
+  }
+
+  if (
+    !historyStack ||
+    typeof historyStack.pop !== 'function' ||
+    typeof historyStack.isEmpty !== 'function'
+  ) {
+    throw new TypeError('removePoint historyStack must expose pop() and isEmpty() methods.')
+  }
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isNonNegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0
+}
+
+/**
+ * @param {unknown} points
+ * @returns {boolean}
+ */
+function isValidPointValue(points) {
+  return (
+    points === SCORE_POINTS.LOVE ||
+    points === SCORE_POINTS.FIFTEEN ||
+    points === SCORE_POINTS.THIRTY ||
+    points === SCORE_POINTS.FORTY ||
+    points === SCORE_POINTS.ADVANTAGE ||
+    isNonNegativeInteger(points)
+  )
+}
+
+/**
+ * @param {unknown} team
+ * @returns {boolean}
+ */
+function isValidTeamState(team) {
+  return (
+    !!team &&
+    typeof team === 'object' &&
+    isValidPointValue(team.points) &&
+    isNonNegativeInteger(team.games)
+  )
+}
+
+/**
+ * @param {unknown} currentSetStatus
+ * @returns {boolean}
+ */
+function isValidCurrentSetStatus(currentSetStatus) {
+  return (
+    !!currentSetStatus &&
+    typeof currentSetStatus === 'object' &&
+    isNonNegativeInteger(currentSetStatus.teamAGames) &&
+    isNonNegativeInteger(currentSetStatus.teamBGames) &&
+    isNonNegativeInteger(currentSetStatus.number) &&
+    currentSetStatus.number >= 1
+  )
+}
+
+/**
+ * @param {unknown} state
+ * @returns {boolean}
+ */
+function isValidRestorableMatchState(state) {
+  return (
+    !!state &&
+    typeof state === 'object' &&
+    isValidTeamState(state.teamA) &&
+    isValidTeamState(state.teamB) &&
+    isValidCurrentSetStatus(state.currentSetStatus) &&
+    isNonNegativeInteger(state.currentSet) &&
+    state.currentSet >= 1 &&
+    state.currentSet === state.currentSetStatus.number &&
+    (state.status === 'active' || state.status === 'finished') &&
+    isNonNegativeInteger(state.updatedAt)
+  )
+}
+
+/**
+ * @param {unknown} state
+ */
+function assertRestorableMatchState(state) {
+  if (!isValidRestorableMatchState(state)) {
+    throw new TypeError('removePoint can only restore a valid match snapshot state.')
+  }
+}
+
+/**
+ * @param {import('./match-state.js').MatchState} state
+ * @returns {boolean}
+ */
+function isInitialLikeState(state) {
+  return (
+    state.teamA.points === SCORE_POINTS.LOVE &&
+    state.teamB.points === SCORE_POINTS.LOVE &&
+    state.teamA.games === 0 &&
+    state.teamB.games === 0 &&
+    state.currentSetStatus.number === 1 &&
+    state.currentSetStatus.teamAGames === 0 &&
+    state.currentSetStatus.teamBGames === 0 &&
+    state.currentSet === 1
+  )
+}
+
+/**
  * @param {import('./match-state.js').MatchState} state
  * @param {import('./history-stack.js').HistoryStack<import('./match-state.js').MatchState>} [historyStack]
  * @returns {import('./match-state.js').MatchState}
@@ -259,4 +372,32 @@ export function addPoint(state, team, historyStack) {
   }
 
   return nextState
+}
+
+/**
+ * Restores the previous match snapshot from history.
+ *
+ * @param {import('./match-state.js').MatchState} state
+ * @param {import('./history-stack.js').HistoryStack<import('./match-state.js').MatchState>} [historyStack]
+ * @returns {import('./match-state.js').MatchState}
+ */
+export function removePoint(state, historyStack) {
+  assertValidUndoHistoryStack(historyStack)
+
+  if (isInitialLikeState(state)) {
+    return deepCopyState(state)
+  }
+
+  if (historyStack === undefined || historyStack.isEmpty()) {
+    return deepCopyState(state)
+  }
+
+  const restoredState = historyStack.pop()
+
+  if (restoredState === null) {
+    return deepCopyState(state)
+  }
+
+  assertRestorableMatchState(restoredState)
+  return deepCopyState(restoredState)
 }
