@@ -25,5 +25,11 @@ msgstr "+ Team A"
 msgid "game.teamBAddPoint"
 msgstr "+ Team B"
 
+msgid "game.teamARemovePoint"
+msgstr "- Team A"
+
+msgid "game.teamBRemovePoint"
+msgstr "- Team B"
+
 msgid "game.undo"
 msgstr "Undo"
