@@ -38,6 +38,17 @@ npm run test
   - `fix: resolve memory leak in score calculation`
   - `docs: update installation guide`
 
+## Tools Stack
+
+This repository uses the following tools:
+
+- **Zeus CLI**: For project scaffolding, local development, and app distribution. Use `zepp os` skill.
+- **Zepp App**: For testing and debugging on real Amazfit devices. Use `zepp os` skill.
+- **Zepp OS Simulator**: For local testing of the app on different screen sizes. Use `zepp os` skill.
+- **Node.js**: For running npm scripts and tools.
+- **npm**: Package manager for Node.js dependencies.
+- **Github**: Version control system for code collaboration. Use github-mcp when need to interact with the remote repository.
+
 ## Code Style Guidelines
 
 - **Indentation**: 2 spaces (see .editorconfig)
