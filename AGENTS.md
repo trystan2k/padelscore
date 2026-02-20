@@ -42,7 +42,7 @@ At the moment this project does not have a QA gate script to be executed, so if 
   - Files: `snake_case` or `kebab-case` generally preferred in Zepp OS projects (though some templates use `camelCase`). Follow existing project structure.
   - Variables/Functions: `camelCase`.
 - **Responsive Units Baseline**:
-  - Keep target-specific `designWidth` values in `app.json` (`454` for `454x454-amazfit-gtr-3`, `390` for `390x450-amazfit-gts-3`).
+  - Keep target-specific `designWidth` values in `app.json` (`454` for `gtr-3`, `390` for `gts-3`).
   - Use responsive units for layout values (`rpx` preferred). Use `px` only when fixed physical sizing is required (for example, 1px dividers or bitmap-native asset dimensions).
 
 ## Stack used

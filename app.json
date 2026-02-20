@@ -23,12 +23,10 @@
     }
   },
   "targets": {
-    "454x454-amazfit-gtr-3": {
+    "gtr-3": {
       "module": {
         "page": {
-          "pages": [
-            "page/index"
-          ]
+          "pages": ["page/index"]
         },
         "app-side": {
           "path": "app-side/index"
@@ -49,12 +47,10 @@
       ],
       "designWidth": 454
     },
-    "390x450-amazfit-gts-3": {
+    "gts-3": {
       "module": {
         "page": {
-          "pages": [
-            "page/index"
-          ]
+          "pages": ["page/index"]
         },
         "app-side": {
           "path": "app-side/index"
