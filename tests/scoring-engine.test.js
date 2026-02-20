@@ -2,9 +2,44 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { createInitialMatchState } from '../utils/match-state.js'
-import { addPoint } from '../utils/scoring-engine.js'
+import { addPoint, removePoint } from '../utils/scoring-engine.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { createHistoryStack } from '../utils/history-stack.js'
+
+const VALID_REGULAR_POINTS = new Set([
+  SCORE_POINTS.LOVE,
+  SCORE_POINTS.FIFTEEN,
+  SCORE_POINTS.THIRTY,
+  SCORE_POINTS.FORTY,
+  SCORE_POINTS.ADVANTAGE
+])
+
+function assertValidUndoState(state) {
+  const points = [state.teamA.points, state.teamB.points]
+
+  points.forEach((point) => {
+    const isValidNumericTieBreakPoint = Number.isInteger(point) && point >= 0
+    const isValidRegularPoint = VALID_REGULAR_POINTS.has(point)
+    assert.equal(
+      isValidRegularPoint || isValidNumericTieBreakPoint,
+      true,
+      'undo should keep point values in a valid scoring domain'
+    )
+  })
+
+  assert.equal(Number.isInteger(state.teamA.games) && state.teamA.games >= 0, true)
+  assert.equal(Number.isInteger(state.teamB.games) && state.teamB.games >= 0, true)
+  assert.equal(
+    Number.isInteger(state.currentSetStatus.teamAGames) && state.currentSetStatus.teamAGames >= 0,
+    true
+  )
+  assert.equal(
+    Number.isInteger(state.currentSetStatus.teamBGames) && state.currentSetStatus.teamBGames >= 0,
+    true
+  )
+  assert.equal(Number.isInteger(state.currentSetStatus.number) && state.currentSetStatus.number >= 1, true)
+  assert.equal(Number.isInteger(state.currentSet) && state.currentSet >= 1, true)
+}
 
 function createStateWithTeamAGamePoint(teamAGames, teamBGames) {
   const state = createInitialMatchState()
@@ -290,4 +325,106 @@ test('addPoint stores deep-copied pre-update snapshot that restores prior state'
   assert.equal(restoredPreviousState.teamA.points, SCORE_POINTS.FIFTEEN)
   assert.equal(restoredPreviousState.currentSetStatus.teamAGames, 0)
   assert.equal(restoredPreviousState.teams.teamA.label, 'Team A')
+})
+
+test('removePoint undoes a single scored point', () => {
+  const history = createHistoryStack()
+  const initialState = createInitialMatchState()
+
+  const afterPoint = addPoint(initialState, 'teamA', history)
+  const restoredState = removePoint(afterPoint, history)
+
+  assert.equal(afterPoint.teamA.points, SCORE_POINTS.FIFTEEN)
+  assert.deepEqual(restoredState, initialState)
+  assert.equal(history.size(), 0)
+})
+
+test('removePoint handles rapid repeated undos back to initial state', () => {
+  const history = createHistoryStack()
+  let state = createInitialMatchState()
+
+  state = addPoint(state, 'teamA', history)
+  state = addPoint(state, 'teamB', history)
+  state = addPoint(state, 'teamA', history)
+  state = addPoint(state, 'teamA', history)
+  state = addPoint(state, 'teamB', history)
+
+  const undoAttempts = history.size() + 5
+
+  for (let index = 0; index < undoAttempts; index += 1) {
+    state = removePoint(state, history)
+    assertValidUndoState(state)
+  }
+
+  assert.deepEqual(state, createInitialMatchState())
+  assert.equal(history.size(), 0)
+})
+
+test('removePoint is a no-op when history is empty', () => {
+  const state = addPoint(createInitialMatchState(), 'teamA')
+  const history = createHistoryStack()
+
+  const restoredState = removePoint(state, history)
+
+  assert.deepEqual(restoredState, state)
+  assert.equal(history.size(), 0)
+})
+
+test('removePoint is a no-op when already at initial state', () => {
+  const state = createInitialMatchState()
+  const history = createHistoryStack()
+  history.push(createInitialMatchState())
+
+  const restoredState = removePoint(state, history)
+
+  assert.deepEqual(restoredState, state)
+  assert.equal(history.size(), 1)
+})
+
+test('removePoint restores pre-game-win snapshot exactly', () => {
+  const history = createHistoryStack()
+  const preGameWinState = createStateWithTeamAGamePoint(0, 0)
+
+  const afterGameWinState = addPoint(preGameWinState, 'teamA', history)
+  const restoredState = removePoint(afterGameWinState, history)
+
+  assert.equal(afterGameWinState.teamA.games, 1)
+  assert.equal(afterGameWinState.teamA.points, SCORE_POINTS.LOVE)
+  assert.deepEqual(restoredState, preGameWinState)
+})
+
+test('removePoint restores pre-set-win snapshot exactly', () => {
+  const history = createHistoryStack()
+  const preSetWinState = createStateWithTeamAGamePoint(5, 4)
+
+  const afterSetWinState = addPoint(preSetWinState, 'teamA', history)
+  const restoredState = removePoint(afterSetWinState, history)
+
+  assert.equal(afterSetWinState.currentSet, 2)
+  assert.equal(afterSetWinState.currentSetStatus.number, 2)
+  assert.deepEqual(restoredState, preSetWinState)
+})
+
+test('removePoint restores tie-break point progression snapshot', () => {
+  const history = createHistoryStack()
+  const preTieBreakPointState = createTieBreakState(3, 2)
+
+  const afterTieBreakPointState = addPoint(preTieBreakPointState, 'teamA', history)
+  const restoredState = removePoint(afterTieBreakPointState, history)
+
+  assert.equal(afterTieBreakPointState.teamA.points, 4)
+  assert.equal(afterTieBreakPointState.teamB.points, 2)
+  assert.deepEqual(restoredState, preTieBreakPointState)
+})
+
+test('removePoint restores pre-tie-break-set-win snapshot', () => {
+  const history = createHistoryStack()
+  const preTieBreakSetWinState = createTieBreakState(6, 5)
+
+  const afterTieBreakSetWinState = addPoint(preTieBreakSetWinState, 'teamA', history)
+  const restoredState = removePoint(afterTieBreakSetWinState, history)
+
+  assert.equal(afterTieBreakSetWinState.currentSetStatus.number, 2)
+  assert.equal(afterTieBreakSetWinState.currentSet, 2)
+  assert.deepEqual(restoredState, preTieBreakSetWinState)
 })

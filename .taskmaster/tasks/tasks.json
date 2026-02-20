@@ -259,17 +259,79 @@
         "id": "5",
         "title": "Undo & Remove Point Logic",
         "description": "Implement the logic to reverse the last score action using the history stack.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "4"
         ],
         "priority": "high",
         "details": "Implement `removePoint()` function. This function should pop the previous state from the history stack and set it as the current state. If the history is empty or score is at start (0-0, 0-0), the function should be a no-op. Ensure this effectively restores game points, set scores, and tie-break statuses.",
         "testStrategy": "Verify that pressing Undo after scoring reverts the score exactly to the previous state. Test rapid Undo presses until the score reaches 0-0 and ensure no errors occur or negative scores appear.",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement removePoint() core logic in scoring engine",
+            "description": "Implement the removePoint() function in the scoring engine to handle state restoration from the history stack.",
+            "dependencies": [],
+            "details": "Create or update utils/scoring-engine.js to include removePoint(). The function must: 1) Check if history is empty or state is initial (0-0, 0-0) -> return no-op, 2) Pop previous state from utils/history-stack.js, 3) Restore the popped state as current match state, 4) Ensure all fields (points, games, sets, tie-break status) are restored. Import historyStack and popState from utils/history-stack.js.",
+            "status": "done",
+            "testStrategy": "Write unit tests for single undo, multiple rapid undos, edge cases (empty history), and state integrity validation.",
+            "metadata": {
+              "files": [
+                "utils/scoring-engine.js"
+              ],
+              "complexity": 2,
+              "testCommand": "npm test -- scoring-engine.test.js"
+            },
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T16:25:59.786Z"
+          },
+          {
+            "id": 2,
+            "title": "Create comprehensive unit tests for removePoint functionality",
+            "description": "Write unit tests to verify the removePoint() function handles all scoring scenarios correctly.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add test cases to tests/scoring-engine.test.js or create tests/remove-point.test.js. Cover: 1) Single undo after a point, 2) Multiple undos until initial state (0-0, 0-0), 3) Verify no-op when history is empty, 4) Verify no-op when already at initial state, 5) Ensure undo never produces negative scores or invalid transitions. Use createHistoryStack from utils/history-stack.js to mock history state.",
+            "status": "done",
+            "testStrategy": "Execute the test runner to ensure all test cases pass, including edge cases and rapid undo sequences.",
+            "metadata": {
+              "files": [
+                "tests/scoring-engine.test.js",
+                "tests/remove-point.test.js"
+              ],
+              "complexity": 2,
+              "testCommand": "npm test"
+            },
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T16:26:01.549Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate Undo action in app and UI layer",
+            "description": "Wire up the removePoint() function to the UI layer and expose it as an action.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update app.js and page/index.js. Expose a public removePoint action that calls the scoring engine function. If an Undo button exists in page/index.js UI, bind the handler to this action. Add an integration test or runtime check to verify the app's global state updates correctly after Undo is triggered, reflecting the restored state in the UI.",
+            "status": "done",
+            "testStrategy": "Manual test on Zepp OS simulator: click a point, then click Undo, verify UI reverts. Automated integration test to check global state restoration.",
+            "metadata": {
+              "files": [
+                "app.js",
+                "page/index.js"
+              ],
+              "complexity": 1,
+              "testCommand": "npm run test:integration"
+            },
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T16:26:03.053Z"
+          }
+        ],
         "complexity": 3,
         "recommendedSubtasks": 1,
-        "expansionPrompt": "Create a subtask to implement the removePoint function, focusing on popping from history, validation checks (empty stack), and state restoration."
+        "expansionPrompt": "Create a subtask to implement the removePoint function, focusing on popping from history, validation checks (empty stack), and state restoration.",
+        "updatedAt": "2026-02-20T16:26:03.053Z"
       },
       {
         "id": "6",
@@ -358,9 +420,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-20T15:35:54.087Z",
+      "lastModified": "2026-02-20T16:26:03.053Z",
       "taskCount": 10,
-      "completedCount": 4,
+      "completedCount": 5,
       "tags": [
         "master"
       ]
