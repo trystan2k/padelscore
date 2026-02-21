@@ -3,6 +3,7 @@ import { gettext } from 'i18n'
 import { createScoreViewModel } from './score-view-model.js'
 import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
+import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
 import { loadMatchState, saveMatchState } from '../utils/match-storage.js'
 import {
@@ -52,6 +53,13 @@ const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const PERSISTED_ADVANTAGE_POINT_VALUE = 50
 const PERSISTED_GAME_POINT_VALUE = 60
 const DEFAULT_SETS_TO_PLAY = 3
+const TIE_BREAK_ENTRY_GAMES = 6
+const REGULAR_GAME_POINT_VALUES = new Set([
+  SCORE_POINTS.LOVE,
+  SCORE_POINTS.FIFTEEN,
+  SCORE_POINTS.THIRTY,
+  SCORE_POINTS.FORTY
+])
 
 function cloneMatchState(matchState) {
   try {
@@ -155,6 +163,34 @@ function toPersistedPointValue(value) {
   return 0
 }
 
+function isTieBreakMode(teamAGames, teamBGames) {
+  return teamAGames === TIE_BREAK_ENTRY_GAMES && teamBGames === TIE_BREAK_ENTRY_GAMES
+}
+
+function toRuntimePointValue(value, tieBreakMode, fallback = SCORE_POINTS.LOVE) {
+  if (!Number.isInteger(value) || value < 0) {
+    return fallback
+  }
+
+  if (tieBreakMode) {
+    return value
+  }
+
+  if (value === PERSISTED_ADVANTAGE_POINT_VALUE) {
+    return SCORE_POINTS.ADVANTAGE
+  }
+
+  if (value === PERSISTED_GAME_POINT_VALUE) {
+    return SCORE_POINTS.GAME
+  }
+
+  if (REGULAR_GAME_POINT_VALUES.has(value)) {
+    return value
+  }
+
+  return value
+}
+
 function cloneSetHistory(setHistory) {
   if (!Array.isArray(setHistory)) {
     return []
@@ -244,6 +280,19 @@ function mergeRuntimeStateWithPersistedSession(runtimeMatchState, persistedMatch
   mergedState.currentSetStatus.teamBGames = teamBGames
   mergedState.teamA.games = teamAGames
   mergedState.teamB.games = teamBGames
+
+  const tieBreakMode = isTieBreakMode(teamAGames, teamBGames)
+
+  mergedState.teamA.points = toRuntimePointValue(
+    persistedMatchState?.currentGame?.points?.teamA,
+    tieBreakMode,
+    mergedState.teamA.points
+  )
+  mergedState.teamB.points = toRuntimePointValue(
+    persistedMatchState?.currentGame?.points?.teamB,
+    tieBreakMode,
+    mergedState.teamB.points
+  )
 
   mergedState.setsNeededToWin = toPositiveInteger(
     persistedMatchState.setsNeededToWin,

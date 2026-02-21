@@ -48,6 +48,16 @@ Load at runtime bootstrap points:
 2. game page initialization when runtime state is missing
 3. post-undo restore flows that rebuild state from persistence (if runtime stack is unavailable)
 
+Home Resume visibility is schema-first: show Resume only when `loadMatchState()` returns a valid session with `status === 'active'`.
+
+If `loadMatchState()` returns `null` (missing session, invalid schema, corrupt JSON, or adapter error), fail safe:
+
+- hide Resume on Home
+- do not navigate to Game from Resume handler
+- keep runtime manager unchanged
+
+On Resume click, re-run `loadMatchState()` before navigation (do not trust stale Home cache). Only after an active session is revalidated should runtime state be restored into `app.globalData.matchState` and navigation to `page/game` proceed.
+
 If `loadMatchState()` returns `null`, initialize a fresh state via `createDefaultMatchState()` (or existing runtime initializer until full migration).
 
 ### Clear (`clearMatchState`)
@@ -136,6 +146,8 @@ Start new match/reset -> clearMatchState() -> create fresh runtime state
 ## Notes for Incremental Adoption
 
 - Current pages still use legacy `saveState/loadState/clearState` in `utils/storage.js`.
-- Migration to `saveMatchState/loadMatchState/clearMatchState` should be done in Task 12+ to avoid mixed contracts.
+- Home Resume now uses schema persistence (`loadMatchState`) as the source of truth for visibility and restore decisions.
+- Runtime write-through compatibility remains intentional during migration: `page/game.js` continues dual writes (`saveState` + `saveMatchState`) so legacy runtime snapshots and schema sessions stay aligned.
+- New match/reset flows continue to clear both stores (`clearState` + `clearMatchState`) until legacy runtime storage is fully removed.
 - During transition, keep behavior equivalent: fail-safe loads, idempotent saves, explicit clears.
 - Task 14 introduced dedupe for overlapping lifecycle callbacks (`onHide` then `onDestroy`) so only one final state snapshot is committed when state did not change.
