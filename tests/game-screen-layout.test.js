@@ -56,6 +56,8 @@ async function loadGamePageDefinition() {
   const matchStateUrl = new URL('../utils/match-state.js', import.meta.url)
   const scoringEngineUrl = new URL('../utils/scoring-engine.js', import.meta.url)
   const storageUrl = new URL('../utils/storage.js', import.meta.url)
+  const matchStorageUrl = new URL('../utils/match-storage.js', import.meta.url)
+  const matchStateSchemaUrl = new URL('../utils/match-state-schema.js', import.meta.url)
 
   let source = await readFile(sourceUrl, 'utf8')
 
@@ -66,6 +68,8 @@ async function loadGamePageDefinition() {
     .replace("from '../utils/match-state.js'", `from '${matchStateUrl.href}'`)
     .replace("from '../utils/scoring-engine.js'", `from '${scoringEngineUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/match-storage.js'", `from '${matchStorageUrl.href}'`)
+    .replace("from '../utils/match-state-schema.js'", `from '${matchStateSchemaUrl.href}'`)
 
   const moduleUrl =
     'data:text/javascript;charset=utf-8,' +
@@ -199,6 +203,8 @@ async function runWithRenderedGamePage(width, height, runScenario) {
     const page = createPageInstance(definition)
 
     page.onInit()
+    // Bypass async session validation for layout tests - session guard is tested separately
+    page.isSessionAccessGranted = true
     page.build()
 
     return runScenario({
@@ -983,5 +989,257 @@ test('game interaction performance metrics flag over-budget high-history team re
     assert.equal(page.lastInteractionPerformanceMetrics.exceededLatencyBudget, true)
     assert.equal(app.globalData.matchHistory.size(), historyDepthBeforeRemove - 1)
     assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+  })
+})
+
+// ============================================================================
+// Game Access Guard Tests
+// ============================================================================
+
+/**
+ * Creates a serialized match state for testing session persistence
+ */
+function createSerializedMatchState(overrides = {}) {
+  const baseState = {
+    status: 'active',
+    setsToPlay: 3,
+    setsNeededToWin: 2,
+    setsWon: { teamA: 0, teamB: 0 },
+    currentSet: { number: 1, games: { teamA: 0, teamB: 0 } },
+    currentGame: { points: { teamA: 0, teamB: 0 } },
+    setHistory: [],
+    updatedAt: Date.now(),
+    schemaVersion: 1,
+    ...overrides
+  }
+  return JSON.stringify(baseState)
+}
+
+/**
+ * Helper to run session access guard tests with isolated storage mocking
+ */
+async function runSessionGuardTest(storageValue, runAssertions) {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const originalHmApp = globalThis.hmApp
+  const originalHmUI = globalThis.hmUI
+  const originalHmSetting = globalThis.hmSetting
+  const originalGetApp = globalThis.getApp
+
+  const { hmUI, createdWidgets } = createHmUiRecorder()
+  const navigationCalls = []
+
+  globalThis.settingsStorage = {
+    getItem(key) {
+      // match-storage.js uses ACTIVE_MATCH_SESSION key
+      if (key === 'ACTIVE_MATCH_SESSION') {
+        return storageValue
+      }
+      return null
+    },
+    setItem() {},
+    removeItem() {}
+  }
+
+  globalThis.hmApp = {
+    gotoPage(options) {
+      navigationCalls.push(options)
+    },
+    goBack() {
+      navigationCalls.push({ goBack: true })
+    }
+  }
+
+  globalThis.hmUI = hmUI
+  globalThis.hmSetting = {
+    getDeviceInfo() {
+      return { width: 390, height: 450 }
+    }
+  }
+  globalThis.getApp = () => ({
+    globalData: {
+      matchState: createInitialMatchState(1700000000),
+      matchHistory: createHistoryStack()
+    }
+  })
+
+  try {
+    const definition = await loadGamePageDefinition()
+    const page = createPageInstance(definition)
+
+    await runAssertions({
+      page,
+      createdWidgets,
+      navigationCalls,
+      getVisibleWidgets
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+
+    if (typeof originalHmUI === 'undefined') {
+      delete globalThis.hmUI
+    } else {
+      globalThis.hmUI = originalHmUI
+    }
+
+    if (typeof originalHmSetting === 'undefined') {
+      delete globalThis.hmSetting
+    } else {
+      globalThis.hmSetting = originalHmSetting
+    }
+
+    if (typeof originalGetApp === 'undefined') {
+      delete globalThis.getApp
+    } else {
+      globalThis.getApp = originalGetApp
+    }
+  }
+}
+
+test('game access guard redirects to setup when persisted session is missing', async () => {
+  await runSessionGuardTest(null, async ({ page, navigationCalls }) => {
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, false)
+    assert.equal(page.isSessionAccessGranted, false)
+    assert.equal(navigationCalls.length, 1)
+    assert.deepEqual(navigationCalls[0], { url: 'page/setup' })
+  })
+})
+
+test('game access guard redirects to setup when persisted session is empty string', async () => {
+  await runSessionGuardTest('', async ({ page, navigationCalls }) => {
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, false)
+    assert.equal(page.isSessionAccessGranted, false)
+    assert.equal(navigationCalls.length, 1)
+    assert.deepEqual(navigationCalls[0], { url: 'page/setup' })
+  })
+})
+
+test('game access guard redirects to setup when persisted session is invalid JSON', async () => {
+  await runSessionGuardTest('not-valid-json{{{', async ({ page, navigationCalls }) => {
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, false)
+    assert.equal(page.isSessionAccessGranted, false)
+    assert.equal(navigationCalls.length, 1)
+    assert.deepEqual(navigationCalls[0], { url: 'page/setup' })
+  })
+})
+
+test('game access guard redirects to setup when persisted session has invalid schema', async () => {
+  await runSessionGuardTest(JSON.stringify({ invalid: 'structure' }), async ({ page, navigationCalls }) => {
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, false)
+    assert.equal(page.isSessionAccessGranted, false)
+    assert.equal(navigationCalls.length, 1)
+    assert.deepEqual(navigationCalls[0], { url: 'page/setup' })
+  })
+})
+
+test('game access guard redirects to setup when persisted session is finished', async () => {
+  const finishedState = createSerializedMatchState({ status: 'finished' })
+
+  await runSessionGuardTest(finishedState, async ({ page, navigationCalls }) => {
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, false)
+    assert.equal(page.isSessionAccessGranted, false)
+    assert.equal(navigationCalls.length, 1)
+    assert.deepEqual(navigationCalls[0], { url: 'page/setup' })
+  })
+})
+
+test('game access guard allows render when persisted session is valid and active', async () => {
+  const activeState = createSerializedMatchState({ status: 'active' })
+
+  await runSessionGuardTest(activeState, async ({ page, navigationCalls, createdWidgets, getVisibleWidgets }) => {
+    // Initialize page state like onInit does
+    page.widgets = []
+    page.isSessionAccessCheckInFlight = false
+    page.isSessionAccessGranted = false
+
+    // Mock the hasValidActiveSession to return true for valid active session
+    page.hasValidActiveSession = async () => true
+
+    const result = await page.validateSessionAccess()
+
+    assert.equal(result, true)
+    assert.equal(page.isSessionAccessGranted, true)
+    assert.equal(navigationCalls.length, 0)
+
+    page.build()
+
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(buttons.length, 5)
+
+    const labels = buttons.map((button) => button.properties.text)
+    assert.deepEqual(labels, [
+      'game.teamAAddPoint',
+      'game.teamBAddPoint',
+      'game.teamARemovePoint',
+      'game.teamBRemovePoint',
+      'game.backHome'
+    ])
+  })
+})
+
+test('game access guard caches session access after successful validation', async () => {
+  const activeState = createSerializedMatchState({ status: 'active' })
+
+  await runSessionGuardTest(activeState, async ({ page, navigationCalls }) => {
+    // Initialize page state like onInit does
+    page.widgets = []
+    page.isSessionAccessCheckInFlight = false
+    page.isSessionAccessGranted = false
+
+    // Mock the hasValidActiveSession to return true for valid active session
+    page.hasValidActiveSession = async () => true
+
+    const firstResult = await page.validateSessionAccess()
+    assert.equal(firstResult, true)
+
+    const secondResult = await page.validateSessionAccess()
+    assert.equal(secondResult, true)
+
+    assert.equal(navigationCalls.length, 0)
+  })
+})
+
+test('game access guard build is no-op when session not yet validated', async () => {
+  await runSessionGuardTest(null, async ({ page, createdWidgets, getVisibleWidgets }) => {
+    page.isSessionAccessGranted = false
+    page.build()
+
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(buttons.length, 0)
+  })
+})
+
+test('game access guard does not re-check session when already in flight', async () => {
+  await runSessionGuardTest(null, async ({ page }) => {
+    page.isSessionAccessCheckInFlight = false
+    const firstCheck = page.validateSessionAccess()
+
+    assert.equal(page.isSessionAccessCheckInFlight, true)
+    const secondCheck = page.validateSessionAccess()
+
+    const secondResult = await secondCheck
+    assert.equal(secondResult, false)
+
+    const firstResult = await firstCheck
+    assert.equal(firstResult, false)
   })
 })

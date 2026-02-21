@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
+import { matchStorage } from '../utils/match-storage.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { MATCH_STATE_STORAGE_KEY } from '../utils/storage.js'
 
@@ -50,6 +52,7 @@ function createPageInstance(definition) {
 async function loadHomePageDefinition() {
   const sourceUrl = new URL('../page/index.js', import.meta.url)
   const historyStackUrl = new URL('../utils/history-stack.js', import.meta.url)
+  const matchStorageUrl = new URL('../utils/match-storage.js', import.meta.url)
   const matchStateUrl = new URL('../utils/match-state.js', import.meta.url)
   const storageUrl = new URL('../utils/storage.js', import.meta.url)
 
@@ -58,6 +61,7 @@ async function loadHomePageDefinition() {
   source = source
     .replace("import { gettext } from 'i18n'\n", 'const gettext = (key) => key\n')
     .replace("from '../utils/history-stack.js'", `from '${historyStackUrl.href}'`)
+    .replace("from '../utils/match-storage.js'", `from '${matchStorageUrl.href}'`)
     .replace("from '../utils/match-state.js'", `from '${matchStateUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
 
@@ -174,6 +178,7 @@ test('home screen start button clears persisted state, resets runtime state, and
   const originalHmApp = globalThis.hmApp
   const originalGetApp = globalThis.getApp
   const originalSettingsStorage = globalThis.settingsStorage
+  const originalMatchStorageAdapter = matchStorage.adapter
 
   const { hmUI, createdWidgets } = createHmUiRecorder()
   const savedState = createInitialMatchState(1700000002)
@@ -189,8 +194,8 @@ test('home screen start button clears persisted state, resets runtime state, and
     }
   }
 
-  let removeItemCalls = 0
-  let removedKey = ''
+  const removedKeys = []
+  const clearedMatchStorageKeys = []
   let navigationPayload = null
 
   globalThis.hmUI = hmUI
@@ -210,8 +215,16 @@ test('home screen start button clears persisted state, resets runtime state, and
       return JSON.stringify(savedState)
     },
     removeItem(key) {
-      removeItemCalls += 1
-      removedKey = key
+      removedKeys.push(key)
+    }
+  }
+  matchStorage.adapter = {
+    async save() {},
+    async load() {
+      return null
+    },
+    async clear(key) {
+      clearedMatchStorageKeys.push(key)
     }
   }
 
@@ -234,7 +247,7 @@ test('home screen start button clears persisted state, resets runtime state, and
 
     assert.ok(startButton)
 
-    startButton.properties.click_func()
+    await startButton.properties.click_func()
   } finally {
     if (typeof originalHmUI === 'undefined') {
       delete globalThis.hmUI
@@ -265,13 +278,15 @@ test('home screen start button clears persisted state, resets runtime state, and
     } else {
       globalThis.settingsStorage = originalSettingsStorage
     }
+
+    matchStorage.adapter = originalMatchStorageAdapter
   }
 
-  assert.equal(removeItemCalls, 1)
-  assert.equal(removedKey, MATCH_STATE_STORAGE_KEY)
+  assert.deepEqual(removedKeys, [MATCH_STATE_STORAGE_KEY])
+  assert.deepEqual(clearedMatchStorageKeys, [ACTIVE_MATCH_SESSION_STORAGE_KEY])
   assert.deepEqual(app.globalData.matchState, createInitialMatchState())
   assert.equal(app.globalData.matchHistory.clearCalls, 1)
-  assert.deepEqual(navigationPayload, { url: 'page/game' })
+  assert.deepEqual(navigationPayload, { url: 'page/setup' })
 })
 
 test('home screen shows Resume button and resumes without clearing persisted state', async () => {

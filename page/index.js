@@ -1,5 +1,6 @@
 import { gettext } from 'i18n'
 import { createHistoryStack } from '../utils/history-stack.js'
+import { clearMatchState } from '../utils/match-storage.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { clearState, loadState } from '../utils/storage.js'
 
@@ -188,10 +189,11 @@ Page({
     })
   },
 
-  handleStartNewGame() {
+  async handleStartNewGame() {
     clearState()
+    await clearMatchState()
     this.resetRuntimeMatchState()
-    this.navigateToGamePage()
+    this.navigateToSetupPage()
   },
 
   handleResumeGame() {
@@ -270,6 +272,16 @@ Page({
 
     hmApp.gotoPage({
       url: 'page/game'
+    })
+  },
+
+  navigateToSetupPage() {
+    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
+      return
+    }
+
+    hmApp.gotoPage({
+      url: 'page/setup'
     })
   }
 })

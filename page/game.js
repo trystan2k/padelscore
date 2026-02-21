@@ -4,6 +4,8 @@ import { createScoreViewModel } from './score-view-model.js'
 import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
+import { loadMatchState } from '../utils/match-storage.js'
+import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
 import { loadState, saveState } from '../utils/storage.js'
 
 const GAME_TOKENS = Object.freeze({
@@ -91,6 +93,13 @@ function calculateRoundSafeSectionSideInset(
 
 function isRecord(value) {
   return typeof value === 'object' && value !== null
+}
+
+function isPersistedMatchStateActive(matchState) {
+  return (
+    isRecord(matchState) &&
+    matchState.status === PERSISTED_MATCH_STATUS.ACTIVE
+  )
 }
 
 function getCurrentTimestampMs() {
@@ -216,12 +225,13 @@ Page({
   onInit() {
     this.widgets = []
     this.lastAcceptedScoringInteractionAt = null
-    this.ensureRuntimeState()
+    this.isSessionAccessCheckInFlight = false
+    this.isSessionAccessGranted = false
+    this.validateSessionAccessAndRender()
   },
 
   onShow() {
-    this.ensureRuntimeState()
-    this.renderGameScreen()
+    this.validateSessionAccessAndRender()
   },
 
   onHide() {
@@ -229,6 +239,10 @@ Page({
   },
 
   build() {
+    if (!this.isSessionAccessGranted) {
+      return
+    }
+
     this.renderGameScreen()
   },
 
@@ -238,7 +252,73 @@ Page({
   },
 
   handleLifecycleAutoSave() {
+    if (!this.isSessionAccessGranted) {
+      return false
+    }
+
     return this.saveCurrentRuntimeState()
+  },
+
+  async validateSessionAccessAndRender() {
+    const hasSessionAccess = await this.validateSessionAccess()
+
+    if (!hasSessionAccess) {
+      return false
+    }
+
+    this.ensureRuntimeState()
+    this.renderGameScreen()
+    return true
+  },
+
+  async validateSessionAccess() {
+    if (this.isSessionAccessGranted) {
+      return true
+    }
+
+    if (this.isSessionAccessCheckInFlight) {
+      return false
+    }
+
+    this.isSessionAccessCheckInFlight = true
+
+    try {
+      const hasValidActiveSession = await this.hasValidActiveSession()
+
+      this.isSessionAccessGranted = hasValidActiveSession
+
+      if (!hasValidActiveSession) {
+        this.navigateToSetupPage()
+      }
+
+      return hasValidActiveSession
+    } finally {
+      this.isSessionAccessCheckInFlight = false
+    }
+  },
+
+  async hasValidActiveSession() {
+    try {
+      const persistedMatchState = await loadMatchState()
+      return isPersistedMatchStateActive(persistedMatchState)
+    } catch {
+      return false
+    }
+  },
+
+  navigateToSetupPage() {
+    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
+      return false
+    }
+
+    try {
+      hmApp.gotoPage({
+        url: 'page/setup'
+      })
+      return true
+    } catch {
+      return false
+    }
   },
 
   getScreenMetrics() {

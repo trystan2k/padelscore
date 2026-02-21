@@ -770,7 +770,7 @@
         "id": "13",
         "title": "Implement Pre-Match Setup UI and Logic",
         "description": "Create the Match Setup screen allowing users to select 1, 3, or 5 sets and initialize the match session.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "11",
           "12"
@@ -778,7 +778,91 @@
         "priority": "high",
         "details": "Build the 'Match Setup' view with three buttons or a selector for sets (1, 3, 5). When a user confirms a selection: 1. Calculate `setsNeededToWin` (Math.ceil(setsToPlay / 2)), 2. Initialize a fresh `MatchState` object with scores at 0 and status 'active', 3. Call `saveMatchState`, 4. Navigate to the Game screen. Ensure this flow blocks access to the Game screen without a selection.",
         "testStrategy": "Manual QA: Verify selecting '3' sets allows entry to game. Verify default state is initialized correctly with scores at 0-0 and `setsNeededToWin` set to 2.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Match Setup UI Components",
+            "description": "Build the visual interface for the match setup screen with set selection buttons",
+            "dependencies": [],
+            "details": "Create the Match Setup view UI with three distinct buttons/selector options for 1, 3, or 5 sets. Add a 'Start Match' confirmation button that is initially disabled. Style elements for clarity and touch interaction on Zepp OS display. Include visual feedback for selected option.",
+            "status": "done",
+            "testStrategy": "Visual verification of all buttons rendering correctly. Test button selection state changes. Verify touch responsiveness on each button element.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:16.182Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Match State Initialization Model",
+            "description": "Create the logic to calculate setsNeededToWin and initialize MatchState object",
+            "dependencies": [],
+            "details": "Implement `initializeMatchState(setsToPlay: number)` function. Calculate `setsNeededToWin` using `Math.ceil(setsToPlay / 2)`. Create fresh MatchState object with: teamASets=0, teamBSets=0, currentSet={teamAGames:0, teamBGames:0, teamAPoints:0, teamBPoints:0}, setHistory=[], setsToPlay, setsNeededToWin, status='active', createdAt and updatedAt timestamps.",
+            "status": "done",
+            "testStrategy": "Unit test verifying MatchState initialization with 1 set (setsNeededToWin=1), 3 sets (setsNeededToWin=2), 5 sets (setsNeededToWin=3). Verify all fields are correctly initialized to zero or default values.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:17.512Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate Match State Persistence",
+            "description": "Connect the setup flow to save the initialized match state to storage",
+            "dependencies": [
+              2
+            ],
+            "details": "In the setup confirmation handler, call the existing `saveMatchState(state)` function (from Task 12) with the newly initialized MatchState object. Ensure this happens before navigation. Add error handling to display user feedback if save fails (e.g., toast message or inline error). Return boolean success/failure status.",
+            "status": "done",
+            "testStrategy": "Integration test confirming MatchState is persisted to storage after clicking Start Match button. Verify storage contains valid JSON with correct structure. Test failure scenario with mock save failure.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:18.879Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement Navigation Flow to Game Screen",
+            "description": "Add navigation logic to transition from Setup to Game screen after state initialization",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement `navigateToGame()` function triggered after successful state save. Use Zepp OS navigation API (e.g., `push` or `replace`) to transition to the Game screen view. Ensure Game screen loads state from storage on init. Prevent duplicate navigation calls during async operations.",
+            "status": "done",
+            "testStrategy": "Manual test: Complete setup flow, verify Game screen appears and displays initial 0-0 state. Test rapid button clicks to ensure no double-navigation bugs.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:20.253Z"
+          },
+          {
+            "id": 5,
+            "title": "Add Validation and Access Control",
+            "description": "Implement safeguards to prevent access to Game screen without proper setup",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Add validation on Setup confirmation button requiring an explicit set selection (1, 3, or 5) before enabling. Implement guard on Game screen init that checks for valid active MatchState in storage using `loadMatchState`; redirect to Setup if missing, invalid, or status is not 'active'. Block direct Game screen entry without setup completion.",
+            "status": "done",
+            "testStrategy": "Test attempting direct Game screen navigation without setup - should redirect to Setup. Test clicking Start Match without selection - button should remain disabled. Verify guard catches corrupted state.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:21.577Z"
+          },
+          {
+            "id": 6,
+            "title": "Create Unit and Integration Tests for Setup Flow",
+            "description": "Write comprehensive tests covering the complete match setup workflow",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Create unit tests for `initializeMatchState` function with edge cases including invalid inputs. Create integration tests for the full flow: UI selection → state init → save → navigate. Mock storage and navigation services. Test invalid inputs, storage failures, and happy path scenarios. Ensure tests can run in CI environment.",
+            "status": "done",
+            "testStrategy": "Automated test suite with >80% coverage of setup flow logic. Verify all acceptance criteria: selecting '3' sets allows entry, default state initializes correctly with 0-0 scores and setsNeededToWin=2.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T11:36:22.871Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T11:36:22.871Z"
       },
       {
         "id": "14",
@@ -894,9 +978,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T09:58:15.911Z",
+      "lastModified": "2026-02-21T11:36:22.871Z",
       "taskCount": 21,
-      "completedCount": 12,
+      "completedCount": 13,
       "tags": [
         "master"
       ]

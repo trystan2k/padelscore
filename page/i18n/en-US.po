@@ -48,3 +48,24 @@ msgstr "Match Finished"
 
 msgid "game.undo"
 msgstr "Undo"
+
+msgid "setup.title"
+msgstr "Match Setup"
+
+msgid "setup.selectSetsHint"
+msgstr "Choose number of sets"
+
+msgid "setup.option.oneSet"
+msgstr "1 Set"
+
+msgid "setup.option.threeSets"
+msgstr "3 Sets"
+
+msgid "setup.option.fiveSets"
+msgstr "5 Sets"
+
+msgid "setup.startMatch"
+msgstr "Start Match"
+
+msgid "setup.saveFailed"
+msgstr "Could not save match setup"
