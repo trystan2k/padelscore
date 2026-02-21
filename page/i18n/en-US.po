@@ -31,5 +31,8 @@ msgstr "- Team A"
 msgid "game.teamBRemovePoint"
 msgstr "- Team B"
 
+msgid "game.backHome"
+msgstr "Back to Home"
+
 msgid "game.undo"
 msgstr "Undo"

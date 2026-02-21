@@ -185,12 +185,21 @@ Page({
     this.renderGameScreen()
   },
 
+  onHide() {
+    this.handleLifecycleAutoSave()
+  },
+
   build() {
     this.renderGameScreen()
   },
 
   onDestroy() {
+    this.handleLifecycleAutoSave()
     this.clearWidgets()
+  },
+
+  handleLifecycleAutoSave() {
+    return this.saveCurrentRuntimeState()
   },
 
   getScreenMetrics() {
@@ -287,6 +296,39 @@ Page({
     }
 
     app.globalData.matchState = nextState
+  },
+
+  saveCurrentRuntimeState() {
+    const app = this.getAppInstance()
+
+    if (!app || !isValidRuntimeMatchState(app.globalData.matchState)) {
+      return false
+    }
+
+    saveState(app.globalData.matchState)
+    return true
+  },
+
+  navigateToHomePage() {
+    if (typeof hmApp === 'undefined') {
+      return
+    }
+
+    if (typeof hmApp.goBack === 'function') {
+      hmApp.goBack()
+      return
+    }
+
+    if (typeof hmApp.gotoPage === 'function') {
+      hmApp.gotoPage({
+        url: 'page/index'
+      })
+    }
+  },
+
+  handleBackToHome() {
+    this.saveCurrentRuntimeState()
+    this.navigateToHomePage()
   },
 
   getCurrentTimeMs() {
@@ -449,7 +491,7 @@ Page({
     const uiUpdatedAt = this.getCurrentTimeMs()
 
     this.measureInteractionPerformance(interactionStartedAt, renderStartedAt, uiUpdatedAt)
-    saveState(nextState)
+    this.saveCurrentRuntimeState()
   },
 
   executeScoringAction(action) {
@@ -526,15 +568,17 @@ Page({
     const controlsColumnGap = Math.round(width * GAME_TOKENS.spacingScale.controlsColumnGap)
     const controlsRowGap = Math.round(height * GAME_TOKENS.spacingScale.controlsRowGap)
     const buttonHeight = clamp(Math.round(height * 0.104), 46, 58)
+    const controlsRows = 3
     const baseControlsBottomInset = Math.round(height * GAME_TOKENS.spacingScale.controlsBottom)
     const controlsBottomInset = isRoundScreen
       ? Math.max(baseControlsBottomInset, Math.round(height * 0.11))
       : baseControlsBottomInset
-    const addButtonsY =
-      height - controlsBottomInset - buttonHeight * 2 - controlsRowGap
+    const controlsSectionHeight =
+      buttonHeight * controlsRows + controlsRowGap * (controlsRows - 1)
+    const addButtonsY = height - controlsBottomInset - controlsSectionHeight
     const removeButtonsY = addButtonsY + buttonHeight + controlsRowGap
+    const backHomeButtonY = removeButtonsY + buttonHeight + controlsRowGap
     if (isRoundScreen) {
-      const controlsSectionHeight = buttonHeight * 2 + controlsRowGap
       const controlsSectionSafeInset = calculateRoundSafeSectionSideInset(
         width,
         height,
@@ -552,6 +596,7 @@ Page({
     const buttonWidth = Math.round((width - controlsSideInset * 2 - controlsColumnGap) / 2)
     const leftButtonX = controlsSideInset
     const rightButtonX = leftButtonX + buttonWidth + controlsColumnGap
+    const backHomeButtonWidth = Math.max(1, buttonWidth * 2 + controlsColumnGap)
     const pointsSectionY =
       setSectionY + setSectionHeight + Math.round(height * GAME_TOKENS.spacingScale.sectionGap)
     const pointsSectionBottom = addButtonsY - Math.round(height * GAME_TOKENS.spacingScale.sectionGap)
@@ -732,6 +777,20 @@ Page({
       text_size: Math.round(width * GAME_TOKENS.fontScale.button),
       text: gettext('game.teamBRemovePoint'),
       click_func: () => this.handleRemovePointForTeam('teamB')
+    })
+
+    this.createWidget(hmUI.widget.BUTTON, {
+      x: leftButtonX,
+      y: backHomeButtonY,
+      w: backHomeButtonWidth,
+      h: buttonHeight,
+      radius: Math.round(buttonHeight / 2),
+      normal_color: GAME_TOKENS.colors.accent,
+      press_color: GAME_TOKENS.colors.accent,
+      color: GAME_TOKENS.colors.buttonText,
+      text_size: Math.round(width * GAME_TOKENS.fontScale.button),
+      text: gettext('game.backHome'),
+      click_func: () => this.handleBackToHome()
     })
   }
 })

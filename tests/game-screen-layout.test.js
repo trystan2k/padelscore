@@ -279,7 +279,7 @@ test('game screen keeps set, points, and controls in top-to-bottom layout order'
     .sort((left, right) => left.properties.y - right.properties.y)
 
   assert.equal(sectionCards.length, 2)
-  assert.equal(buttons.length, 4)
+  assert.equal(buttons.length, 5)
 
   const setSectionBottom = sectionCards[0].properties.y + sectionCards[0].properties.h
   const pointsSectionTop = sectionCards[1].properties.y
@@ -313,7 +313,7 @@ test('game controls keep key visible widgets in bounds for square and round scre
       ...visibleForegroundFillRects
     ]
 
-    assert.equal(buttons.length, 4)
+    assert.equal(buttons.length, 5)
     assert.equal(visibleTextWidgets.length > 0, true)
     assert.equal(visibleForegroundFillRects.length > 0, true)
 
@@ -356,7 +356,8 @@ test('game screen renders expected bottom control button labels', async () => {
     'game.teamAAddPoint',
     'game.teamBAddPoint',
     'game.teamARemovePoint',
-    'game.teamBRemovePoint'
+    'game.teamBRemovePoint',
+    'game.backHome'
   ])
 })
 
@@ -367,12 +368,14 @@ test('game screen controls call team-specific handlers for add and remove', asyn
     const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
     const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
     const removeTeamBButton = findButtonByText(buttons, 'game.teamBRemovePoint')
+    const backHomeButton = findButtonByText(buttons, 'game.backHome')
     const calls = []
 
     assert.equal(typeof addTeamAButton?.properties.click_func, 'function')
     assert.equal(typeof addTeamBButton?.properties.click_func, 'function')
     assert.equal(typeof removeTeamAButton?.properties.click_func, 'function')
     assert.equal(typeof removeTeamBButton?.properties.click_func, 'function')
+    assert.equal(typeof backHomeButton?.properties.click_func, 'function')
 
     page.handleAddPointForTeam = (team) => {
       calls.push(`add:${team}`)
@@ -382,13 +385,185 @@ test('game screen controls call team-specific handlers for add and remove', asyn
       calls.push(`remove:${team}`)
     }
 
+    page.handleBackToHome = () => {
+      calls.push('home:back')
+    }
+
     addTeamAButton.properties.click_func()
     addTeamBButton.properties.click_func()
     removeTeamAButton.properties.click_func()
     removeTeamBButton.properties.click_func()
+    backHomeButton.properties.click_func()
 
-    assert.deepEqual(calls, ['add:teamA', 'add:teamB', 'remove:teamA', 'remove:teamB'])
+    assert.deepEqual(calls, ['add:teamA', 'add:teamB', 'remove:teamA', 'remove:teamB', 'home:back'])
   })
+})
+
+test('game back-home control saves state before navigating with goBack', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const originalHmApp = globalThis.hmApp
+  const callOrder = []
+  let persistedStatePayload = null
+
+  globalThis.settingsStorage = {
+    setItem(_key, value) {
+      callOrder.push('save')
+      persistedStatePayload = value
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  globalThis.hmApp = {
+    goBack() {
+      callOrder.push('goBack')
+    },
+    gotoPage() {
+      callOrder.push('gotoPage')
+    }
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ app, createdWidgets }) => {
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const backHomeButton = findButtonByText(buttons, 'game.backHome')
+
+      assert.equal(typeof backHomeButton?.properties.click_func, 'function')
+
+      backHomeButton.properties.click_func()
+
+      assert.equal(typeof persistedStatePayload, 'string')
+      assert.deepEqual(JSON.parse(persistedStatePayload), app.globalData.matchState)
+      assert.deepEqual(callOrder, ['save', 'goBack'])
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
+test('game back-home control falls back to home route when goBack is unavailable', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const originalHmApp = globalThis.hmApp
+  const callOrder = []
+
+  globalThis.settingsStorage = {
+    setItem() {
+      callOrder.push('save')
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  globalThis.hmApp = {
+    gotoPage(options) {
+      callOrder.push(`goto:${options?.url ?? ''}`)
+    }
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ createdWidgets }) => {
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const backHomeButton = findButtonByText(buttons, 'game.backHome')
+
+      assert.equal(typeof backHomeButton?.properties.click_func, 'function')
+
+      backHomeButton.properties.click_func()
+
+      assert.deepEqual(callOrder, ['save', 'goto:page/index'])
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
+test('game lifecycle auto-save persists runtime state on hide and destroy', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const persistedPayloads = []
+
+  globalThis.settingsStorage = {
+    setItem(_key, value) {
+      persistedPayloads.push(value)
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ app, page }) => {
+      page.onHide()
+      page.onDestroy()
+
+      assert.equal(persistedPayloads.length, 2)
+      assert.deepEqual(JSON.parse(persistedPayloads[0]), app.globalData.matchState)
+      assert.deepEqual(JSON.parse(persistedPayloads[1]), app.globalData.matchState)
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
+})
+
+test('game lifecycle auto-save is a no-op when runtime match state is invalid', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  let saveCallCount = 0
+
+  globalThis.settingsStorage = {
+    setItem() {
+      saveCallCount += 1
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ app, page }) => {
+      app.globalData.matchState = null
+
+      assert.equal(page.handleLifecycleAutoSave(), false)
+
+      page.onHide()
+      page.onDestroy()
+
+      assert.equal(saveCallCount, 0)
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
 })
 
 test('team-specific remove buttons remove latest point scored by selected team', async () => {

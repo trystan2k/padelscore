@@ -493,7 +493,7 @@
         "id": "9",
         "title": "Navigation & Lifecycle Handling",
         "description": "Manage navigation between screens and handle app backgrounding/foregrounding events.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "6",
           "8"
@@ -501,10 +501,34 @@
         "priority": "medium",
         "details": "Implement the 'Back/Home' button logic in the Game Screen to return to the Home Screen. Add event listeners for lifecycle events (e.g., `app.on('pause')` or page hide events) to trigger `saveState` automatically, ensuring no data is lost if the user receives a call or locks the screen.",
         "testStrategy": "Navigate from Game to Home and verify save is triggered. Background the app while in a game state (simulate via tools or OS gesture) and foreground it to verify the state persists exactly as left.",
-        "subtasks": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Game Screen Back/Home Navigation",
+            "description": "Configure the Back/Home button on the Game Screen to navigate to the Home Screen and trigger state saving.",
+            "dependencies": [],
+            "details": "Modify `pages/game` to handle navigation events. Implement a click handler for the Back/Home widget that first invokes `saveState()` to persist the current game score, then executes a navigation command (e.g., `router.replace` or `router.push`) to route the user back to `pages/index` (Home Screen). Ensure the transition is smooth.",
+            "status": "done",
+            "testStrategy": "Functional Test: Start a game session and modify the score. Tap the Back/Home button. Verify the app transitions to the Home Screen. Then, tap 'Resume Game' and verify the game state (scores) matches exactly what it was before navigation.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T21:30:27.026Z"
+          },
+          {
+            "id": 2,
+            "title": "Add Lifecycle Event Listeners for Auto-Save",
+            "description": "Implement event listeners for app pause and visibility changes to automatically save the game state, preventing data loss during interruptions.",
+            "dependencies": [],
+            "details": "Integrate Zepp OS lifecycle event handling (e.g., `app.on('pause')` or page visibility events) within the app lifecycle or Game Screen controller. When a 'pause' or 'hide' event is detected (simulating a phone call or screen lock), automatically trigger the `saveState()` function. Ensure this happens synchronously or reliably before the app fully suspends to guarantee data integrity.",
+            "status": "done",
+            "testStrategy": "Lifecycle Test: Start a game and change the score. Simulate an interruption by backgrounding the app (using OS gesture or simulator tool) or triggering a 'pause' event. Foreground the app and verify the game resumes with the exact score. Verify storage to confirm data was written at the moment of pause.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-20T21:30:28.703Z"
+          }
+        ],
         "complexity": 4,
         "recommendedSubtasks": 2,
-        "expansionPrompt": "Break into: 1) Implementing navigation logic (Back/Home button) and 2) Adding lifecycle event listeners (pause/hide) for automatic state persistence."
+        "expansionPrompt": "Break into: 1) Implementing navigation logic (Back/Home button) and 2) Adding lifecycle event listeners (pause/hide) for automatic state persistence.",
+        "updatedAt": "2026-02-20T21:30:28.703Z"
       },
       {
         "id": "10",
@@ -525,9 +549,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-20T18:47:05.999Z",
+      "lastModified": "2026-02-20T21:30:28.703Z",
       "taskCount": 10,
-      "completedCount": 8,
+      "completedCount": 9,
       "tags": [
         "master"
       ]
