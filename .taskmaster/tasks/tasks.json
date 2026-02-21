@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Project Initialization & Configuration",
         "description": "Set up the Zepp OS project structure, configuration files, and base directories.",
         "status": "done",
@@ -26,7 +26,9 @@
             "id": 2,
             "title": "Configure Core App Metadata in app.json",
             "description": "Set the project identification and version information in the configuration file.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Edit the root `app.json` file to input the correct `appId`, `versionName`, `versionCode`, and `appName`. Ensure the JSON syntax is valid to prevent build errors.",
             "status": "done",
             "testStrategy": "Validate the JSON structure using a linter or the Zepp developer tools to ensure no syntax errors exist.",
@@ -37,7 +39,9 @@
             "id": 3,
             "title": "Define Storage Permissions in app.json",
             "description": "Configure necessary permissions for local data access.",
-            "dependencies": [2],
+            "dependencies": [
+              2
+            ],
             "details": "Add the appropriate permission keys to `app.json` to enable access to `storage` APIs. This is required for the subsequent implementation of local state persistence.",
             "status": "done",
             "testStrategy": "Review the configuration file to confirm permission keys are present and formatted according to Zepp OS documentation.",
@@ -48,7 +52,9 @@
             "id": 4,
             "title": "Set Viewport Configuration for Round Screens",
             "description": "Configure the project settings to support circular screen resolutions.",
-            "dependencies": [2],
+            "dependencies": [
+              2
+            ],
             "details": "Update the `app.json` or global configuration files to define the `designWidth` and viewport settings specifically tailored for round screen devices (e.g., 454px). Configure the design system to handle circular clipping zones.",
             "status": "done",
             "testStrategy": "Deploy the project to a round screen simulator and verify that the default page renders within the circular bounds without overflow.",
@@ -59,7 +65,9 @@
             "id": 5,
             "title": "Set Viewport Configuration for Square Screens and Responsive Units",
             "description": "Ensure compatibility with square screens and implement responsive units.",
-            "dependencies": [4],
+            "dependencies": [
+              4
+            ],
             "details": "Adjust configuration to support square screen resolutions. Enforce the use of responsive units (px/rpx) in the global settings or style guide to ensure layouts scale correctly across both round and square form factors.",
             "status": "done",
             "testStrategy": "Deploy to a square screen simulator. Verify elements are positioned correctly and that the layout adapts without distortion compared to the round screen view.",
@@ -73,7 +81,7 @@
         "updatedAt": "2026-02-20T07:17:14.797Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Data Model & State Management Design",
         "description": "Define the data structures for the game state, scoring history, and team configurations.",
         "status": "done",
@@ -97,7 +105,9 @@
             "id": 2,
             "title": "Implement History Stack with Deep Copy Logic",
             "description": "Develop the history stack data structure required for the Undo functionality, ensuring immutability via deep copying.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Implement a stack class or module with `push(state)` and `pop()` methods. Integrate deep copy logic (e.g., using JSON.parse(JSON.stringify()) or a utility library) to ensure stored states are independent snapshots.",
             "status": "done",
             "testStrategy": "Unit tests to verify that pushing a state and modifying the original does not affect the stored history, and that pop correctly restores previous states.",
@@ -122,11 +132,13 @@
         "updatedAt": "2026-02-20T13:23:14.673Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Local Storage & Persistence Layer",
         "description": "Implement the mechanism to save and load the game state using the device's local storage.",
         "status": "done",
-        "dependencies": ["2"],
+        "dependencies": [
+          "2"
+        ],
         "priority": "high",
         "details": "Utilize Zepp OS `settingsStorage` API to persist the `MatchState` object as a JSON string. Implement `saveState(state)` and `loadState()` functions. Ensure data is serialized correctly and handle potential JSON parsing errors. The load function should return `null` if no saved game exists.",
         "testStrategy": "Manually save a state, restart the app/simulator, and verify the data is retrieved accurately. Test with invalid/corrupted storage data to ensure the app handles it gracefully (e.g., defaults to new game).",
@@ -160,11 +172,13 @@
         "updatedAt": "2026-02-20T14:42:51.982Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Padel Scoring Logic Engine",
         "description": "Develop the core state machine logic for handling points, games, sets, and tie-breaks.",
         "status": "done",
-        "dependencies": ["2"],
+        "dependencies": [
+          "2"
+        ],
         "priority": "high",
         "details": "Implement the `addPoint(team)` function. Logic must handle: standard progression (0->15->30->40->Game), Deuce/Advantage rules (40-40 -> Ad -> Game or Deuce), and Game/Set increments. Implement Set logic: win at 6 games (margin of 2) or Tie-break at 6-6 (first to 7, margin of 2). Every state change must be pushed to the history stack before updating the current state to support Undo.",
         "testStrategy": "Write test cases for standard scoring, deuce scenarios (winning/losing from advantage), set wins (6-0, 6-4), and tie-break entry (6-6). Validate that the history stack grows with every point.",
@@ -184,7 +198,9 @@
             "id": 2,
             "title": "Implement deuce and advantage state handling",
             "description": "Develop logic to manage the 40-40 (Deuce) state and the subsequent Advantage transitions.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Modify `addPoint` to detect when both teams reach 3 points (40-40). If scores are equal (3-3) or higher and equal, the next point puts the scorer at 'Advantage'. If a team is at 'Advantage' and scores, they win the Game. If they lose the point, revert to 'Deuce'.",
             "status": "done",
             "testStrategy": "Test scenarios reaching 40-40, winning a point to get Advantage, and then both winning and losing the subsequent point to ensure correct Game or Deuce results.",
@@ -195,7 +211,9 @@
             "id": 3,
             "title": "Implement game counting and set win conditions",
             "description": "Handle game score increments within a set and determine when a set is won based on game margins.",
-            "dependencies": [2],
+            "dependencies": [
+              2
+            ],
             "details": "When a Game is won (from Task 1 or 2), increment the game counter for the winning team and reset points. Check set win conditions: A team wins the set if they reach 6 games and lead by at least 2 games (e.g., 6-4, 6-3, 6-0). Handle the transition to a new set or match end.",
             "status": "done",
             "testStrategy": "Test game progression to 6-0, 6-4. Verify that a score of 6-5 does not end the set. Confirm that reaching 7-5 (if allowed by logic flow) ends the set.",
@@ -206,7 +224,9 @@
             "id": 4,
             "title": "Implement tie-break logic",
             "description": "Develop the specific scoring rules for a tie-break game triggered at a 6-6 game score.",
-            "dependencies": [3],
+            "dependencies": [
+              3
+            ],
             "details": "Detect when the set score reaches 6-6. Switch to tie-break mode where points are counted as 1, 2, 3, etc., instead of 15/30/40. The first team to reach 7 points wins the tie-break and the set, provided they have a margin of at least 2 points (e.g., 7-5, 8-6). Reset points/games correctly upon completion.",
             "status": "done",
             "testStrategy": "Simulate a 6-6 set score. Verify tie-break points increment numerically. Test winning scenarios at 7-0, 7-5, and 8-6. Ensure the set concludes correctly upon winning the tie-break.",
@@ -217,7 +237,12 @@
             "id": 5,
             "title": "Integrate history stack for state changes",
             "description": "Implement the mechanism to push deep copies of the state to the history stack before any score update.",
-            "dependencies": [1, 2, 3, 4],
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
             "details": "At the beginning of the `addPoint(team)` function, create a deep copy of the current match state object. Push this copy onto the `historyStack` array. This ensures that every modification to points, games, sets, or tie-break status is captured to support the Undo functionality.",
             "status": "done",
             "testStrategy": "Verify that the history stack length increases by exactly 1 for every point added. Check that popping the history restores the exact previous state without reference issues.",
@@ -231,11 +256,13 @@
         "updatedAt": "2026-02-20T15:35:54.087Z"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Undo & Remove Point Logic",
         "description": "Implement the logic to reverse the last score action using the history stack.",
         "status": "done",
-        "dependencies": ["4"],
+        "dependencies": [
+          "4"
+        ],
         "priority": "high",
         "details": "Implement `removePoint()` function. This function should pop the previous state from the history stack and set it as the current state. If the history is empty or score is at start (0-0, 0-0), the function should be a no-op. Ensure this effectively restores game points, set scores, and tie-break statuses.",
         "testStrategy": "Verify that pressing Undo after scoring reverts the score exactly to the previous state. Test rapid Undo presses until the score reaches 0-0 and ensure no errors occur or negative scores appear.",
@@ -249,7 +276,9 @@
             "status": "done",
             "testStrategy": "Write unit tests for single undo, multiple rapid undos, edge cases (empty history), and state integrity validation.",
             "metadata": {
-              "files": ["utils/scoring-engine.js"],
+              "files": [
+                "utils/scoring-engine.js"
+              ],
               "complexity": 2,
               "testCommand": "npm test -- scoring-engine.test.js"
             },
@@ -260,7 +289,9 @@
             "id": 2,
             "title": "Create comprehensive unit tests for removePoint functionality",
             "description": "Write unit tests to verify the removePoint() function handles all scoring scenarios correctly.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Add test cases to tests/scoring-engine.test.js or create tests/remove-point.test.js. Cover: 1) Single undo after a point, 2) Multiple undos until initial state (0-0, 0-0), 3) Verify no-op when history is empty, 4) Verify no-op when already at initial state, 5) Ensure undo never produces negative scores or invalid transitions. Use createHistoryStack from utils/history-stack.js to mock history state.",
             "status": "done",
             "testStrategy": "Execute the test runner to ensure all test cases pass, including edge cases and rapid undo sequences.",
@@ -279,12 +310,17 @@
             "id": 3,
             "title": "Integrate Undo action in app and UI layer",
             "description": "Wire up the removePoint() function to the UI layer and expose it as an action.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Update app.js and page/index.js. Expose a public removePoint action that calls the scoring engine function. If an Undo button exists in page/index.js UI, bind the handler to this action. Add an integration test or runtime check to verify the app's global state updates correctly after Undo is triggered, reflecting the restored state in the UI.",
             "status": "done",
             "testStrategy": "Manual test on Zepp OS simulator: click a point, then click Undo, verify UI reverts. Automated integration test to check global state restoration.",
             "metadata": {
-              "files": ["app.js", "page/index.js"],
+              "files": [
+                "app.js",
+                "page/index.js"
+              ],
               "complexity": 1,
               "testCommand": "npm run test:integration"
             },
@@ -298,11 +334,14 @@
         "updatedAt": "2026-02-20T16:26:03.053Z"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Home Screen UI Implementation",
         "description": "Build the Home Screen with Start and Resume functionality based on the design reference.",
         "status": "done",
-        "dependencies": ["1", "3"],
+        "dependencies": [
+          "1",
+          "3"
+        ],
         "priority": "medium",
         "details": "Create `page/index` using Zepp UI components. Implement the App Title/Logo. Add 'Start New Game' and 'Resume Game' buttons. Use the `loadState` result to conditionally render the 'Resume Game' button (only if a saved game exists). Apply design tokens (colors, fonts) from the Lovable reference.",
         "testStrategy": "UI Test: Verify button placement and text match the 'Game Start' design. Functional Test: With no data, only 'Start' is shown. With data, both are shown. Clicking 'Start' clears storage and navigates. Clicking 'Resume' navigates without clearing.",
@@ -322,7 +361,9 @@
             "id": 2,
             "title": "Implement Start New Game Button and Logic",
             "description": "Add the 'Start New Game' button to the interface and configure the logic to clear storage and navigate to the game screen.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Add the 'Start New Game' button component to the layout. Implement the click event handler to clear any saved game state and navigate the user to the game page (`page/game`).",
             "status": "done",
             "testStrategy": "Functional test to verify clicking 'Start New Game' clears any existing storage and navigates correctly to the game screen.",
@@ -333,7 +374,9 @@
             "id": 3,
             "title": "Implement Conditional Resume Game Button and Data Fetching",
             "description": "Integrate data fetching to check for saved games and conditionally render the 'Resume Game' button based on the result.",
-            "dependencies": [2],
+            "dependencies": [
+              2
+            ],
             "details": "Use the `loadState` function to check for a saved game state. Conditionally render the 'Resume Game' button only if data exists. Implement the click handler to navigate using the loaded state without clearing it.",
             "status": "done",
             "testStrategy": "Functional test verifying the button only appears when saved data exists, and clicking it loads the specific state and navigates correctly.",
@@ -347,11 +390,13 @@
         "updatedAt": "2026-02-20T17:12:16.550Z"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Game Screen Layout Construction",
         "description": "Create the layout for the Game Screen displaying scores and control buttons.",
         "status": "done",
-        "dependencies": ["1"],
+        "dependencies": [
+          "1"
+        ],
         "priority": "medium",
         "details": "Create `page/game`. Layout the top section for Set Scores (Games won) and the middle section for Current Game Points (0, 15, 30...). Ensure high contrast and large typography for readability. Place Team A and Team B action buttons (Add/Remove) at the bottom. Ensure layout adapts to Round vs Square screens using relative positioning or flexbox.",
         "testStrategy": "Visual inspection on Round and Square simulators to ensure elements do not overlap or get cut off. Verify text size is readable as per accessibility requirements.",
@@ -371,7 +416,9 @@
             "id": 2,
             "title": "Layout Current Game Point Section",
             "description": "Create the middle section UI displaying current game points (0, 15, 30, etc.) with large, readable typography.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Implement the middle container in `page/game` for Current Game Points. Define large typography styles for visibility. Ensure high contrast text is used for the point values.",
             "status": "done",
             "testStrategy": "Verify text size is sufficient for readability and contrast meets accessibility standards.",
@@ -382,7 +429,10 @@
             "id": 3,
             "title": "Layout Control Buttons and Responsive Adaptation",
             "description": "Create bottom control buttons for scoring and ensure the full layout is responsive for Round and Square screens.",
-            "dependencies": [1, 2],
+            "dependencies": [
+              1,
+              2
+            ],
             "details": "Add Team A and Team B action buttons (Add/Remove) at the bottom of `page/game`. Apply responsive layout logic (flexbox/relative) to ensure elements fit correctly on both Round and Square screen shapes without overlap.",
             "status": "done",
             "testStrategy": "Visual inspection on Round and Square simulators. Ensure no elements are cut off and buttons are accessible.",
@@ -396,11 +446,15 @@
         "updatedAt": "2026-02-20T18:09:24.012Z"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Game Screen Interaction & Binding",
         "description": "Connect the UI buttons to the Scoring Logic and update the view dynamically.",
         "status": "done",
-        "dependencies": ["4", "5", "7"],
+        "dependencies": [
+          "4",
+          "5",
+          "7"
+        ],
         "priority": "high",
         "details": "Bind the 'Add Point' (+) and 'Remove Point' (-) buttons for both teams to the logic engine. On click: 1. Execute logic, 2. Update the UI state (re-render or update text widgets), 3. Trigger `saveState`. Ensure the UI updates within 100ms of the tap.",
         "testStrategy": "Integration test: Tap buttons and observe UI changes immediately. Verify that adding a point updates the Game Point score, and winning a game updates the Set Score. Verify persistence by closing and reopening the app.",
@@ -420,7 +474,9 @@
             "id": 2,
             "title": "Implement Auto-Save and Performance Verification",
             "description": "Integrate state persistence into the click handlers and ensure UI rendering meets latency requirements.",
-            "dependencies": [1],
+            "dependencies": [
+              1
+            ],
             "details": "Call `saveState` (from Task 3) within the button click handlers immediately after logic execution and UI update. Implement or verify logic to measure rendering latency from tap to screen update. Optimize the update loop if necessary to guarantee the UI updates within the 100ms requirement.",
             "status": "done",
             "testStrategy": "Performance test: Use console logging or profiling tools to ensure time delta between event trigger and UI paint is < 100ms. Persistence test: Close and reopen app to verify the last state is saved correctly.",
@@ -434,11 +490,14 @@
         "updatedAt": "2026-02-20T18:47:05.999Z"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Navigation & Lifecycle Handling",
         "description": "Manage navigation between screens and handle app backgrounding/foregrounding events.",
         "status": "done",
-        "dependencies": ["6", "8"],
+        "dependencies": [
+          "6",
+          "8"
+        ],
         "priority": "medium",
         "details": "Implement the 'Back/Home' button logic in the Game Screen to return to the Home Screen. Add event listeners for lifecycle events (e.g., `app.on('pause')` or page hide events) to trigger `saveState` automatically, ensuring no data is lost if the user receives a call or locks the screen.",
         "testStrategy": "Navigate from Game to Home and verify save is triggered. Background the app while in a game state (simulate via tools or OS gesture) and foreground it to verify the state persists exactly as left.",
@@ -472,11 +531,13 @@
         "updatedAt": "2026-02-20T21:30:28.703Z"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Styling Refinement, Input Debouncing & Polish",
         "description": "Apply final design styles, implement input debouncing, and optimize performance.",
         "status": "done",
-        "dependencies": ["9"],
+        "dependencies": [
+          "9"
+        ],
         "priority": "low",
         "details": "Refine the UI to strictly match the Lovable design (Game Finish, Score colors, button styles). Implement a debounce mechanism (e.g., ignore input for 300ms after a valid tap) on scoring buttons to prevent double-tap errors. Ensure touch targets are large enough (min 48px) for sports usage.",
         "testStrategy": "Perform rapid tapping tests to ensure debounce prevents double scoring. Conduct a final design audit against the provided images. Measure UI update latency to ensure <100ms compliance.",
@@ -510,131 +571,254 @@
         "updatedAt": "2026-02-21T07:37:54.865Z"
       },
       {
-        "id": 11,
+        "id": "11",
         "title": "Define Match State Data Model and Storage Schema",
         "description": "Create the data structure interface for the match session that satisfies the persistence and scoring requirements defined in the PRD.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [],
         "priority": "high",
         "details": "Define a TypeScript/JavaScript interface or object structure representing `MatchState`. It must include fields: `status` ('active' | 'finished'), `setsToPlay` (1|3|5), `setsNeededToWin` (1|2|3), `setsWon` ({teamA, teamB}), `currentSet` ({number, games: {teamA, teamB}}), `currentGame` ({points: {teamA, teamB}}), `setHistory` (Array of {setNumber, teamAGames, teamBGames}), and `updatedAt`. Establish a constant storage key (e.g., 'ACTIVE_MATCH_SESSION').",
         "testStrategy": "Verify that the data structure can be instantiated with all required fields and successfully serialized to JSON without data loss.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define TypeScript Interface for MatchState",
+            "description": "Create comprehensive TypeScript type definitions for the match state data structure with proper typing for all nested fields.",
+            "dependencies": [],
+            "details": "Define TypeScript interfaces and types: MatchState with fields status ('active'|'finished'), setsToPlay (1|3|5), setsNeededToWin (1|2|3), setsWon ({teamA, teamB}), currentSet ({number, games: {teamA, teamB}}), currentGame ({points: {teamA, teamB}}), setHistory (Array of {setNumber, teamAGames, teamBGames}), updatedAt (timestamp), and schemaVersion (number). Export all types from a central types module.",
+            "status": "done",
+            "testStrategy": "Verify TypeScript compilation succeeds, no type errors when creating MatchState objects, and all union types correctly restrict invalid values.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:18:59.901Z"
+          },
+          {
+            "id": 2,
+            "title": "Create Default State Factory and Constants",
+            "description": "Implement factory function to generate initial MatchState objects and define storage-related constants.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create constant STORAGE_KEY = 'ACTIVE_MATCH_SESSION'. Implement createDefaultMatchState() factory function that returns a properly initialized MatchState object: status='active', setsToPlay=3, setsNeededToWin=2, setsWon={teamA:0, teamB:0}, currentSet={number:1, games:{teamA:0, teamB:0}}, currentGame={points:{teamA:0, teamB:0}}, setHistory=[], updatedAt=current timestamp, schemaVersion=1.",
+            "status": "done",
+            "testStrategy": "Test factory returns object with all required fields initialized correctly, default values match requirements, and multiple calls create independent objects (no shared references).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:01:13.890Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Serialization and Runtime Validation",
+            "description": "Create functions to serialize MatchState to JSON and deserialize with runtime type validation.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement serializeMatchState(state: MatchState): string that converts state to JSON string. Implement deserializeMatchState(json: string): MatchState | null that parses JSON and validates all fields match expected types and ranges. Validation should check status values, setsToPlay in [1,3,5], setsNeededToWin in [1,2,3], numeric scores are non-negative integers. Return null if validation fails.",
+            "status": "done",
+            "testStrategy": "Test round-trip serialization/deserialization preserves all data. Test with malformed JSON, missing fields, invalid enum values, and negative scores to verify null returns and no crashes.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:05:01.012Z"
+          },
+          {
+            "id": 4,
+            "title": "Build Storage Adapter with Abstracted API",
+            "description": "Implement storage adapter with save, load, and clear functions using Zepp OS settingsStorage API.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create StorageAdapter interface with save(key: string, value: string): Promise<void>, load(key: string): Promise<string | null>, clear(key: string): Promise<void>. Implement ZeppOsStorageAdapter using settingsStorage.setItem/getItem/removeItem. Create MatchStorage class that wraps the adapter with saveMatchState(state), loadMatchState(), clearMatchState() methods using STORAGE_KEY constant. Handle JSON parsing errors gracefully.",
+            "status": "done",
+            "testStrategy": "Test save then load retrieves identical state. Test load returns null when no data exists. Test clear removes data. Test error handling with corrupted storage data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:19:05.663Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement Migration and Versioning Utilities",
+            "description": "Create version-aware migration system to upgrade saved MatchState from older schema versions to current format.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Define CURRENT_SCHEMA_VERSION constant matching factory output. Create migration registry Map<number, (oldState: any) => MatchState> mapping from version to upgrade function. Implement migrateMatchState(rawData: any): MatchState that checks schemaVersion field, applies migrations sequentially from stored version to current version, or returns default state if version missing or invalid. Include migration from version 0 (no version field) to version 1.",
+            "status": "done",
+            "testStrategy": "Test migrating from version 0 (legacy format without version) creates valid current state. Test stored version 1 bypasses migration unchanged. Test invalid or missing version returns default state.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:19:07.650Z"
+          },
+          {
+            "id": 6,
+            "title": "Write Unit Tests for Data Model Components",
+            "description": "Create comprehensive unit tests covering instantiation, serialization, storage round-trip, and migration logic.",
+            "dependencies": [
+              5
+            ],
+            "details": "Write test suite covering: MatchState interface type checking, factory function creates valid defaults, serialization/deserialization preserves all fields including edge cases (max scores, finished status), storage adapter save/load/clear operations work correctly, migration handles legacy and current formats, and invalid data is rejected safely. Include tests for deep cloning correctness (no reference sharing in nested objects). Achieve >90% code coverage.",
+            "status": "done",
+            "testStrategy": "Run automated test suite. Verify all tests pass. Check code coverage report. Ensure no race conditions in async storage operations.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:19:09.521Z"
+          },
+          {
+            "id": 7,
+            "title": "Document Integration Notes and Task Dependencies",
+            "description": "Create documentation explaining how to integrate the MatchState storage into the match lifecycle and identify dependencies.",
+            "details": "Document saveMatchState() call points: after each point scored, after set completion, when match finishes, and on app pause/background. Document loadMatchState() call points: on app startup and after undo operations. Create dependency mapping: requires Task 3 (Local Storage layer) complete, provides data structure for Task 12 (Match Logic Engine). Include usage examples in JSDoc comments and a separate INTEGRATION.md file with diagrams showing state flow.",
+            "status": "done",
+            "testStrategy": "Review documentation for clarity and completeness. Verify dependency mappings are accurate against project task list. Peer review of integration examples.",
+            "dependencies": [],
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:19:11.291Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T09:19:11.291Z"
       },
       {
-        "id": 12,
+        "id": "12",
         "title": "Implement Core Persistence Service (Save/Load)",
         "description": "Develop the utility functions to save the match state to local storage and load it back, including error handling for corrupted data.",
         "status": "pending",
-        "dependencies": [11],
+        "dependencies": [
+          "11"
+        ],
         "priority": "high",
         "details": "Implement `saveMatchState(state: MatchState)` and `loadMatchState(): MatchState | null`. Use Zepp OS `localStorage` or `settingsStorage` API to persist the JSON stringified state. `saveMatchState` should update `updatedAt` timestamp. `loadMatchState` must be wrapped in a try-catch block to handle parsing errors or missing data gracefully, returning null if data is invalid/missing (safe failure).",
         "testStrategy": "Unit test saving a state object, verifying it exists in storage. Unit test loading the object back. Test loading with corrupted JSON to ensure it returns null instead of crashing.",
         "subtasks": []
       },
       {
-        "id": 13,
+        "id": "13",
         "title": "Implement Pre-Match Setup UI and Logic",
         "description": "Create the Match Setup screen allowing users to select 1, 3, or 5 sets and initialize the match session.",
         "status": "pending",
-        "dependencies": [11, 12],
+        "dependencies": [
+          "11",
+          "12"
+        ],
         "priority": "high",
         "details": "Build the 'Match Setup' view with three buttons or a selector for sets (1, 3, 5). When a user confirms a selection: 1. Calculate `setsNeededToWin` (Math.ceil(setsToPlay / 2)), 2. Initialize a fresh `MatchState` object with scores at 0 and status 'active', 3. Call `saveMatchState`, 4. Navigate to the Game screen. Ensure this flow blocks access to the Game screen without a selection.",
         "testStrategy": "Manual QA: Verify selecting '3' sets allows entry to game. Verify default state is initialized correctly with scores at 0-0 and `setsNeededToWin` set to 2.",
         "subtasks": []
       },
       {
-        "id": 14,
+        "id": "14",
         "title": "Integrate Lifecycle Persistence Triggers",
         "description": "Ensure state is saved automatically on app lifecycle events (sleep, exit, background) to meet reliability requirements.",
         "status": "pending",
-        "dependencies": [12],
+        "dependencies": [
+          "12"
+        ],
         "priority": "high",
         "details": "Hook into Zepp OS lifecycle events (e.g., `page.onHide`, `app.onHide`, or specific sleep callbacks depending on API availability). In these handlers, retrieve the current runtime state and call `saveMatchState`. Additionally, ensure `saveMatchState` is called immediately after any scoring update (add/remove point).",
         "testStrategy": "Integration test: Start a match, score a few points, trigger a 'sleep' event or 'back' button press, and relaunch the app. Verify storage contains the latest score.",
         "subtasks": []
       },
       {
-        "id": 15,
+        "id": "15",
         "title": "Update Game Screen for Set Point Display",
         "description": "Modify the Game Screen UI to visualize the match-level set points (Sets Won) alongside current game scores.",
         "status": "pending",
-        "dependencies": [11],
+        "dependencies": [
+          "11"
+        ],
         "priority": "medium",
         "details": "Update the Game View UI layout to include labels or indicators for `setsWon.teamA` and `setsWon.teamB`. Bind these UI elements to the current `MatchState` data. Ensure the display updates immediately when the underlying state changes.",
         "testStrategy": "Visual QA: Verify that upon entering a game, set counters are visible and set to 0. Verify UI updates when set counts change programmatically.",
         "subtasks": []
       },
       {
-        "id": 16,
+        "id": "16",
         "title": "Implement Set Completion and Match Completion Logic",
         "description": "Develop the logic to handle set wins, update set history, reset games, and determine the match winner based on the configured format.",
         "status": "pending",
-        "dependencies": [11],
+        "dependencies": [
+          "11"
+        ],
         "priority": "high",
         "details": "Implement a function `handleGameWin(team)`. Logic: 1. Increment current set games. 2. Check Padel game win condition (e.g., >= 6 and diff >= 2). 3. If set won: Increment `setsWon` for the winner. Push final scores ({setNumber, teamAGames, teamBGames}) to `setHistory`. Reset `currentSet.games`. 4. Check match completion: If `setsWon[winner] >= setsNeededToWin`, set status to 'finished'. 5. If match finished, trigger navigation to Summary. If not, start next set.",
         "testStrategy": "Unit tests simulating game sequences to trigger set wins. Verify `setsWon` increments, `setHistory` is populated, and match status changes to 'finished' at the correct threshold.",
         "subtasks": []
       },
       {
-        "id": 17,
+        "id": "17",
         "title": "Implement Home Screen Resume Logic",
         "description": "Update the Home Screen to conditionally show 'Resume Game' and handle restoring the active match state.",
         "status": "pending",
-        "dependencies": [12],
+        "dependencies": [
+          "12"
+        ],
         "priority": "high",
         "details": "On Home Screen initialization (`onShow` or `init`), call `loadMatchState`. If the result is not null AND `status === 'active'`, display the 'Resume Game' button/element. On 'Resume Game' click: 1. Load the state into the global runtime match manager. 2. Navigate to Game Screen. 3. Update UI to reflect restored state. Hide button if state is null or status is 'finished'.",
         "testStrategy": "Integration test: Create a match, exit to home. Verify 'Resume' appears. Click resume. Verify game screen opens with exact previous score. Finish a match, go home. Verify 'Resume' does not appear.",
         "subtasks": []
       },
       {
-        "id": 18,
+        "id": "18",
         "title": "Implement Match Summary Screen",
         "description": "Create the Summary Screen to display the match winner, final set points, and per-set breakdown.",
         "status": "pending",
-        "dependencies": [11, 16],
+        "dependencies": [
+          "11",
+          "16"
+        ],
         "priority": "medium",
         "details": "Build the 'Match Summary' view. Display: 'Team [A/B] Wins', Final Set Score (e.g., '2-1'), and a list of sets (e.g., 'Set 1: 6-4', 'Set 2: 4-6'). Iterate through the `setHistory` array from the `MatchState` to populate the list. Add 'Home' and 'Start New Game' buttons.",
         "testStrategy": "Visual QA: Complete a 3-set match. Verify summary shows the correct winner and all 3 set scores. Verify buttons are functional.",
         "subtasks": []
       },
       {
-        "id": 19,
+        "id": "19",
         "title": "Implement New Match Reset and Cleanup",
         "description": "Ensure starting a new match clears the existing active session and history properly.",
         "status": "pending",
-        "dependencies": [12, 13],
+        "dependencies": [
+          "12",
+          "13"
+        ],
         "priority": "medium",
         "details": "Implement a `startNewMatchFlow` function. This should clear the persisted `ACTIVE_MATCH_SESSION` from storage (set to null or delete key). Reset the in-memory state manager. Then navigate to the Match Setup screen (Task 13). This must be triggered from the Summary screen 'Start New Game' button and potentially the Home screen if a hard reset is needed.",
         "testStrategy": "Functional test: Finish a match. Click 'Start New Game'. Check storage to ensure old 'finished' match is cleared or overwritten. Verify setup screen appears fresh.",
         "subtasks": []
       },
       {
-        "id": 20,
+        "id": "20",
         "title": "Edge Case Handling and Data Validation",
         "description": "Robustness check to handle app interruptions before first point, corrupted data, and null reference safety.",
         "status": "pending",
-        "dependencies": [12, 17],
+        "dependencies": [
+          "12",
+          "17"
+        ],
         "priority": "medium",
         "details": "Add defensive coding in `loadMatchState` and state consumers. Scenario 1: User exits immediately after setup (0 points). Ensure state saves 'active' status and loads correctly. Scenario 2: Partial data in storage. Logic must default to 'no active game' (hide resume) rather than crashing. Add checks in Game screen to ensure state exists before rendering UI.",
         "testStrategy": "QA Scenarios: 1. Setup match -> Press Back -> Open App -> Verify Resume works. 2. Manually corrupt storage file -> Open App -> Verify app loads Home safely without 'Resume'.",
         "subtasks": []
       },
       {
-        "id": 21,
+        "id": "21",
         "title": "Increase Add Point Button Size for Game Screen (Accessibility)",
         "description": "Refactor the Game Screen UI to ensure Add Point buttons meet the 44x44 px touch target requirement, optimizing layout for round and square Zepp OS screens without breaking existing functionality.",
         "details": "Modify the `page/game` layout to increase the dimensions of Team A and Team B Add/Remove point controls to a minimum of 44x44 px. Adjust the Points Display and Set Points display areas (referencing Task 15) to be more compact or repositioned to accommodate larger controls. Reduce non-essential UI elements (padding, chrome) if necessary to maximize space. Ensure layout logic handles dynamic sizing for Round (designWidth 454) and Square (designWidth 390) screens. Maintain event bindings established in Task 8 and ensure visual separation between interactive elements to prevent accidental adjacent taps.",
         "testStrategy": "Visual QA on Zepp OS simulator (round 454, square 390) to verify 44px minimum touch targets and adequate spacing. Conduct manual on-device rapid tap tests to verify responsiveness and prevent accidental touches. Verify accessibility standards (contrast, separation). Run regression tests for scoring flows and save/restore functionality to ensure UI changes do not break existing logic.",
         "status": "pending",
-        "dependencies": [7, 8, 15, "2", "4"],
+        "dependencies": [
+          "7",
+          "8",
+          "15",
+          "2",
+          "4"
+        ],
         "priority": "medium",
         "subtasks": []
       }
     ],
     "metadata": {
-      "created": "2026-02-21T08:24:30.945Z",
-      "updated": "2026-02-21T08:32:30.047Z",
-      "description": "Tasks for master context"
+      "version": "1.0.0",
+      "lastModified": "2026-02-21T09:19:11.291Z",
+      "taskCount": 21,
+      "completedCount": 11,
+      "tags": [
+        "master"
+      ]
     }
   },
   "qa-remediation-v1-1": {
@@ -666,7 +850,10 @@
         "title": "Implement Match Initialization Logic",
         "description": "Create the logic to instantiate a fresh match session based on user setup and persist it immediately.",
         "status": "pending",
-        "dependencies": [1, 2],
+        "dependencies": [
+          1,
+          2
+        ],
         "priority": "high",
         "details": "Create a function `initMatch(setsToPlay)` that derives `setsNeededToWin` (e.g., 3 sets -> 2 wins). Construct the initial `MatchSession` object with `status: 'active'`, zeroed scores, and empty `setHistory`. Use `MatchStorage.saveSession` to write this initial state to storage immediately. Transition the app to the Game Screen.",
         "testStrategy": "Unit tests verifying correct `setsNeededToWin` calculation for inputs 1, 3, and 5. Verify that immediately after initialization, the storage file contains a valid 'active' session.",
@@ -677,7 +864,9 @@
         "title": "Develop Scoring and Set Progression Engine",
         "description": "Implement the core game logic to handle point increments, game increments, and set transitions.",
         "status": "pending",
-        "dependencies": [1],
+        "dependencies": [
+          1
+        ],
         "priority": "high",
         "details": "Implement functions `addPoint(team)` and `removePoint(team)`. Maintain logic for game progression (points -> games). When a team wins a game, increment `currentSet.games`. When a team wins a set (standard padel rules apply here as per assumptions), push the final score to `setHistory`, increment `setsWon` for the winning team, and reset `currentSet.games`. This task handles the in-memory state update only.",
         "testStrategy": "Unit tests simulating full sets to ensure `setHistory` is populated correctly and counters reset appropriately. Verify edge cases like deuce/advantage (existing logic) leading to game wins.",
@@ -688,7 +877,9 @@
         "title": "Implement Match Completion Logic",
         "description": "Add the logic to detect when a match has been won based on the set threshold.",
         "status": "pending",
-        "dependencies": [4],
+        "dependencies": [
+          4
+        ],
         "priority": "high",
         "details": "In the scoring flow (Task 4), after incrementing `setsWon`, check if the value equals or exceeds `setsNeededToWin`. If so, set match `status` to 'finished'. Disable further scoring buttons/interactions on the UI. Trigger the transition to the Match Summary Screen.",
         "testStrategy": "Unit tests for all three formats (1, 3, 5 sets). Verify that reaching exactly the required number of sets ends the match, and playing extra sets (if logic were to allow it erroneously) is blocked.",
@@ -699,7 +890,9 @@
         "title": "Implement State Restoration Service",
         "description": "Create the service responsible for loading the match state when the app starts.",
         "status": "pending",
-        "dependencies": [1],
+        "dependencies": [
+          1
+        ],
         "priority": "high",
         "details": "On app startup (e.g., in `init.js` or the entry point), call `MatchStorage.loadSession()`. Validate the loaded object: ensure it exists, is not null, and has valid fields (e.g., `status` is either 'active' or 'finished'). Store this state in a global singleton or state manager accessible to the UI layer. If data is invalid/corrupted, treat as no session.",
         "testStrategy": "Integration tests: Start app with a valid saved file, verify global state is populated. Start app with a corrupted file, verify app does not crash and defaults to empty state.",
@@ -710,7 +903,9 @@
         "title": "Update Home Screen with Resume Game Logic",
         "description": "Modify the Home screen to conditionally display the 'Resume Game' button based on loaded state.",
         "status": "pending",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "priority": "medium",
         "details": "In the Home screen view logic, check the loaded global state. If `status === 'active'`, render the 'Resume Game' button using `hmUI`. If status is 'finished' or null, hide 'Resume Game'. Wire the 'Resume Game' button to navigate to the Game screen, ensuring the Game screen reads the current global state to render the exact scores and timer. Ensure 'Start New Game' is always visible.",
         "testStrategy": "Integration tests: 1. App start with active match -> Resume shows. 2. App start with finished match -> Resume hidden. 3. App start with no data -> Resume hidden.",
@@ -721,7 +916,11 @@
         "title": "Integrate Persistence Triggers and Lifecycle",
         "description": "Connect the storage layer to game actions and system lifecycle events to prevent data loss.",
         "status": "pending",
-        "dependencies": [1, 4, 7],
+        "dependencies": [
+          1,
+          4,
+          7
+        ],
         "priority": "high",
         "details": "Wrap the scoring actions (Task 4) to call `MatchStorage.saveSession` immediately after every state change (point added, set won). Implement Zepp OS lifecycle listeners (e.g., `page.onHide()` or global pause event) to trigger a save when the app goes to background or the watch sleeps. Ensure writes are synchronous or handled safely to guarantee completion before sleep.",
         "testStrategy": "Lifecycle tests: Simulate pressing a point, then immediately forcing the app to background/sleep. Reopen app and verify the point is recorded. Rapidly press points and check storage integrity.",
@@ -732,7 +931,9 @@
         "title": "Develop Match Summary Screen",
         "description": "Build the end-of-match summary screen displaying the winner and set history.",
         "status": "pending",
-        "dependencies": [5],
+        "dependencies": [
+          5
+        ],
         "priority": "medium",
         "details": "Create a new Summary Page view. Read the `MatchSession` global state (which will have `status: 'finished'`). Display the Winner (based on `setsWon`). Display the final set score (e.g., 'Sets: 2-1'). Iterate through `setHistory` array and render a list of results (e.g., 'Set 1: 6-4'). Add 'Home' and 'Start New Game' buttons for navigation.",
         "testStrategy": "Visual QA: Complete a match and verify all sets are listed correctly and the winner is clearly identified. Verify buttons navigate to correct screens.",
@@ -743,7 +944,10 @@
         "title": "Implement New Match Reset and Cleanup",
         "description": "Ensure starting a new match clears all previous data and resets the app flow.",
         "status": "pending",
-        "dependencies": [7, 9],
+        "dependencies": [
+          7,
+          9
+        ],
         "priority": "medium",
         "details": "Implement the logic for the 'Start New Game' buttons found on Home and Summary screens. This must call `MatchStorage.saveSession(null)` or delete the session file to clear persistence. Reset global in-memory state variables. Navigate to the Match Setup screen (Task 2) to begin the loop again. Ensure no残留 data from the previous match affects the new one.",
         "testStrategy": "Integration test: Complete a match, view summary, click 'Start New Game', then force-close the app. Reopen and verify no 'Resume Game' option appears (confirming clean wipe).",
@@ -756,7 +960,11 @@
         "details": "Modify the Game Screen layout to increase the touch target size of Add Point buttons to a minimum of 44x44 px on all supported devices. This may require: 1) Reducing the points display area size or repositioning it, 2) Removing or reducing non-essential UI chrome to free up space, 3) Rearranging the button layout for optimal reachability. Ensure visual distinction between buttons with sufficient padding and spacing to prevent accidental adjacent taps. Layout must adapt dynamically for round screens (GTR-3, designWidth 454) and square screens (GTS-3, designWidth 390) while maintaining legibility. Preserve all existing scoring functionality - the add/remove point flows must continue to work and update persistent state via the existing scoring logic.",
         "testStrategy": "Visual QA on Zepp OS simulator using round (designWidth 454) and square (designWidth 390) profiles to verify touch targets meet the 44px minimum and spacing is adequate. Perform manual on-device tap tests during an active match to confirm reliable single-hand rapid taps without missed presses or accidental touches. Conduct accessibility verification: confirm button size >=44px, clear visual contrast from background, and tap areas do not overlap other interactive elements. Run regression testing with existing unit/integration tests for scoring flows. Perform manual save/restore tests to ensure persistence is unaffected by UI changes.",
         "status": "pending",
-        "dependencies": [2, 4, 7],
+        "dependencies": [
+          2,
+          4,
+          7
+        ],
         "priority": "medium",
         "subtasks": []
       }
