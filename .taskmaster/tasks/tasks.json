@@ -1130,14 +1130,92 @@
         "id": "17",
         "title": "Implement Home Screen Resume Logic",
         "description": "Update the Home Screen to conditionally show 'Resume Game' and handle restoring the active match state.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "12"
         ],
         "priority": "high",
         "details": "On Home Screen initialization (`onShow` or `init`), call `loadMatchState`. If the result is not null AND `status === 'active'`, display the 'Resume Game' button/element. On 'Resume Game' click: 1. Load the state into the global runtime match manager. 2. Navigate to Game Screen. 3. Update UI to reflect restored state. Hide button if state is null or status is 'finished'.",
         "testStrategy": "Integration test: Create a match, exit to home. Verify 'Resume' appears. Click resume. Verify game screen opens with exact previous score. Finish a match, go home. Verify 'Resume' does not appear.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Resume Game Button to Home Screen Layout",
+            "description": "Add a new 'Resume Game' button element to the Home Screen view and configure its initial visibility state.",
+            "dependencies": [],
+            "details": "Create the button UI element in the Home Screen layout/template. Set its visibility to hidden/false by default. Style the button to match the existing UI theme. Position it appropriately, typically near the 'Start New Game' button for logical user flow.",
+            "status": "done",
+            "testStrategy": "Visual QA: Verify the Home Screen renders without the Resume Game button visible on initial load.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:08.629Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Home Screen Initialization State Check",
+            "description": "Implement the logic on Home Screen initialization to check for active match state and conditionally display the Resume button.",
+            "dependencies": [
+              1
+            ],
+            "details": "In the Home Screen's onShow or init lifecycle method, call the loadMatchState() function from the persistence service (Task 12). Evaluate the returned state: if state is not null AND state.status equals 'active', set the Resume Game button visibility to true; otherwise, ensure it remains hidden. Handle null states gracefully.",
+            "status": "done",
+            "testStrategy": "Unit test: Mock loadMatchState to return active state - verify button shows. Mock return null or finished status - verify button stays hidden.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:10.148Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Resume Game State Loading",
+            "description": "Implement the logic to load the persisted match state into the global runtime match manager when Resume Game is clicked.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create a click event handler for the Resume Game button. In the handler, call loadMatchState() to retrieve the current active state. Pass this state to the global runtime match manager's initialization/load function to restore the match state in memory. Add error handling for cases where state loading fails or returns invalid data.",
+            "status": "done",
+            "testStrategy": "Unit test: Verify the handler calls loadMatchState and passes the result to the match manager. Test error handling when state loading fails.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:11.751Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement Resume Game Navigation",
+            "description": "Implement navigation from Home Screen to Game Screen after state is successfully loaded.",
+            "dependencies": [
+              3
+            ],
+            "details": "After successfully loading the state into the match manager (in the Resume click handler), trigger navigation to the Game Screen using the app's navigation router. Ensure the navigation happens only after state loading is complete and successful. Add fallback error UI if navigation or state loading fails.",
+            "status": "done",
+            "testStrategy": "Integration test: Click Resume button and verify the navigation router is called with Game Screen route.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:15.280Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement Game Screen UI State Restoration",
+            "description": "Update the Game Screen UI to reflect the restored match state when opened via Resume functionality.",
+            "dependencies": [
+              4
+            ],
+            "details": "When the Game Screen initializes, check if a match state is already loaded in the global match manager. If present, update all UI elements (team scores, current set scores, games won, serve indicators, team names, set history) to display the values from the restored state. Ensure the game appears exactly as it was when the user exited.",
+            "status": "done",
+            "testStrategy": "Visual QA: Create a match with specific scores, exit, resume. Verify all UI elements show exact previous state including scores, serves, and history.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:17.184Z"
+          },
+          {
+            "id": 6,
+            "title": "Testing and Documentation for Resume Logic",
+            "description": "Write comprehensive tests for the resume functionality and document the implementation details.",
+            "dependencies": [
+              5
+            ],
+            "details": "Write integration tests simulating the full resume flow: create a match, exit to home, verify Resume appears, click Resume, verify Game Screen opens with correct state. Add test for finished match not showing Resume. Document the resume feature behavior, edge cases handled, and integration points in the project README or technical documentation.",
+            "status": "done",
+            "testStrategy": "End-to-end test: Complete full user journey from creating match, exiting, resuming, and verifying state persistence. Verify 'Resume' does not appear for finished matches.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:48:19.358Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T19:48:19.358Z"
       },
       {
         "id": "18",
@@ -1201,9 +1279,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T19:22:38.432Z",
+      "lastModified": "2026-02-21T19:48:19.358Z",
       "taskCount": 21,
-      "completedCount": 16,
+      "completedCount": 17,
       "tags": [
         "master"
       ]

@@ -57,6 +57,7 @@ async function loadGamePageDefinition() {
   const scoreViewModelUrl = new URL('../page/score-view-model.js', import.meta.url)
   const historyStackUrl = new URL('../utils/history-stack.js', import.meta.url)
   const matchStateUrl = new URL('../utils/match-state.js', import.meta.url)
+  const scoringConstantsUrl = new URL('../utils/scoring-constants.js', import.meta.url)
   const scoringEngineUrl = new URL('../utils/scoring-engine.js', import.meta.url)
   const storageUrl = new URL('../utils/storage.js', import.meta.url)
   const matchStorageUrl = new URL('../utils/match-storage.js', import.meta.url)
@@ -69,6 +70,7 @@ async function loadGamePageDefinition() {
     .replace("from './score-view-model.js'", `from '${scoreViewModelUrl.href}'`)
     .replace("from '../utils/history-stack.js'", `from '${historyStackUrl.href}'`)
     .replace("from '../utils/match-state.js'", `from '${matchStateUrl.href}'`)
+    .replace("from '../utils/scoring-constants.js'", `from '${scoringConstantsUrl.href}'`)
     .replace("from '../utils/scoring-engine.js'", `from '${scoringEngineUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
     .replace("from '../utils/match-storage.js'", `from '${matchStorageUrl.href}'`)
@@ -585,6 +587,180 @@ test('game runtime state hydrates set metadata from persisted active session', a
         teamBGames: 6
       }
     ])
+  })
+})
+
+test('game runtime state hydrates regular-game persisted points with Ad/Game conversion', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    page.persistedSessionState = {
+      status: 'active',
+      setsToPlay: 3,
+      setsNeededToWin: 2,
+      setsWon: {
+        teamA: 0,
+        teamB: 1
+      },
+      currentSet: {
+        number: 2,
+        games: {
+          teamA: 4,
+          teamB: 3
+        }
+      },
+      currentGame: {
+        points: {
+          teamA: 50,
+          teamB: 60
+        }
+      },
+      setHistory: [
+        {
+          setNumber: 1,
+          teamAGames: 3,
+          teamBGames: 6
+        }
+      ],
+      updatedAt: Date.now(),
+      schemaVersion: 1
+    }
+
+    app.globalData.matchState = createInitialMatchState(1700000001)
+    page.ensureRuntimeState()
+    page.renderGameScreen()
+
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.ADVANTAGE)
+    assert.equal(app.globalData.matchState.teamB.points, SCORE_POINTS.GAME)
+
+    const renderedScores = getRenderedScoreTextValues(createdWidgets)
+
+    assert.equal(renderedScores.gamePoints, 'Ad - Game')
+  })
+})
+
+test('game runtime state keeps tie-break persisted points as numeric values', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    page.persistedSessionState = {
+      status: 'active',
+      setsToPlay: 3,
+      setsNeededToWin: 2,
+      setsWon: {
+        teamA: 0,
+        teamB: 0
+      },
+      currentSet: {
+        number: 1,
+        games: {
+          teamA: 6,
+          teamB: 6
+        }
+      },
+      currentGame: {
+        points: {
+          teamA: 50,
+          teamB: 60
+        }
+      },
+      setHistory: [],
+      updatedAt: Date.now(),
+      schemaVersion: 1
+    }
+
+    app.globalData.matchState = createInitialMatchState(1700000002)
+    page.ensureRuntimeState()
+    page.renderGameScreen()
+
+    assert.equal(app.globalData.matchState.teamA.points, 50)
+    assert.equal(app.globalData.matchState.teamB.points, 60)
+
+    const renderedScores = getRenderedScoreTextValues(createdWidgets)
+
+    assert.equal(renderedScores.gamePoints, '50 - 60')
+  })
+})
+
+test('game screen renders resumed manager team labels and score context', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    app.globalData.matchState = {
+      ...createInitialMatchState(1700000003),
+      teams: {
+        teamA: {
+          id: 'teamA',
+          label: 'Alpha'
+        },
+        teamB: {
+          id: 'teamB',
+          label: 'Beta'
+        }
+      },
+      teamA: {
+        points: SCORE_POINTS.THIRTY,
+        games: 3
+      },
+      teamB: {
+        points: SCORE_POINTS.FIFTEEN,
+        games: 2
+      },
+      currentSetStatus: {
+        number: 2,
+        teamAGames: 3,
+        teamBGames: 2
+      },
+      currentSet: 2,
+      setsNeededToWin: 2,
+      setsWon: {
+        teamA: 1,
+        teamB: 0
+      },
+      setHistory: [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 4
+        }
+      ]
+    }
+
+    page.persistedSessionState = {
+      status: 'active',
+      setsToPlay: 3,
+      setsNeededToWin: 2,
+      setsWon: {
+        teamA: 1,
+        teamB: 0
+      },
+      currentSet: {
+        number: 2,
+        games: {
+          teamA: 3,
+          teamB: 2
+        }
+      },
+      currentGame: {
+        points: {
+          teamA: 30,
+          teamB: 15
+        }
+      },
+      setHistory: [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 4
+        }
+      ],
+      updatedAt: Date.now(),
+      schemaVersion: 1
+    }
+
+    page.ensureRuntimeState()
+    page.renderGameScreen()
+
+    assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
+
+    const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT')
+
+    assert.equal(Boolean(findTextByExactContent(textWidgets, 'Alpha')), true)
+    assert.equal(Boolean(findTextByExactContent(textWidgets, 'Beta')), true)
   })
 })
 
