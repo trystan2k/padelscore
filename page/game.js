@@ -51,6 +51,7 @@ const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const PERSISTED_ADVANTAGE_POINT_VALUE = 50
 const PERSISTED_GAME_POINT_VALUE = 60
+const DEFAULT_SETS_TO_PLAY = 3
 
 function cloneMatchState(matchState) {
   try {
@@ -118,6 +119,26 @@ function toPositiveInteger(value, fallback = 1) {
   return Number.isInteger(value) && value > 0 ? value : fallback
 }
 
+function toSupportedSetsToPlay(value, fallback = DEFAULT_SETS_TO_PLAY) {
+  return value === 1 || value === 3 || value === 5 ? value : fallback
+}
+
+function resolveSetsToPlayFromSetsNeededToWin(setsNeededToWin) {
+  if (setsNeededToWin <= 1) {
+    return 1
+  }
+
+  if (setsNeededToWin >= 3) {
+    return 5
+  }
+
+  return 3
+}
+
+function isSupportedSetConfiguration(setsToPlay, setsNeededToWin) {
+  return Math.ceil(setsToPlay / 2) === setsNeededToWin
+}
+
 function toPersistedPointValue(value) {
   if (Number.isInteger(value) && value >= 0) {
     return value
@@ -146,6 +167,113 @@ function cloneSetHistory(setHistory) {
   }))
 }
 
+function resolveWinnerTeam(matchState) {
+  if (!isRecord(matchState)) {
+    return null
+  }
+
+  if (isTeamIdentifier(matchState.winnerTeam)) {
+    return matchState.winnerTeam
+  }
+
+  if (isRecord(matchState.winner) && isTeamIdentifier(matchState.winner.team)) {
+    return matchState.winner.team
+  }
+
+  return null
+}
+
+function clearWinnerMetadata(matchState) {
+  if (!isRecord(matchState)) {
+    return
+  }
+
+  delete matchState.winnerTeam
+  delete matchState.winner
+}
+
+function applyWinnerMetadata(matchState, winnerTeam) {
+  if (!isRecord(matchState)) {
+    return
+  }
+
+  if (!isTeamIdentifier(winnerTeam)) {
+    clearWinnerMetadata(matchState)
+    return
+  }
+
+  matchState.winnerTeam = winnerTeam
+
+  if (!isRecord(matchState.winner)) {
+    matchState.winner = {
+      team: winnerTeam
+    }
+    return
+  }
+
+  matchState.winner.team = winnerTeam
+}
+
+function mergeRuntimeStateWithPersistedSession(runtimeMatchState, persistedMatchState) {
+  if (!isValidRuntimeMatchState(runtimeMatchState)) {
+    return createInitialMatchState()
+  }
+
+  const mergedState = cloneMatchState(runtimeMatchState)
+
+  if (!isPersistedMatchState(persistedMatchState)) {
+    return mergedState
+  }
+
+  const currentSetNumber = toPositiveInteger(
+    persistedMatchState?.currentSet?.number,
+    toPositiveInteger(mergedState.currentSetStatus.number, 1)
+  )
+  const teamAGames = toNonNegativeInteger(
+    persistedMatchState?.currentSet?.games?.teamA,
+    toNonNegativeInteger(mergedState.currentSetStatus.teamAGames, 0)
+  )
+  const teamBGames = toNonNegativeInteger(
+    persistedMatchState?.currentSet?.games?.teamB,
+    toNonNegativeInteger(mergedState.currentSetStatus.teamBGames, 0)
+  )
+
+  mergedState.currentSetStatus.number = currentSetNumber
+  mergedState.currentSet = currentSetNumber
+  mergedState.currentSetStatus.teamAGames = teamAGames
+  mergedState.currentSetStatus.teamBGames = teamBGames
+  mergedState.teamA.games = teamAGames
+  mergedState.teamB.games = teamBGames
+
+  mergedState.setsNeededToWin = toPositiveInteger(
+    persistedMatchState.setsNeededToWin,
+    toPositiveInteger(mergedState.setsNeededToWin, 2)
+  )
+  mergedState.setsWon = {
+    teamA: toNonNegativeInteger(
+      persistedMatchState?.setsWon?.teamA,
+      toNonNegativeInteger(mergedState?.setsWon?.teamA, 0)
+    ),
+    teamB: toNonNegativeInteger(
+      persistedMatchState?.setsWon?.teamB,
+      toNonNegativeInteger(mergedState?.setsWon?.teamB, 0)
+    )
+  }
+  mergedState.setHistory = cloneSetHistory(persistedMatchState.setHistory)
+  mergedState.status =
+    persistedMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
+      ? PERSISTED_MATCH_STATUS.FINISHED
+      : PERSISTED_MATCH_STATUS.ACTIVE
+
+  applyWinnerMetadata(mergedState, resolveWinnerTeam(persistedMatchState))
+
+  if (mergedState.status !== PERSISTED_MATCH_STATUS.FINISHED) {
+    clearWinnerMetadata(mergedState)
+  }
+
+  return mergedState
+}
+
 function createPersistedMatchStateSnapshot(runtimeMatchState, basePersistedMatchState) {
   if (!isValidRuntimeMatchState(runtimeMatchState)) {
     return null
@@ -155,15 +283,33 @@ function createPersistedMatchStateSnapshot(runtimeMatchState, basePersistedMatch
     ? cloneMatchState(basePersistedMatchState)
     : createDefaultPersistedMatchState()
 
-  return {
+  const setsNeededToWin = toPositiveInteger(
+    runtimeMatchState.setsNeededToWin,
+    toPositiveInteger(baseState?.setsNeededToWin, 2)
+  )
+  const baseSetsToPlay = toSupportedSetsToPlay(baseState?.setsToPlay)
+  const setsToPlay = isSupportedSetConfiguration(baseSetsToPlay, setsNeededToWin)
+    ? baseSetsToPlay
+    : resolveSetsToPlayFromSetsNeededToWin(setsNeededToWin)
+  const winnerTeam = resolveWinnerTeam(runtimeMatchState)
+
+  const persistedSnapshot = {
     ...baseState,
     status:
       runtimeMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
         ? PERSISTED_MATCH_STATUS.FINISHED
         : PERSISTED_MATCH_STATUS.ACTIVE,
+    setsToPlay,
+    setsNeededToWin,
     setsWon: {
-      teamA: toNonNegativeInteger(baseState?.setsWon?.teamA, 0),
-      teamB: toNonNegativeInteger(baseState?.setsWon?.teamB, 0)
+      teamA: toNonNegativeInteger(
+        runtimeMatchState?.setsWon?.teamA,
+        toNonNegativeInteger(baseState?.setsWon?.teamA, 0)
+      ),
+      teamB: toNonNegativeInteger(
+        runtimeMatchState?.setsWon?.teamB,
+        toNonNegativeInteger(baseState?.setsWon?.teamB, 0)
+      )
     },
     currentSet: {
       number: toPositiveInteger(runtimeMatchState.currentSetStatus.number, 1),
@@ -178,9 +324,35 @@ function createPersistedMatchStateSnapshot(runtimeMatchState, basePersistedMatch
         teamB: toPersistedPointValue(runtimeMatchState.teamB.points)
       }
     },
-    setHistory: cloneSetHistory(baseState.setHistory),
+    setHistory: cloneSetHistory(runtimeMatchState.setHistory),
     schemaVersion: toPositiveInteger(baseState.schemaVersion, 1)
   }
+
+  if (isTeamIdentifier(winnerTeam)) {
+    persistedSnapshot.winnerTeam = winnerTeam
+  } else {
+    delete persistedSnapshot.winnerTeam
+  }
+
+  return persistedSnapshot
+}
+
+function didMatchTransitionToFinished(previousState, nextState) {
+  return (
+    isRecord(previousState) &&
+    isRecord(nextState) &&
+    previousState.status !== PERSISTED_MATCH_STATUS.FINISHED &&
+    nextState.status === PERSISTED_MATCH_STATUS.FINISHED
+  )
+}
+
+function didMatchTransitionFromFinished(previousState, nextState) {
+  return (
+    isRecord(previousState) &&
+    isRecord(nextState) &&
+    previousState.status === PERSISTED_MATCH_STATUS.FINISHED &&
+    nextState.status !== PERSISTED_MATCH_STATUS.FINISHED
+  )
 }
 
 function serializeMatchStateForComparison(matchState) {
@@ -242,7 +414,15 @@ function isSameMatchState(leftState, rightState) {
 }
 
 function getLeadingTeamId(viewModel) {
-  if (!isRecord(viewModel) || !isRecord(viewModel.currentSetGames)) {
+  if (!isRecord(viewModel)) {
+    return null
+  }
+
+  if (isTeamIdentifier(viewModel.winnerTeam)) {
+    return viewModel.winnerTeam
+  }
+
+  if (!isRecord(viewModel.currentSetGames)) {
     return null
   }
 
@@ -314,6 +494,7 @@ Page({
   onInit() {
     this.widgets = []
     this.lastAcceptedScoringInteractionAt = null
+    this.hasAttemptedSummaryNavigation = false
     this.isSessionAccessCheckInFlight = false
     this.isSessionAccessGranted = false
     this.persistedSessionState = null
@@ -489,14 +670,23 @@ Page({
       app.globalData.matchHistory = createHistoryStack()
     }
 
+    let runtimeMatchState = null
+
     if (isValidRuntimeMatchState(app.globalData.matchState)) {
-      return
+      runtimeMatchState = cloneMatchState(app.globalData.matchState)
+    } else {
+      const persistedRuntimeState = loadState()
+
+      runtimeMatchState =
+        persistedRuntimeState !== null
+          ? cloneMatchState(persistedRuntimeState)
+          : createInitialMatchState()
     }
 
-    const persistedState = loadState()
-
-    app.globalData.matchState =
-      persistedState !== null ? cloneMatchState(persistedState) : createInitialMatchState()
+    app.globalData.matchState = mergeRuntimeStateWithPersistedSession(
+      runtimeMatchState,
+      this.persistedSessionState
+    )
   },
 
   getRuntimeMatchState() {
@@ -696,6 +886,37 @@ Page({
     })
   },
 
+  navigateToSummaryPage() {
+    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
+      return false
+    }
+
+    try {
+      hmApp.gotoPage({
+        url: 'page/summary'
+      })
+      return true
+    } catch {
+      return false
+    }
+  },
+
+  handleMatchFinishedTransition() {
+    if (this.hasAttemptedSummaryNavigation) {
+      return
+    }
+
+    this.hasAttemptedSummaryNavigation = true
+
+    this.waitForPersistenceIdle()
+      .then(() => {
+        this.navigateToSummaryPage()
+      })
+      .catch(() => {
+        // Keep the finished state rendered if summary navigation cannot run.
+      })
+  },
+
   navigateToHomePage() {
     if (typeof hmApp === 'undefined') {
       return
@@ -866,7 +1087,7 @@ Page({
     return rebuiltState
   },
 
-  persistAndRender(nextState, interactionStartedAt) {
+  persistAndRender(nextState, interactionStartedAt, options = {}) {
     if (!isValidRuntimeMatchState(nextState)) {
       return
     }
@@ -878,7 +1099,9 @@ Page({
     const uiUpdatedAt = this.getCurrentTimeMs()
 
     this.measureInteractionPerformance(interactionStartedAt, renderStartedAt, uiUpdatedAt)
-    this.saveCurrentRuntimeState()
+
+    const shouldForcePersistence = isRecord(options) && options.forcePersistence === true
+    this.saveCurrentRuntimeState({ force: shouldForcePersistence })
   },
 
   isScoringInteractionDebounced(interactionStartedAt) {
@@ -918,7 +1141,19 @@ Page({
       this.lastAcceptedScoringInteractionAt = interactionStartedAt
     }
 
-    this.persistAndRender(nextState, interactionStartedAt)
+    if (didMatchTransitionFromFinished(previousState, nextState)) {
+      this.hasAttemptedSummaryNavigation = false
+    }
+
+    const didFinishMatch = didMatchTransitionToFinished(previousState, nextState)
+
+    this.persistAndRender(nextState, interactionStartedAt, {
+      forcePersistence: didFinishMatch
+    })
+
+    if (didFinishMatch) {
+      this.handleMatchFinishedTransition()
+    }
   },
 
   handleAddPointForTeam(team) {

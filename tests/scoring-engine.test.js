@@ -63,6 +63,34 @@ function createTieBreakState(teamAPoints = 0, teamBPoints = 0) {
   return state
 }
 
+function createSetPointState({
+  winningTeam,
+  setsNeededToWin,
+  setsWonByWinningTeam,
+  currentSetNumber = 1,
+  teamAGames = 5,
+  teamBGames = 0
+}) {
+  const state = createInitialMatchState()
+  const losingTeam = winningTeam === 'teamA' ? 'teamB' : 'teamA'
+
+  state.setsNeededToWin = setsNeededToWin
+  state.setsWon = {
+    teamA: winningTeam === 'teamA' ? setsWonByWinningTeam : 0,
+    teamB: winningTeam === 'teamB' ? setsWonByWinningTeam : 0
+  }
+  state.currentSetStatus.number = currentSetNumber
+  state.currentSet = currentSetNumber
+  state.currentSetStatus.teamAGames = teamAGames
+  state.currentSetStatus.teamBGames = teamBGames
+  state.teamA.games = teamAGames
+  state.teamB.games = teamBGames
+  state[winningTeam].points = SCORE_POINTS.FORTY
+  state[losingTeam].points = SCORE_POINTS.LOVE
+
+  return state
+}
+
 test('addPoint progresses regular points from 0 to 40', () => {
   const initialState = createInitialMatchState()
 
@@ -167,6 +195,18 @@ test('addPoint wins set at 6-0 and resets games for next set', () => {
   assert.equal(nextState.currentSetStatus.teamBGames, 0)
   assert.equal(nextState.teamA.points, SCORE_POINTS.LOVE)
   assert.equal(nextState.teamB.points, SCORE_POINTS.LOVE)
+  assert.deepEqual(nextState.setsWon, {
+    teamA: 1,
+    teamB: 0
+  })
+  assert.deepEqual(nextState.setHistory, [
+    {
+      setNumber: 1,
+      teamAGames: 6,
+      teamBGames: 0
+    }
+  ])
+  assert.equal(nextState.status, 'active')
 })
 
 test('addPoint wins set at 6-4 and resets games for next set', () => {
@@ -263,6 +303,125 @@ test('addPoint wins tie-break set at 7-5', () => {
   assert.equal(nextState.currentSetStatus.teamBGames, 0)
   assert.equal(nextState.teamA.points, SCORE_POINTS.LOVE)
   assert.equal(nextState.teamB.points, SCORE_POINTS.LOVE)
+})
+
+test('addPoint keeps set history unchanged when game is not won', () => {
+  const state = createInitialMatchState()
+  state.setHistory = [
+    {
+      setNumber: 1,
+      teamAGames: 6,
+      teamBGames: 4
+    }
+  ]
+
+  const nextState = addPoint(state, 'teamA')
+
+  assert.equal(nextState.teamA.points, SCORE_POINTS.FIFTEEN)
+  assert.deepEqual(nextState.setHistory, [
+    {
+      setNumber: 1,
+      teamAGames: 6,
+      teamBGames: 4
+    }
+  ])
+})
+
+test('addPoint marks match finished exactly when setsNeededToWin is 1', () => {
+  const state = createSetPointState({
+    winningTeam: 'teamA',
+    setsNeededToWin: 1,
+    setsWonByWinningTeam: 0,
+    currentSetNumber: 1,
+    teamAGames: 5,
+    teamBGames: 0
+  })
+
+  const nextState = addPoint(state, 'teamA')
+
+  assert.equal(nextState.status, 'finished')
+  assert.equal(nextState.winnerTeam, 'teamA')
+  assert.equal(nextState.currentSetStatus.number, 1)
+  assert.equal(nextState.currentSet, 1)
+  assert.equal(nextState.setsWon.teamA, 1)
+  assert.deepEqual(nextState.setHistory, [
+    {
+      setNumber: 1,
+      teamAGames: 6,
+      teamBGames: 0
+    }
+  ])
+})
+
+test('addPoint marks match finished exactly when setsNeededToWin is 2', () => {
+  const state = createSetPointState({
+    winningTeam: 'teamA',
+    setsNeededToWin: 2,
+    setsWonByWinningTeam: 1,
+    currentSetNumber: 2,
+    teamAGames: 5,
+    teamBGames: 3
+  })
+
+  const nextState = addPoint(state, 'teamA')
+
+  assert.equal(nextState.status, 'finished')
+  assert.equal(nextState.winnerTeam, 'teamA')
+  assert.equal(nextState.currentSetStatus.number, 2)
+  assert.equal(nextState.currentSet, 2)
+  assert.equal(nextState.setsWon.teamA, 2)
+  assert.equal(nextState.currentSetStatus.teamAGames, 0)
+  assert.equal(nextState.currentSetStatus.teamBGames, 0)
+})
+
+test('addPoint marks match finished exactly when setsNeededToWin is 3', () => {
+  const state = createSetPointState({
+    winningTeam: 'teamA',
+    setsNeededToWin: 3,
+    setsWonByWinningTeam: 2,
+    currentSetNumber: 5,
+    teamAGames: 5,
+    teamBGames: 4
+  })
+
+  const nextState = addPoint(state, 'teamA')
+
+  assert.equal(nextState.status, 'finished')
+  assert.equal(nextState.winnerTeam, 'teamA')
+  assert.equal(nextState.currentSetStatus.number, 5)
+  assert.equal(nextState.currentSet, 5)
+  assert.equal(nextState.setsWon.teamA, 3)
+  assert.deepEqual(nextState.setHistory, [
+    {
+      setNumber: 5,
+      teamAGames: 6,
+      teamBGames: 4
+    }
+  ])
+})
+
+test('addPoint records tie-break set history as 7-6 and finishes when threshold reached', () => {
+  const state = createTieBreakState(6, 5)
+  state.setsNeededToWin = 1
+  state.setsWon = {
+    teamA: 0,
+    teamB: 0
+  }
+
+  const nextState = addPoint(state, 'teamA')
+
+  assert.equal(nextState.status, 'finished')
+  assert.equal(nextState.winnerTeam, 'teamA')
+  assert.equal(nextState.setsWon.teamA, 1)
+  assert.deepEqual(nextState.setHistory, [
+    {
+      setNumber: 1,
+      teamAGames: 7,
+      teamBGames: 6
+    }
+  ])
+  assert.equal(nextState.currentSetStatus.teamAGames, 0)
+  assert.equal(nextState.currentSetStatus.teamBGames, 0)
 })
 
 test('addPoint wins tie-break set at 8-6 and requires a two-point margin', () => {

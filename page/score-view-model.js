@@ -1,9 +1,10 @@
 /**
  * @param {import('../utils/match-state.js').MatchState} matchState
- * @param {{ persistedMatchState?: { setsWon?: { teamA?: number, teamB?: number } } | null }} [options]
+ * @param {{ persistedMatchState?: { setsWon?: { teamA?: number, teamB?: number }, winnerTeam?: 'teamA' | 'teamB', winner?: { team?: 'teamA' | 'teamB' } } | null }} [options]
  */
 export function createScoreViewModel(matchState, options = {}) {
   const resolvedSetsWon = resolveSetsWon(matchState, options.persistedMatchState)
+  const resolvedWinnerTeam = resolveWinnerTeam(matchState, options.persistedMatchState)
 
   return {
     teamA: {
@@ -22,6 +23,7 @@ export function createScoreViewModel(matchState, options = {}) {
       teamB: matchState.currentSetStatus.teamBGames
     },
     setsWon: resolvedSetsWon,
+    winnerTeam: resolvedWinnerTeam,
     status: matchState.status
   }
 }
@@ -45,6 +47,42 @@ function resolveSetsWon(matchState, persistedMatchState) {
     teamA: 0,
     teamB: 0
   }
+}
+
+function resolveWinnerTeam(matchState, persistedMatchState) {
+  const runtimeWinnerTeam = extractWinnerTeam(matchState)
+
+  if (runtimeWinnerTeam) {
+    return runtimeWinnerTeam
+  }
+
+  const persistedWinnerTeam = extractWinnerTeam(persistedMatchState)
+
+  if (persistedWinnerTeam) {
+    return persistedWinnerTeam
+  }
+
+  return null
+}
+
+function extractWinnerTeam(matchState) {
+  if (!isRecord(matchState)) {
+    return null
+  }
+
+  if (isTeamIdentifier(matchState.winnerTeam)) {
+    return matchState.winnerTeam
+  }
+
+  if (isRecord(matchState.winner) && isTeamIdentifier(matchState.winner.team)) {
+    return matchState.winner.team
+  }
+
+  return null
+}
+
+function isTeamIdentifier(value) {
+  return value === 'teamA' || value === 'teamB'
 }
 
 function isRecord(value) {

@@ -510,6 +510,272 @@ test('game screen reflects programmatic sets-won state changes on rerender', asy
   })
 })
 
+test('game runtime state hydrates set metadata from persisted active session', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, page }) => {
+    page.persistedSessionState = {
+      status: 'active',
+      setsToPlay: 5,
+      setsNeededToWin: 3,
+      setsWon: {
+        teamA: 1,
+        teamB: 2
+      },
+      currentSet: {
+        number: 4,
+        games: {
+          teamA: 2,
+          teamB: 3
+        }
+      },
+      currentGame: {
+        points: {
+          teamA: 0,
+          teamB: 0
+        }
+      },
+      setHistory: [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 4
+        },
+        {
+          setNumber: 2,
+          teamAGames: 3,
+          teamBGames: 6
+        },
+        {
+          setNumber: 3,
+          teamAGames: 7,
+          teamBGames: 6
+        }
+      ],
+      updatedAt: Date.now(),
+      schemaVersion: 1
+    }
+
+    app.globalData.matchState = createInitialMatchState(1700000001)
+    page.ensureRuntimeState()
+
+    assert.equal(app.globalData.matchState.setsNeededToWin, 3)
+    assert.deepEqual(app.globalData.matchState.setsWon, {
+      teamA: 1,
+      teamB: 2
+    })
+    assert.equal(app.globalData.matchState.currentSetStatus.number, 4)
+    assert.equal(app.globalData.matchState.currentSet, 4)
+    assert.equal(app.globalData.matchState.currentSetStatus.teamAGames, 2)
+    assert.equal(app.globalData.matchState.currentSetStatus.teamBGames, 3)
+    assert.equal(app.globalData.matchState.teamA.games, 2)
+    assert.equal(app.globalData.matchState.teamB.games, 3)
+    assert.deepEqual(app.globalData.matchState.setHistory, [
+      {
+        setNumber: 1,
+        teamAGames: 6,
+        teamBGames: 4
+      },
+      {
+        setNumber: 2,
+        teamAGames: 3,
+        teamBGames: 6
+      },
+      {
+        setNumber: 3,
+        teamAGames: 7,
+        teamBGames: 6
+      }
+    ])
+  })
+})
+
+test('game match completion persists set metadata and attempts summary navigation', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const originalHmApp = globalThis.hmApp
+  const persistenceWrites = []
+  const navigationCalls = []
+
+  globalThis.settingsStorage = {
+    setItem(key, value) {
+      persistenceWrites.push({ key, value })
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  globalThis.hmApp = {
+    gotoPage(options) {
+      navigationCalls.push(options)
+    }
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, async ({ app, createdWidgets, page }) => {
+      page.persistenceDebounceWindowMs = 0
+      page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
+
+      app.globalData.matchState.setsNeededToWin = 1
+      app.globalData.matchState.setsWon = {
+        teamA: 0,
+        teamB: 0
+      }
+      app.globalData.matchState.setHistory = []
+      app.globalData.matchState.currentSetStatus.number = 1
+      app.globalData.matchState.currentSet = 1
+      app.globalData.matchState.currentSetStatus.teamAGames = 5
+      app.globalData.matchState.currentSetStatus.teamBGames = 0
+      app.globalData.matchState.teamA.games = 5
+      app.globalData.matchState.teamB.games = 0
+      app.globalData.matchState.teamA.points = SCORE_POINTS.FORTY
+      app.globalData.matchState.teamB.points = SCORE_POINTS.LOVE
+
+      page.renderGameScreen()
+
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+      assert.equal(typeof addTeamAButton?.properties.click_func, 'function')
+
+      addTeamAButton.properties.click_func()
+
+      await page.waitForPersistenceIdle()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+      assert.equal(app.globalData.matchState.winnerTeam, 'teamA')
+      assert.deepEqual(app.globalData.matchState.setsWon, {
+        teamA: 1,
+        teamB: 0
+      })
+      assert.deepEqual(app.globalData.matchState.setHistory, [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 0
+        }
+      ])
+
+      const visibleButtons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT')
+      const winnerText = textWidgets.find(
+        (widget) =>
+          typeof widget.properties.text === 'string' &&
+          widget.properties.text.includes('Team A') &&
+          widget.properties.text.includes('game.winsSuffix')
+      )
+
+      assert.equal(visibleButtons.length, 1)
+      assert.equal(Boolean(findButtonByText(visibleButtons, 'game.teamAAddPoint')), false)
+      assert.equal(Boolean(findButtonByText(visibleButtons, 'game.teamBAddPoint')), false)
+      assert.equal(Boolean(findButtonByText(visibleButtons, 'game.teamARemovePoint')), false)
+      assert.equal(Boolean(findButtonByText(visibleButtons, 'game.teamBRemovePoint')), false)
+      assert.equal(Boolean(winnerText), true)
+      assert.equal(navigationCalls.some((call) => call?.url === 'page/summary'), true)
+
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+      const persistedFinishedSession = JSON.parse(
+        activeSessionWrites[activeSessionWrites.length - 1]
+      )
+
+      assert.equal(persistedFinishedSession.status, 'finished')
+      assert.deepEqual(persistedFinishedSession.setsWon, {
+        teamA: 1,
+        teamB: 0
+      })
+      assert.deepEqual(persistedFinishedSession.setHistory, [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 0
+        }
+      ])
+      assert.equal(persistedFinishedSession.winnerTeam, 'teamA')
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
+test('game summary navigation resets after undo from finished match state', async () => {
+  const originalHmApp = globalThis.hmApp
+  const navigationCalls = []
+
+  globalThis.hmApp = {
+    gotoPage(options) {
+      navigationCalls.push(options)
+    }
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, async ({ app, createdWidgets, page }) => {
+      page.persistenceDebounceWindowMs = 0
+      page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
+
+      app.globalData.matchState.setsNeededToWin = 1
+      app.globalData.matchState.setsWon = {
+        teamA: 0,
+        teamB: 0
+      }
+      app.globalData.matchState.setHistory = []
+      app.globalData.matchState.currentSetStatus.number = 1
+      app.globalData.matchState.currentSet = 1
+      app.globalData.matchState.currentSetStatus.teamAGames = 5
+      app.globalData.matchState.currentSetStatus.teamBGames = 0
+      app.globalData.matchState.teamA.games = 5
+      app.globalData.matchState.teamB.games = 0
+      app.globalData.matchState.teamA.points = SCORE_POINTS.FORTY
+      app.globalData.matchState.teamB.points = SCORE_POINTS.LOVE
+
+      page.renderGameScreen()
+
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+      assert.equal(typeof addTeamAButton?.properties.click_func, 'function')
+
+      addTeamAButton.properties.click_func()
+      await page.waitForPersistenceIdle()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+      assert.equal(page.hasAttemptedSummaryNavigation, true)
+      assert.equal(navigationCalls.filter((call) => call?.url === 'page/summary').length, 1)
+
+      page.handleRemovePointForTeam('teamA')
+      await page.waitForPersistenceIdle()
+
+      assert.equal(app.globalData.matchState.status, 'active')
+      assert.equal(page.hasAttemptedSummaryNavigation, false)
+      assert.equal(navigationCalls.filter((call) => call?.url === 'page/summary').length, 1)
+
+      page.handleAddPointForTeam('teamA')
+      await page.waitForPersistenceIdle()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+      assert.equal(page.hasAttemptedSummaryNavigation, true)
+      assert.equal(navigationCalls.filter((call) => call?.url === 'page/summary').length, 2)
+    })
+  } finally {
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
 test('game controls keep minimum 48x48 touch targets in active and finished states', async () => {
   const screenScenarios = [
     { width: 390, height: 450 },

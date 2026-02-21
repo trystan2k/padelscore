@@ -1052,14 +1052,79 @@
         "id": "16",
         "title": "Implement Set Completion and Match Completion Logic",
         "description": "Develop the logic to handle set wins, update set history, reset games, and determine the match winner based on the configured format.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "11"
         ],
         "priority": "high",
         "details": "Implement a function `handleGameWin(team)`. Logic: 1. Increment current set games. 2. Check Padel game win condition (e.g., >= 6 and diff >= 2). 3. If set won: Increment `setsWon` for the winner. Push final scores ({setNumber, teamAGames, teamBGames}) to `setHistory`. Reset `currentSet.games`. 4. Check match completion: If `setsWon[winner] >= setsNeededToWin`, set status to 'finished'. 5. If match finished, trigger navigation to Summary. If not, start next set.",
         "testStrategy": "Unit tests simulating game sequences to trigger set wins. Verify `setsWon` increments, `setHistory` is populated, and match status changes to 'finished' at the correct threshold.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement game score increment for winning team",
+            "description": "Create function to increment the games count for the current set when a team wins a game point",
+            "dependencies": [],
+            "details": "Implement the first part of handleGameWin(team) that increments the current set's game count for the specified team. Update the teamAGames or teamBGames counter in the match state based on the team parameter passed to the function.",
+            "status": "done",
+            "testStrategy": "Unit test to verify games counter increments correctly for team A and team B independently",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:22:27.363Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Padel game win condition check",
+            "description": "Create validation logic to determine if a set is won based on games won threshold and margin",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement logic to check if the current set has been won by either team. A team wins a set if they have >= 6 games AND lead by at least 2 games (6-4, 6-0, 7-5, etc.). Return the winning team or null if no winner yet.",
+            "status": "done",
+            "testStrategy": "Unit tests for various score scenarios including 6-4, 7-5, 6-0 wins, and 5-5, 6-5 where no winner exists",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:22:30.120Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement set completion and history tracking",
+            "description": "Handle set win by incrementing setsWon, recording set history, and resetting current games",
+            "dependencies": [
+              2
+            ],
+            "details": "When a set is won, increment the winner's setsWon counter in match state. Push an object {setNumber, teamAGames, teamBGames} to setHistory array with current set number and final game scores. Reset currentSet.games to {teamA: 0, teamB: 0} for the next set.",
+            "status": "done",
+            "testStrategy": "Unit tests to verify setsWon increments correctly, setHistory is populated with proper score objects, and games reset to zero",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:22:32.488Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement match winner determination",
+            "description": "Check if match is finished by comparing setsWon to setsNeededToWin configuration",
+            "dependencies": [
+              3
+            ],
+            "details": "After a set is won, check if the winner's setsWon count meets or exceeds setsNeededToWin (e.g., 2 for best-of-3 format). If condition is met, update match status to 'finished', store the winning team identifier, and update the finishedAt timestamp.",
+            "status": "done",
+            "testStrategy": "Unit tests simulating 2-set win (best-of-3) and 3-set win scenarios to verify match status changes to finished at correct threshold",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:22:35.647Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement navigation to Summary or next set",
+            "description": "Trigger appropriate screen navigation based on match completion status",
+            "dependencies": [
+              4
+            ],
+            "details": "If match status is 'finished', trigger navigation to Match Summary screen (Task 18) with final state. If match continues, initialize the next set by incrementing setNumber and reset games, then ensure game screen displays updated state for new set.",
+            "status": "done",
+            "testStrategy": "Integration test to verify navigation to Summary after match win, and proper set initialization for continuing matches",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T19:22:38.432Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T19:22:38.432Z"
       },
       {
         "id": "17",
@@ -1136,9 +1201,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T16:28:42.326Z",
+      "lastModified": "2026-02-21T19:22:38.432Z",
       "taskCount": 21,
-      "completedCount": 15,
+      "completedCount": 16,
       "tags": [
         "master"
       ]

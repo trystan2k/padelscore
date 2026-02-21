@@ -14,6 +14,7 @@ const MIN_GAME_MARGIN_TO_WIN_SET = 2
 const TIE_BREAK_ENTRY_GAMES = 6
 const MIN_TIE_BREAK_POINTS_TO_WIN_SET = 7
 const MIN_TIE_BREAK_POINT_MARGIN = 2
+const DEFAULT_SETS_NEEDED_TO_WIN = 2
 
 /**
  * @param {'teamA' | 'teamB'} team
@@ -110,6 +111,48 @@ function getTieBreakPoints(points) {
 }
 
 /**
+ * @param {unknown} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+function toNonNegativeInteger(value, fallback = 0) {
+  return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
+/**
+ * @param {unknown} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+function toPositiveInteger(value, fallback = 1) {
+  return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+/**
+ * @param {import('./match-state.js').MatchState} state
+ */
+function ensureSetTrackingMetadata(state) {
+  state.setsNeededToWin = toPositiveInteger(
+    state.setsNeededToWin,
+    DEFAULT_SETS_NEEDED_TO_WIN
+  )
+
+  const setWins =
+    state.setsWon && typeof state.setsWon === 'object'
+      ? state.setsWon
+      : { teamA: 0, teamB: 0 }
+
+  state.setsWon = {
+    teamA: toNonNegativeInteger(setWins.teamA, 0),
+    teamB: toNonNegativeInteger(setWins.teamB, 0)
+  }
+
+  if (!Array.isArray(state.setHistory)) {
+    state.setHistory = []
+  }
+}
+
+/**
  * @param {import('./match-state.js').MatchState} state
  * @param {'teamA' | 'teamB'} team
  * @returns {boolean}
@@ -128,10 +171,7 @@ function isTieBreakWon(state, team) {
 /**
  * @param {import('./match-state.js').MatchState} state
  */
-function moveToNextSet(state) {
-  state.currentSetStatus.number += 1
-  state.currentSet = state.currentSetStatus.number
-
+function resetCurrentSetGames(state) {
   state.teamA.games = 0
   state.teamB.games = 0
   state.currentSetStatus.teamAGames = 0
@@ -140,11 +180,61 @@ function moveToNextSet(state) {
 
 /**
  * @param {import('./match-state.js').MatchState} state
- * @param {'teamA' | 'teamB'} team
  */
-function finalizeTieBreakWin(state, team) {
+function moveToNextSet(state) {
+  state.currentSetStatus.number += 1
+  state.currentSet = state.currentSetStatus.number
+  resetCurrentSetGames(state)
+}
+
+/**
+ * @param {import('./match-state.js').MatchState} state
+ * @param {'teamA' | 'teamB'} winningTeam
+ */
+function markMatchAsFinished(state, winningTeam) {
+  state.status = 'finished'
+  state.winnerTeam = winningTeam
+  state.winner = {
+    team: winningTeam,
+    setNumber: state.currentSetStatus.number,
+    setsWon: state.setsWon[winningTeam]
+  }
+}
+
+/**
+ * @param {import('./match-state.js').MatchState} state
+ * @param {'teamA' | 'teamB'} team
+ * @param {{ setCompletedByTieBreak?: boolean }} [options]
+ */
+function handleGameWin(state, team, options = {}) {
+  const setCompletedByTieBreak = options.setCompletedByTieBreak === true
+
+  ensureSetTrackingMetadata(state)
   incrementGameCounter(state, team)
   resetPoints(state)
+
+  if (!setCompletedByTieBreak && !isSetWon(state, team)) {
+    return
+  }
+
+  const completedSetNumber = toPositiveInteger(state.currentSetStatus.number, 1)
+  const completedSetTeamAGames = toNonNegativeInteger(state.currentSetStatus.teamAGames, 0)
+  const completedSetTeamBGames = toNonNegativeInteger(state.currentSetStatus.teamBGames, 0)
+
+  state.setsWon[team] += 1
+  state.setHistory.push({
+    setNumber: completedSetNumber,
+    teamAGames: completedSetTeamAGames,
+    teamBGames: completedSetTeamBGames
+  })
+
+  resetCurrentSetGames(state)
+
+  if (state.setsWon[team] >= state.setsNeededToWin) {
+    markMatchAsFinished(state, team)
+    return
+  }
+
   moveToNextSet(state)
 }
 
@@ -160,7 +250,9 @@ function handleTieBreakPoint(state, team) {
   state[opponentTeam].points = getTieBreakPoints(state[opponentTeam].points)
 
   if (isTieBreakWon(state, team)) {
-    finalizeTieBreakWin(state, team)
+    handleGameWin(state, team, {
+      setCompletedByTieBreak: true
+    })
   }
 }
 
@@ -169,12 +261,7 @@ function handleTieBreakPoint(state, team) {
  * @param {'teamA' | 'teamB'} team
  */
 function finalizeGameWin(state, team) {
-  incrementGameCounter(state, team)
-  resetPoints(state)
-
-  if (isSetWon(state, team)) {
-    moveToNextSet(state)
-  }
+  handleGameWin(state, team)
 }
 
 /**
@@ -325,6 +412,10 @@ function createNextState(state, historyStack) {
  */
 export function addPoint(state, team, historyStack) {
   assertValidTeam(team)
+
+  if (state.status === 'finished') {
+    return deepCopyState(state)
+  }
 
   const nextState = createNextState(state, historyStack)
 
