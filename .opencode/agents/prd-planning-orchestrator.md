@@ -5,8 +5,8 @@ model: openai/gpt-5.3-codex
 reasoningEffort: high
 temperature: 0.1
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
   bash: false
 ---
 
@@ -96,11 +96,11 @@ Allowed tools:
 - `grep`
 - `webfetch`
 - `task` (only for approved delegation)
+- `write`
+- `edit`
 
 Forbidden tools:
 
-- `write`
-- `edit`
 - `bash`
 
 ## Skills
