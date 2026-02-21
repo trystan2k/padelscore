@@ -34,5 +34,17 @@ msgstr "- Team B"
 msgid "game.backHome"
 msgstr "Back to Home"
 
+msgid "game.home"
+msgstr "Home"
+
+msgid "game.finishedLabel"
+msgstr "Game Finished"
+
+msgid "game.winsSuffix"
+msgstr "Wins!"
+
+msgid "game.matchFinished"
+msgstr "Match Finished"
+
 msgid "game.undo"
 msgstr "Undo"

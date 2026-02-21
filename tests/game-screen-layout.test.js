@@ -233,8 +233,39 @@ function findButtonByText(buttons, text) {
   return buttons.find((button) => button.properties.text === text)
 }
 
+function findTextByExactContent(textWidgets, text) {
+  return textWidgets.find((widget) => widget.properties.text === text)
+}
+
 function isNumericText(value) {
   return typeof value === 'string' && /^[0-9]+$/.test(value)
+}
+
+function createAcceptedInteractionTimeSource(
+  startAt = 1000,
+  interactionGapMs = 340,
+  renderStartedOffsetMs = 10,
+  uiUpdatedOffsetMs = 44
+) {
+  let interactionStartMs = startAt
+  let interactionPhase = 0
+
+  return () => {
+    if (interactionPhase === 0) {
+      interactionPhase = 1
+      return interactionStartMs
+    }
+
+    if (interactionPhase === 1) {
+      interactionPhase = 2
+      return interactionStartMs + renderStartedOffsetMs
+    }
+
+    interactionPhase = 0
+    const uiUpdatedAt = interactionStartMs + uiUpdatedOffsetMs
+    interactionStartMs += interactionGapMs
+    return uiUpdatedAt
+  }
 }
 
 function getRenderedScoreTextValues(createdWidgets) {
@@ -359,6 +390,91 @@ test('game screen renders expected bottom control button labels', async () => {
     'game.teamBRemovePoint',
     'game.backHome'
   ])
+})
+
+test('game controls keep minimum 48x48 touch targets in active and finished states', async () => {
+  const screenScenarios = [
+    { width: 390, height: 450 },
+    { width: 390, height: 390 },
+    { width: 454, height: 454 }
+  ]
+
+  for (const scenario of screenScenarios) {
+    await runWithRenderedGamePage(scenario.width, scenario.height, ({ app, createdWidgets, page }) => {
+      const activeButtons = getVisibleWidgets(createdWidgets, 'BUTTON')
+
+      assert.equal(activeButtons.length, 5)
+      activeButtons.forEach((button) => {
+        assert.equal(button.properties.w >= 48, true)
+        assert.equal(button.properties.h >= 48, true)
+      })
+
+      app.globalData.matchState.status = 'finished'
+      app.globalData.matchState.currentSetStatus.teamAGames = 0
+      app.globalData.matchState.currentSetStatus.teamBGames = 6
+
+      page.renderGameScreen()
+
+      const finishedButtons = getVisibleWidgets(createdWidgets, 'BUTTON')
+
+      assert.equal(finishedButtons.length, 1)
+      assert.equal(finishedButtons[0].properties.w >= 48, true)
+      assert.equal(finishedButtons[0].properties.h >= 48, true)
+    })
+  }
+})
+
+test('game control buttons apply primary and secondary style variants', async () => {
+  await runWithRenderedGamePage(390, 450, ({ createdWidgets }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
+    const backHomeButton = findButtonByText(buttons, 'game.backHome')
+
+    assert.equal(addTeamAButton?.properties.normal_color, 0x1eb98c)
+    assert.equal(addTeamAButton?.properties.press_color, 0x1aa07a)
+    assert.equal(addTeamAButton?.properties.color, 0x000000)
+
+    assert.equal(removeTeamAButton?.properties.normal_color, 0x24262b)
+    assert.equal(removeTeamAButton?.properties.press_color, 0x2d3036)
+    assert.equal(removeTeamAButton?.properties.color, 0xff6d78)
+
+    assert.equal(backHomeButton?.properties.normal_color, 0x24262b)
+    assert.equal(backHomeButton?.properties.press_color, 0x2d3036)
+    assert.equal(backHomeButton?.properties.color, 0xffffff)
+  })
+})
+
+test('game finished state renders winner message and home-only navigation control', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    app.globalData.matchState.status = 'finished'
+    app.globalData.matchState.currentSetStatus.teamAGames = 0
+    app.globalData.matchState.currentSetStatus.teamBGames = 6
+    app.globalData.matchState.teamA.games = 0
+    app.globalData.matchState.teamB.games = 6
+
+    page.renderGameScreen()
+
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT')
+    const finishedLabel = findTextByExactContent(textWidgets, 'game.finishedLabel')
+    const winnerText = textWidgets.find(
+      (widget) =>
+        typeof widget.properties.text === 'string' &&
+        widget.properties.text.includes('Team B') &&
+        widget.properties.text.includes('game.winsSuffix')
+    )
+
+    assert.equal(buttons.length, 1)
+    assert.equal(buttons[0].properties.text, 'game.home')
+    assert.equal(Boolean(findButtonByText(buttons, 'game.teamAAddPoint')), false)
+    assert.equal(Boolean(findButtonByText(buttons, 'game.teamBAddPoint')), false)
+    assert.equal(Boolean(findButtonByText(buttons, 'game.teamARemovePoint')), false)
+    assert.equal(Boolean(findButtonByText(buttons, 'game.teamBRemovePoint')), false)
+    assert.equal(Boolean(finishedLabel), true)
+    assert.equal(Boolean(winnerText), true)
+    assert.equal(winnerText?.properties.color, 0x1eb98c)
+  })
 })
 
 test('game screen controls call team-specific handlers for add and remove', async () => {
@@ -567,12 +683,14 @@ test('game lifecycle auto-save is a no-op when runtime match state is invalid', 
 })
 
 test('team-specific remove buttons remove latest point scored by selected team', async () => {
-  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets }) => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
     const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
     const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
     const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
     const removeTeamBButton = findButtonByText(buttons, 'game.teamBRemovePoint')
+
+    page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
 
     assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
 
@@ -605,9 +723,11 @@ test('team-specific remove buttons remove latest point scored by selected team',
 })
 
 test('game controls update visible game and set scores after winning a game', async () => {
-  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets }) => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
     const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+    page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
 
     assertRenderedScoresMatchState(createdWidgets, app.globalData.matchState)
 
@@ -673,6 +793,112 @@ test('game scoring updates runtime state, rerenders UI, and then persists', asyn
   }
 })
 
+test('game scoring debounce ignores rapid repeated taps inside 300ms window', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const timeSamples = [1000, 1012, 1040, 1200]
+    let updateCount = 0
+    let renderCount = 0
+    let saveCount = 0
+
+    const originalUpdateRuntimeMatchState = page.updateRuntimeMatchState.bind(page)
+    const originalRenderGameScreen = page.renderGameScreen.bind(page)
+    const originalSaveCurrentRuntimeState = page.saveCurrentRuntimeState.bind(page)
+
+    page.getCurrentTimeMs = () => timeSamples.shift()
+    page.updateRuntimeMatchState = (nextState) => {
+      updateCount += 1
+      return originalUpdateRuntimeMatchState(nextState)
+    }
+    page.renderGameScreen = () => {
+      renderCount += 1
+      return originalRenderGameScreen()
+    }
+    page.saveCurrentRuntimeState = () => {
+      saveCount += 1
+      return originalSaveCurrentRuntimeState()
+    }
+
+    addTeamAButton.properties.click_func()
+    addTeamAButton.properties.click_func()
+
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
+    assert.equal(app.globalData.matchHistory.size(), 1)
+    assert.equal(updateCount, 1)
+    assert.equal(renderCount, 1)
+    assert.equal(saveCount, 1)
+  })
+})
+
+test('game scoring debounce applies across scoring controls and accepts taps after window', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+    const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
+    const timeSamples = [1000, 1010, 1020, 1200, 1400, 1410, 1420]
+
+    page.getCurrentTimeMs = () => timeSamples.shift()
+
+    addTeamAButton.properties.click_func()
+    removeTeamAButton.properties.click_func()
+    removeTeamAButton.properties.click_func()
+
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.LOVE)
+    assert.equal(app.globalData.matchHistory.size(), 0)
+  })
+})
+
+test('game scoring debounce does not block immediate back-home navigation', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const originalHmApp = globalThis.hmApp
+  const interactionOrder = []
+
+  globalThis.settingsStorage = {
+    setItem() {
+      interactionOrder.push('save')
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  globalThis.hmApp = {
+    goBack() {
+      interactionOrder.push('goBack')
+    }
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, ({ createdWidgets, page }) => {
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+      const backHomeButton = findButtonByText(buttons, 'game.backHome')
+      const timeSamples = [1000, 1012, 1044]
+
+      page.getCurrentTimeMs = () => timeSamples.shift()
+
+      addTeamAButton.properties.click_func()
+      backHomeButton.properties.click_func()
+
+      assert.deepEqual(interactionOrder, ['save', 'save', 'goBack'])
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
 test('game interaction performance metrics cover realistic add/remove flow under target budget', async () => {
   await runWithRenderedGamePage(390, 450, ({ createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
@@ -728,6 +954,8 @@ test('game interaction performance metrics flag over-budget high-history team re
     const addTeamBButton = findButtonByText(buttons, 'game.teamBAddPoint')
     const removeTeamAButton = findButtonByText(buttons, 'game.teamARemovePoint')
     const highHistoryInteractionCount = 48
+
+    page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
 
     for (let index = 0; index < highHistoryInteractionCount; index += 1) {
       const addButton = index % 2 === 0 ? addTeamAButton : addTeamBButton

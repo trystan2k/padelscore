@@ -9,10 +9,15 @@ import { loadState, saveState } from '../utils/storage.js'
 const GAME_TOKENS = Object.freeze({
   colors: {
     accent: 0x1eb98c,
+    accentPressed: 0x1aa07a,
     background: 0x000000,
     buttonText: 0x000000,
-    cardBackground: 0x111111,
-    mutedText: 0xb2b2b2,
+    buttonSecondary: 0x24262b,
+    buttonSecondaryPressed: 0x2d3036,
+    buttonSecondaryText: 0xffffff,
+    cardBackground: 0x111318,
+    dangerText: 0xff6d78,
+    mutedText: 0x7d8289,
     text: 0xffffff
   },
   fontScale: {
@@ -35,6 +40,7 @@ const GAME_TOKENS = Object.freeze({
 })
 
 const INTERACTION_LATENCY_TARGET_MS = 100
+const SCORING_DEBOUNCE_WINDOW_MS = 300
 
 function cloneMatchState(matchState) {
   try {
@@ -137,6 +143,38 @@ function isSameMatchState(leftState, rightState) {
   }
 }
 
+function getLeadingTeamId(viewModel) {
+  if (!isRecord(viewModel) || !isRecord(viewModel.currentSetGames)) {
+    return null
+  }
+
+  if (viewModel.currentSetGames.teamA > viewModel.currentSetGames.teamB) {
+    return 'teamA'
+  }
+
+  if (viewModel.currentSetGames.teamB > viewModel.currentSetGames.teamA) {
+    return 'teamB'
+  }
+
+  return null
+}
+
+function getFinishedMessage(viewModel) {
+  const leadingTeamId = getLeadingTeamId(viewModel)
+
+  if (leadingTeamId === 'teamA' || leadingTeamId === 'teamB') {
+    const winningTeam = viewModel[leadingTeamId]
+    const winningLabel =
+      isRecord(winningTeam) && typeof winningTeam.label === 'string'
+        ? winningTeam.label
+        : gettext('game.matchFinished')
+
+    return `${winningLabel} ${gettext('game.winsSuffix')}`
+  }
+
+  return gettext('game.matchFinished')
+}
+
 function getScoringTeamForTransition(previousState, nextState) {
   const nextStateAfterTeamA = addPoint(previousState, 'teamA')
   if (isSameMatchState(nextStateAfterTeamA, nextState)) {
@@ -177,6 +215,7 @@ function restoreHistorySnapshots(historyStack, snapshots) {
 Page({
   onInit() {
     this.widgets = []
+    this.lastAcceptedScoringInteractionAt = null
     this.ensureRuntimeState()
   },
 
@@ -494,12 +533,32 @@ Page({
     this.saveCurrentRuntimeState()
   },
 
-  executeScoringAction(action) {
+  isScoringInteractionDebounced(interactionStartedAt) {
+    if (
+      !Number.isFinite(interactionStartedAt) ||
+      !Number.isFinite(this.lastAcceptedScoringInteractionAt)
+    ) {
+      return false
+    }
+
+    const elapsedMs = interactionStartedAt - this.lastAcceptedScoringInteractionAt
+
+    return elapsedMs >= 0 && elapsedMs < SCORING_DEBOUNCE_WINDOW_MS
+  },
+
+  executeScoringAction(action, options = {}) {
     if (typeof action !== 'function') {
       return
     }
 
+    const shouldDebounceScoringInput =
+      isRecord(options) && options.debounceScoringInput === true
     const interactionStartedAt = this.getCurrentTimeMs()
+
+    if (shouldDebounceScoringInput && this.isScoringInteractionDebounced(interactionStartedAt)) {
+      return
+    }
+
     const previousState = cloneMatchState(this.getRuntimeMatchState())
     const nextState = action()
 
@@ -507,19 +566,29 @@ Page({
       return
     }
 
+    if (shouldDebounceScoringInput) {
+      this.lastAcceptedScoringInteractionAt = interactionStartedAt
+    }
+
     this.persistAndRender(nextState, interactionStartedAt)
   },
 
   handleAddPointForTeam(team) {
-    this.executeScoringAction(() => this.addPointForTeam(team))
+    this.executeScoringAction(() => this.addPointForTeam(team), {
+      debounceScoringInput: true
+    })
   },
 
   handleRemovePoint() {
-    this.executeScoringAction(() => this.removePoint())
+    this.executeScoringAction(() => this.removePoint(), {
+      debounceScoringInput: true
+    })
   },
 
   handleRemovePointForTeam(team) {
-    this.executeScoringAction(() => this.removePointForTeam(team))
+    this.executeScoringAction(() => this.removePointForTeam(team), {
+      debounceScoringInput: true
+    })
   },
 
   renderGameScreen() {
@@ -529,6 +598,8 @@ Page({
 
     const matchState = this.getRuntimeMatchState()
     const viewModel = createScoreViewModel(matchState)
+    const isMatchFinished = viewModel.status === 'finished'
+    const leadingTeamId = getLeadingTeamId(viewModel)
     const { width, height } = this.getScreenMetrics()
     const isRoundScreen = Math.abs(width - height) <= Math.round(width * 0.04)
 
@@ -567,8 +638,8 @@ Page({
     )
     const controlsColumnGap = Math.round(width * GAME_TOKENS.spacingScale.controlsColumnGap)
     const controlsRowGap = Math.round(height * GAME_TOKENS.spacingScale.controlsRowGap)
-    const buttonHeight = clamp(Math.round(height * 0.104), 46, 58)
-    const controlsRows = 3
+    const buttonHeight = clamp(Math.round(height * 0.104), 48, 58)
+    const controlsRows = isMatchFinished ? 1 : 3
     const baseControlsBottomInset = Math.round(height * GAME_TOKENS.spacingScale.controlsBottom)
     const controlsBottomInset = isRoundScreen
       ? Math.max(baseControlsBottomInset, Math.round(height * 0.11))
@@ -621,7 +692,24 @@ Page({
     const pointsLabelHeight = Math.round(pointsSectionHeight * 0.3)
     const pointsValueY = pointsSectionY + pointsLabelHeight
     const pointsValueHeight = pointsSectionHeight - pointsLabelHeight
-    const pointsValueTextSize = clamp(Math.round(width * 0.128), 44, 64)
+    const pointsValueTextSize = isMatchFinished
+      ? clamp(Math.round(width * 0.114), 36, 56)
+      : clamp(Math.round(width * 0.128), 44, 64)
+    const pointsLabelText = isMatchFinished ? gettext('game.finishedLabel') : gettext('game.title')
+    const pointsValueText = isMatchFinished
+      ? getFinishedMessage(viewModel)
+      : `${viewModel.teamA.points} - ${viewModel.teamB.points}`
+    const homeButtonWidth = isMatchFinished
+      ? clamp(Math.round(width * 0.42), 140, backHomeButtonWidth)
+      : backHomeButtonWidth
+    const homeButtonX = isMatchFinished ? Math.round((width - homeButtonWidth) / 2) : leftButtonX
+    const homeButtonY = isMatchFinished
+      ? clamp(
+          pointsValueY + Math.round(pointsValueHeight * 0.58),
+          pointsValueY,
+          height - controlsBottomInset - buttonHeight
+        )
+      : backHomeButtonY
 
     this.clearWidgets()
 
@@ -647,7 +735,7 @@ Page({
       y: setSectionY,
       w: setTeamWidth,
       h: setLabelHeight,
-      color: GAME_TOKENS.colors.accent,
+      color: GAME_TOKENS.colors.mutedText,
       text: viewModel.teamA.label,
       text_size: Math.round(width * GAME_TOKENS.fontScale.setTeam),
       align_h: hmUI.align.CENTER_H,
@@ -659,7 +747,7 @@ Page({
       y: setSectionY,
       w: setTeamWidth,
       h: setLabelHeight,
-      color: GAME_TOKENS.colors.accent,
+      color: GAME_TOKENS.colors.mutedText,
       text: viewModel.teamB.label,
       text_size: Math.round(width * GAME_TOKENS.fontScale.setTeam),
       align_h: hmUI.align.CENTER_H,
@@ -671,7 +759,10 @@ Page({
       y: setScoreY,
       w: setTeamWidth,
       h: setScoreHeight,
-      color: GAME_TOKENS.colors.text,
+      color:
+        leadingTeamId === 'teamB' && isMatchFinished
+          ? GAME_TOKENS.colors.mutedText
+          : GAME_TOKENS.colors.accent,
       text: String(viewModel.currentSetGames.teamA),
       text_size: Math.round(width * GAME_TOKENS.fontScale.setScore),
       align_h: hmUI.align.CENTER_H,
@@ -683,7 +774,10 @@ Page({
       y: setScoreY,
       w: setTeamWidth,
       h: setScoreHeight,
-      color: GAME_TOKENS.colors.text,
+      color:
+        leadingTeamId === 'teamA' && isMatchFinished
+          ? GAME_TOKENS.colors.mutedText
+          : GAME_TOKENS.colors.accent,
       text: String(viewModel.currentSetGames.teamB),
       text_size: Math.round(width * GAME_TOKENS.fontScale.setScore),
       align_h: hmUI.align.CENTER_H,
@@ -704,8 +798,8 @@ Page({
       y: pointsSectionY,
       w: pointsSectionWidth,
       h: pointsLabelHeight,
-      color: GAME_TOKENS.colors.accent,
-      text: gettext('game.title'),
+      color: GAME_TOKENS.colors.mutedText,
+      text: pointsLabelText,
       text_size: Math.round(width * GAME_TOKENS.fontScale.label),
       align_h: hmUI.align.CENTER_H,
       align_v: hmUI.align.CENTER_V
@@ -716,80 +810,82 @@ Page({
       y: pointsValueY,
       w: pointsSectionWidth,
       h: pointsValueHeight,
-      color: GAME_TOKENS.colors.text,
-      text: `${viewModel.teamA.points} - ${viewModel.teamB.points}`,
+      color: isMatchFinished ? GAME_TOKENS.colors.accent : GAME_TOKENS.colors.text,
+      text: pointsValueText,
       text_size: pointsValueTextSize,
       align_h: hmUI.align.CENTER_H,
       align_v: hmUI.align.CENTER_V
     })
 
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: leftButtonX,
-      y: addButtonsY,
-      w: buttonWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
-      normal_color: GAME_TOKENS.colors.accent,
-      press_color: GAME_TOKENS.colors.accent,
-      color: GAME_TOKENS.colors.buttonText,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-      text: gettext('game.teamAAddPoint'),
-      click_func: () => this.handleAddPointForTeam('teamA')
-    })
+    if (!isMatchFinished) {
+      this.createWidget(hmUI.widget.BUTTON, {
+        x: leftButtonX,
+        y: addButtonsY,
+        w: buttonWidth,
+        h: buttonHeight,
+        radius: Math.round(buttonHeight / 2),
+        normal_color: GAME_TOKENS.colors.accent,
+        press_color: GAME_TOKENS.colors.accentPressed,
+        color: GAME_TOKENS.colors.buttonText,
+        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
+        text: gettext('game.teamAAddPoint'),
+        click_func: () => this.handleAddPointForTeam('teamA')
+      })
+
+      this.createWidget(hmUI.widget.BUTTON, {
+        x: rightButtonX,
+        y: addButtonsY,
+        w: buttonWidth,
+        h: buttonHeight,
+        radius: Math.round(buttonHeight / 2),
+        normal_color: GAME_TOKENS.colors.accent,
+        press_color: GAME_TOKENS.colors.accentPressed,
+        color: GAME_TOKENS.colors.buttonText,
+        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
+        text: gettext('game.teamBAddPoint'),
+        click_func: () => this.handleAddPointForTeam('teamB')
+      })
+
+      this.createWidget(hmUI.widget.BUTTON, {
+        x: leftButtonX,
+        y: removeButtonsY,
+        w: buttonWidth,
+        h: buttonHeight,
+        radius: Math.round(buttonHeight / 2),
+        normal_color: GAME_TOKENS.colors.buttonSecondary,
+        press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
+        color: GAME_TOKENS.colors.dangerText,
+        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
+        text: gettext('game.teamARemovePoint'),
+        click_func: () => this.handleRemovePointForTeam('teamA')
+      })
+
+      this.createWidget(hmUI.widget.BUTTON, {
+        x: rightButtonX,
+        y: removeButtonsY,
+        w: buttonWidth,
+        h: buttonHeight,
+        radius: Math.round(buttonHeight / 2),
+        normal_color: GAME_TOKENS.colors.buttonSecondary,
+        press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
+        color: GAME_TOKENS.colors.dangerText,
+        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
+        text: gettext('game.teamBRemovePoint'),
+        click_func: () => this.handleRemovePointForTeam('teamB')
+      })
+    }
 
     this.createWidget(hmUI.widget.BUTTON, {
-      x: rightButtonX,
-      y: addButtonsY,
-      w: buttonWidth,
+      x: homeButtonX,
+      y: homeButtonY,
+      w: homeButtonWidth,
       h: buttonHeight,
       radius: Math.round(buttonHeight / 2),
-      normal_color: GAME_TOKENS.colors.accent,
-      press_color: GAME_TOKENS.colors.accent,
-      color: GAME_TOKENS.colors.buttonText,
+      normal_color: GAME_TOKENS.colors.buttonSecondary,
+      press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
+      color: GAME_TOKENS.colors.buttonSecondaryText,
       text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-      text: gettext('game.teamBAddPoint'),
-      click_func: () => this.handleAddPointForTeam('teamB')
-    })
-
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: leftButtonX,
-      y: removeButtonsY,
-      w: buttonWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
-      normal_color: GAME_TOKENS.colors.accent,
-      press_color: GAME_TOKENS.colors.accent,
-      color: GAME_TOKENS.colors.buttonText,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-      text: gettext('game.teamARemovePoint'),
-      click_func: () => this.handleRemovePointForTeam('teamA')
-    })
-
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: rightButtonX,
-      y: removeButtonsY,
-      w: buttonWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
-      normal_color: GAME_TOKENS.colors.accent,
-      press_color: GAME_TOKENS.colors.accent,
-      color: GAME_TOKENS.colors.buttonText,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-      text: gettext('game.teamBRemovePoint'),
-      click_func: () => this.handleRemovePointForTeam('teamB')
-    })
-
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: leftButtonX,
-      y: backHomeButtonY,
-      w: backHomeButtonWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
-      normal_color: GAME_TOKENS.colors.accent,
-      press_color: GAME_TOKENS.colors.accent,
-      color: GAME_TOKENS.colors.buttonText,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-      text: gettext('game.backHome'),
+      text: isMatchFinished ? gettext('game.home') : gettext('game.backHome'),
       click_func: () => this.handleBackToHome()
     })
   }
