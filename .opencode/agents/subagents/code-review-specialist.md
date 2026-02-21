@@ -1,7 +1,7 @@
 ---
 description: Expert code review agent that evaluates task implementations for correctness, quality, best practices, and improvement opportunities using stack-specific skills.
 mode: subagent
-model: openai/gpt-5.3-codex
+model: zai-coding-plan/glm-5
 reasoningEffort: high
 temperature: 0
 tools:

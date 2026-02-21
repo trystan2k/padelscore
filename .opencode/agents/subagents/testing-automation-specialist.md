@@ -1,7 +1,7 @@
 ---
 description: Expert test automation agent for unit, integration, and E2E testing using stack-specific best practices and project conventions.
 mode: subagent
-model: openai/gpt-5.3-codex
+model: zai-coding-plan/glm-5
 reasoningEffort: high
 temperature: 0
 tools:
