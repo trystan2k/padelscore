@@ -4,8 +4,11 @@ import test from 'node:test'
 
 import { createScoreViewModel } from '../page/score-view-model.js'
 import { createInitialMatchState } from '../utils/match-state.js'
+import { matchStorage, ZeppOsStorageAdapter } from '../utils/match-storage.js'
+import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
+import { MATCH_STATE_STORAGE_KEY } from '../utils/storage.js'
 
 let gamePageImportCounter = 0
 
@@ -181,6 +184,7 @@ async function runWithRenderedGamePage(width, height, runScenario) {
   const originalHmUI = globalThis.hmUI
   const originalHmSetting = globalThis.hmSetting
   const originalGetApp = globalThis.getApp
+  const originalMatchStorageAdapter = matchStorage.adapter
 
   const { hmUI, createdWidgets } = createHmUiRecorder()
   const app = {
@@ -197,6 +201,7 @@ async function runWithRenderedGamePage(width, height, runScenario) {
     }
   }
   globalThis.getApp = () => app
+  matchStorage.adapter = new ZeppOsStorageAdapter()
 
   try {
     const definition = await loadGamePageDefinition()
@@ -207,13 +212,19 @@ async function runWithRenderedGamePage(width, height, runScenario) {
     page.isSessionAccessGranted = true
     page.build()
 
-    return runScenario({
+    const scenarioResult = await runScenario({
       app,
       createdWidgets,
       page,
       width,
       height
     })
+
+    if (typeof page.waitForPersistenceIdle === 'function') {
+      await page.waitForPersistenceIdle()
+    }
+
+    return scenarioResult
   } finally {
     if (typeof originalHmUI === 'undefined') {
       delete globalThis.hmUI
@@ -232,6 +243,8 @@ async function runWithRenderedGamePage(width, height, runScenario) {
     } else {
       globalThis.getApp = originalGetApp
     }
+
+    matchStorage.adapter = originalMatchStorageAdapter
   }
 }
 
@@ -245,6 +258,12 @@ function findTextByExactContent(textWidgets, text) {
 
 function isNumericText(value) {
   return typeof value === 'string' && /^[0-9]+$/.test(value)
+}
+
+function getPersistenceWritesByKey(writes, storageKey) {
+  return writes
+    .filter((entry) => entry.key === storageKey)
+    .map((entry) => entry.value)
 }
 
 function createAcceptedInteractionTimeSource(
@@ -525,12 +544,12 @@ test('game back-home control saves state before navigating with goBack', async (
   const originalSettingsStorage = globalThis.settingsStorage
   const originalHmApp = globalThis.hmApp
   const callOrder = []
-  let persistedStatePayload = null
+  const persistenceWrites = []
 
   globalThis.settingsStorage = {
-    setItem(_key, value) {
-      callOrder.push('save')
-      persistedStatePayload = value
+    setItem(key, value) {
+      callOrder.push(`save:${key}`)
+      persistenceWrites.push({ key, value })
     },
     getItem() {
       return null
@@ -556,9 +575,20 @@ test('game back-home control saves state before navigating with goBack', async (
 
       backHomeButton.properties.click_func()
 
-      assert.equal(typeof persistedStatePayload, 'string')
-      assert.deepEqual(JSON.parse(persistedStatePayload), app.globalData.matchState)
-      assert.deepEqual(callOrder, ['save', 'goBack'])
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+      assert.deepEqual(JSON.parse(legacyWrites[0]), app.globalData.matchState)
+      assert.equal(callOrder[0], `save:${MATCH_STATE_STORAGE_KEY}`)
+      assert.equal(callOrder.includes('goBack'), true)
     })
   } finally {
     if (typeof originalSettingsStorage === 'undefined') {
@@ -579,10 +609,12 @@ test('game back-home control falls back to home route when goBack is unavailable
   const originalSettingsStorage = globalThis.settingsStorage
   const originalHmApp = globalThis.hmApp
   const callOrder = []
+  const persistenceWrites = []
 
   globalThis.settingsStorage = {
-    setItem() {
-      callOrder.push('save')
+    setItem(key, value) {
+      callOrder.push(`save:${key}`)
+      persistenceWrites.push({ key, value })
     },
     getItem() {
       return null
@@ -605,7 +637,19 @@ test('game back-home control falls back to home route when goBack is unavailable
 
       backHomeButton.properties.click_func()
 
-      assert.deepEqual(callOrder, ['save', 'goto:page/index'])
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+      assert.equal(callOrder[0], `save:${MATCH_STATE_STORAGE_KEY}`)
+      assert.equal(callOrder.includes('goto:page/index'), true)
     })
   } finally {
     if (typeof originalSettingsStorage === 'undefined') {
@@ -624,11 +668,11 @@ test('game back-home control falls back to home route when goBack is unavailable
 
 test('game lifecycle auto-save persists runtime state on hide and destroy', async () => {
   const originalSettingsStorage = globalThis.settingsStorage
-  const persistedPayloads = []
+  const persistenceWrites = []
 
   globalThis.settingsStorage = {
-    setItem(_key, value) {
-      persistedPayloads.push(value)
+    setItem(key, value) {
+      persistenceWrites.push({ key, value })
     },
     getItem() {
       return null
@@ -637,13 +681,199 @@ test('game lifecycle auto-save persists runtime state on hide and destroy', asyn
   }
 
   try {
-    await runWithRenderedGamePage(390, 450, ({ app, page }) => {
+    await runWithRenderedGamePage(390, 450, async ({ app, page }) => {
       page.onHide()
       page.onDestroy()
 
-      assert.equal(persistedPayloads.length, 2)
-      assert.deepEqual(JSON.parse(persistedPayloads[0]), app.globalData.matchState)
-      assert.deepEqual(JSON.parse(persistedPayloads[1]), app.globalData.matchState)
+      await page.waitForPersistenceIdle()
+
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+      assert.deepEqual(JSON.parse(legacyWrites[0]), app.globalData.matchState)
+
+      const persistedActiveSession = JSON.parse(activeSessionWrites[0])
+      assert.equal(persistedActiveSession.status, 'active')
+      assert.equal(persistedActiveSession.currentSet.number, app.globalData.matchState.currentSet)
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
+})
+
+test('game persistence debounce coalesces repeated save requests into one write cycle', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const persistenceWrites = []
+
+  globalThis.settingsStorage = {
+    setItem(key, value) {
+      persistenceWrites.push({ key, value })
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, async ({ page }) => {
+      page.persistenceDebounceWindowMs = 0
+
+      page.saveCurrentRuntimeState()
+      page.saveCurrentRuntimeState()
+      page.saveCurrentRuntimeState()
+
+      await page.waitForPersistenceIdle()
+
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
+})
+
+test('game persistence queue keeps latest state when force saves overlap', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const persistenceWrites = []
+
+  globalThis.settingsStorage = {
+    setItem(key, value) {
+      persistenceWrites.push({ key, value })
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, async ({ app, page }) => {
+      let releaseFirstPersistenceRun = null
+      let resolveFirstPersistenceStarted = null
+      const firstPersistenceStarted = new Promise((resolve) => {
+        resolveFirstPersistenceStarted = resolve
+      })
+
+      const originalPersistRuntimeStateSnapshot =
+        page.persistRuntimeStateSnapshot.bind(page)
+      let isFirstPersistenceRun = true
+
+      page.persistRuntimeStateSnapshot = async (runtimeState, signature) => {
+        if (isFirstPersistenceRun) {
+          isFirstPersistenceRun = false
+
+          await new Promise((resolve) => {
+            releaseFirstPersistenceRun = resolve
+            resolveFirstPersistenceStarted()
+          })
+        }
+
+        return originalPersistRuntimeStateSnapshot(runtimeState, signature)
+      }
+
+      page.saveCurrentRuntimeState({ force: true })
+      await firstPersistenceStarted
+
+      app.globalData.matchState.teamA.points = SCORE_POINTS.FIFTEEN
+      page.saveCurrentRuntimeState({ force: true })
+
+      app.globalData.matchState.teamA.points = SCORE_POINTS.THIRTY
+      page.saveCurrentRuntimeState({ force: true })
+
+      releaseFirstPersistenceRun()
+      await page.waitForPersistenceIdle()
+
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      ).map((payload) => JSON.parse(payload))
+
+      assert.equal(legacyWrites.length, 2)
+      assert.equal(legacyWrites[0].teamA.points, SCORE_POINTS.LOVE)
+      assert.equal(legacyWrites[1].teamA.points, SCORE_POINTS.THIRTY)
+      assert.deepEqual(legacyWrites[1], app.globalData.matchState)
+    })
+  } finally {
+    if (typeof originalSettingsStorage === 'undefined') {
+      delete globalThis.settingsStorage
+    } else {
+      globalThis.settingsStorage = originalSettingsStorage
+    }
+  }
+})
+
+test('game lifecycle flush persists latest scoring state before debounce delay elapses', async () => {
+  const originalSettingsStorage = globalThis.settingsStorage
+  const persistenceWrites = []
+
+  globalThis.settingsStorage = {
+    setItem(key, value) {
+      persistenceWrites.push({ key, value })
+    },
+    getItem() {
+      return null
+    },
+    removeItem() {}
+  }
+
+  try {
+    await runWithRenderedGamePage(390, 450, async ({ app, createdWidgets, page }) => {
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
+
+      page.persistenceDebounceWindowMs = 500
+      page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
+
+      addTeamAButton.properties.click_func()
+      page.onHide()
+      page.onDestroy()
+
+      await page.waitForPersistenceIdle()
+
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+
+      const persistedRuntimeState = JSON.parse(legacyWrites[0])
+      assert.equal(persistedRuntimeState.teamA.points, SCORE_POINTS.FIFTEEN)
+      assert.deepEqual(persistedRuntimeState, app.globalData.matchState)
+
+      const persistedActiveSession = JSON.parse(activeSessionWrites[0])
+      assert.equal(persistedActiveSession.currentGame.points.teamA, SCORE_POINTS.FIFTEEN)
     })
   } finally {
     if (typeof originalSettingsStorage === 'undefined') {
@@ -752,12 +982,12 @@ test('game controls update visible game and set scores after winning a game', as
 test('game scoring updates runtime state, rerenders UI, and then persists', async () => {
   const originalSettingsStorage = globalThis.settingsStorage
   const interactionEvents = []
-  let persistedStatePayload = null
+  const persistenceWrites = []
 
   globalThis.settingsStorage = {
-    setItem(_key, value) {
-      interactionEvents.push('save')
-      persistedStatePayload = value
+    setItem(key, value) {
+      interactionEvents.push(`save:${key}`)
+      persistenceWrites.push({ key, value })
     },
     getItem() {
       return null
@@ -766,12 +996,14 @@ test('game scoring updates runtime state, rerenders UI, and then persists', asyn
   }
 
   try {
-    await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    await runWithRenderedGamePage(390, 450, async ({ app, createdWidgets, page }) => {
       const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
       const addTeamAButton = findButtonByText(buttons, 'game.teamAAddPoint')
 
       const originalUpdateRuntimeMatchState = page.updateRuntimeMatchState.bind(page)
       const originalRenderGameScreen = page.renderGameScreen.bind(page)
+
+      page.persistenceDebounceWindowMs = 0
 
       page.updateRuntimeMatchState = (nextState) => {
         interactionEvents.push('update')
@@ -785,10 +1017,31 @@ test('game scoring updates runtime state, rerenders UI, and then persists', asyn
 
       addTeamAButton.properties.click_func()
 
+      await page.waitForPersistenceIdle()
+
+      const legacyWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        MATCH_STATE_STORAGE_KEY
+      )
+      const activeSessionWrites = getPersistenceWritesByKey(
+        persistenceWrites,
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
+
       assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
-      assert.equal(typeof persistedStatePayload, 'string')
-      assert.deepEqual(JSON.parse(persistedStatePayload), app.globalData.matchState)
-      assert.deepEqual(interactionEvents.slice(-3), ['update', 'render', 'save'])
+      assert.equal(legacyWrites.length, 1)
+      assert.equal(activeSessionWrites.length, 1)
+      assert.deepEqual(JSON.parse(legacyWrites[0]), app.globalData.matchState)
+      assert.equal(
+        interactionEvents.indexOf('update') <
+          interactionEvents.indexOf(`save:${MATCH_STATE_STORAGE_KEY}`),
+        true
+      )
+      assert.equal(
+        interactionEvents.indexOf('render') <
+          interactionEvents.indexOf(`save:${MATCH_STATE_STORAGE_KEY}`),
+        true
+      )
     })
   } finally {
     if (typeof originalSettingsStorage === 'undefined') {

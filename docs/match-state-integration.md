@@ -13,11 +13,19 @@ This document defines the integration contract for the MatchState lifecycle: whe
 | Lifecycle moment | API call | Why it happens | Expected behavior |
 | --- | --- | --- | --- |
 | App/page startup (home/game init) | `loadMatchState()` | Restore last active session after app relaunch/background | Return valid `MatchState` or `null`; invalid payloads fail safe (`null`) |
-| After each scoring mutation | `saveMatchState(state)` | Prevent point loss from interruption between taps | Persist newest in-memory state snapshot |
+| After each scoring mutation | `saveState(state)` + `saveMatchState(state)` (debounced) | Prevent point loss from interruption between taps while avoiding burst writes | Queue immediate persistence request; coalesce rapid requests; latest snapshot wins |
 | After set completion | `saveMatchState(state)` | Preserve `setsWon`, `setHistory`, and next-set reset | Persist immediately after set bookkeeping |
 | After match completion | `saveMatchState(state)` | Preserve finished status for summary/resume rules | Persist with `status: 'finished'` before navigation |
-| Lifecycle interruption (`onHide`, fallback `onDestroy`) | `saveMatchState(state)` | Cover background/suspend/exit paths | Save latest valid runtime state idempotently |
+| Lifecycle interruption (`onHide`, fallback `onDestroy`) | Forced flush via persistence coordinator | Cover background/suspend/exit paths | Cancel debounce delay and persist latest pending/runtime snapshot once (dedupe hide/destroy bursts) |
 | New match flow / explicit reset | `clearMatchState()` | Remove stale session so setup starts fresh | Delete `ACTIVE_MATCH_SESSION` (or write empty fallback) |
+
+## Trigger Matrix (Task 14)
+
+- Scoring actions (`add`/`remove`) enqueue persistence immediately after runtime state mutation and render.
+- Queue window is debounced at `180ms` to reduce duplicate writes during burst interactions.
+- Lifecycle exits (`onHide`, `onDestroy`, back-home action) force-flush pending snapshots without waiting for debounce.
+- Writes are serialized (single in-flight save at a time) and use latest-state-wins replay if a newer snapshot arrives mid-save.
+- Runtime persistence is write-through during migration: legacy `saveState` stays active and schema `saveMatchState` is updated in the same coordinator pass.
 
 ## Save/Load/Clear Rules
 
@@ -28,9 +36,9 @@ Save after every state transition that changes gameplay:
 1. point added/removed
 2. set completed
 3. match marked finished
-4. page lifecycle hide/destroy
+4. page lifecycle hide/destroy (forced flush path)
 
-Do not defer save until navigation only. Navigation saves are a safety net, not the primary persistence trigger.
+Do not defer save until navigation only. Navigation saves are a forced flush safety net, not the primary persistence trigger.
 
 ### Load (`loadMatchState`)
 
@@ -130,3 +138,4 @@ Start new match/reset -> clearMatchState() -> create fresh runtime state
 - Current pages still use legacy `saveState/loadState/clearState` in `utils/storage.js`.
 - Migration to `saveMatchState/loadMatchState/clearMatchState` should be done in Task 12+ to avoid mixed contracts.
 - During transition, keep behavior equivalent: fail-safe loads, idempotent saves, explicit clears.
+- Task 14 introduced dedupe for overlapping lifecycle callbacks (`onHide` then `onDestroy`) so only one final state snapshot is committed when state did not change.
