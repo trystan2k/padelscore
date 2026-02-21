@@ -4,8 +4,12 @@ import { createScoreViewModel } from './score-view-model.js'
 import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
-import { loadMatchState } from '../utils/match-storage.js'
-import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
+import { loadMatchState, saveMatchState } from '../utils/match-storage.js'
+import {
+  MATCH_STATUS as PERSISTED_MATCH_STATUS,
+  createDefaultMatchState as createDefaultPersistedMatchState,
+  isMatchState as isPersistedMatchState
+} from '../utils/match-state-schema.js'
 import { loadState, saveState } from '../utils/storage.js'
 
 const GAME_TOKENS = Object.freeze({
@@ -43,6 +47,9 @@ const GAME_TOKENS = Object.freeze({
 
 const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
+const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
+const PERSISTED_ADVANTAGE_POINT_VALUE = 50
+const PERSISTED_GAME_POINT_VALUE = 60
 
 function cloneMatchState(matchState) {
   try {
@@ -100,6 +107,87 @@ function isPersistedMatchStateActive(matchState) {
     isRecord(matchState) &&
     matchState.status === PERSISTED_MATCH_STATUS.ACTIVE
   )
+}
+
+function toNonNegativeInteger(value, fallback = 0) {
+  return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
+function toPositiveInteger(value, fallback = 1) {
+  return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+function toPersistedPointValue(value) {
+  if (Number.isInteger(value) && value >= 0) {
+    return value
+  }
+
+  if (value === 'Ad') {
+    return PERSISTED_ADVANTAGE_POINT_VALUE
+  }
+
+  if (value === 'Game') {
+    return PERSISTED_GAME_POINT_VALUE
+  }
+
+  return 0
+}
+
+function cloneSetHistory(setHistory) {
+  if (!Array.isArray(setHistory)) {
+    return []
+  }
+
+  return setHistory.map((entry) => ({
+    setNumber: toPositiveInteger(entry?.setNumber, 1),
+    teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
+    teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
+  }))
+}
+
+function createPersistedMatchStateSnapshot(runtimeMatchState, basePersistedMatchState) {
+  if (!isValidRuntimeMatchState(runtimeMatchState)) {
+    return null
+  }
+
+  const baseState = isPersistedMatchState(basePersistedMatchState)
+    ? cloneMatchState(basePersistedMatchState)
+    : createDefaultPersistedMatchState()
+
+  return {
+    ...baseState,
+    status:
+      runtimeMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
+        ? PERSISTED_MATCH_STATUS.FINISHED
+        : PERSISTED_MATCH_STATUS.ACTIVE,
+    setsWon: {
+      teamA: toNonNegativeInteger(baseState?.setsWon?.teamA, 0),
+      teamB: toNonNegativeInteger(baseState?.setsWon?.teamB, 0)
+    },
+    currentSet: {
+      number: toPositiveInteger(runtimeMatchState.currentSetStatus.number, 1),
+      games: {
+        teamA: toNonNegativeInteger(runtimeMatchState.currentSetStatus.teamAGames, 0),
+        teamB: toNonNegativeInteger(runtimeMatchState.currentSetStatus.teamBGames, 0)
+      }
+    },
+    currentGame: {
+      points: {
+        teamA: toPersistedPointValue(runtimeMatchState.teamA.points),
+        teamB: toPersistedPointValue(runtimeMatchState.teamB.points)
+      }
+    },
+    setHistory: cloneSetHistory(baseState.setHistory),
+    schemaVersion: toPositiveInteger(baseState.schemaVersion, 1)
+  }
+}
+
+function serializeMatchStateForComparison(matchState) {
+  try {
+    return JSON.stringify(matchState)
+  } catch {
+    return ''
+  }
 }
 
 function getCurrentTimestampMs() {
@@ -227,6 +315,16 @@ Page({
     this.lastAcceptedScoringInteractionAt = null
     this.isSessionAccessCheckInFlight = false
     this.isSessionAccessGranted = false
+    this.persistedSessionState = null
+
+    this.persistenceDebounceWindowMs = PERSISTENCE_DEBOUNCE_WINDOW_MS
+    this.runtimeStatePersistenceTimer = null
+    this.pendingRuntimeStatePersistence = null
+    this.isRuntimeStatePersistenceInFlight = false
+    this.runtimeStatePersistenceInFlightPromise = Promise.resolve()
+    this.runtimeStatePersistenceIdleResolvers = []
+    this.lastPersistedRuntimeStateSignature = null
+
     this.validateSessionAccessAndRender()
   },
 
@@ -256,7 +354,7 @@ Page({
       return false
     }
 
-    return this.saveCurrentRuntimeState()
+    return this.saveCurrentRuntimeState({ force: true })
   },
 
   async validateSessionAccessAndRender() {
@@ -300,8 +398,15 @@ Page({
   async hasValidActiveSession() {
     try {
       const persistedMatchState = await loadMatchState()
-      return isPersistedMatchStateActive(persistedMatchState)
+      const hasValidActiveSession = isPersistedMatchStateActive(persistedMatchState)
+
+      this.persistedSessionState = hasValidActiveSession
+        ? cloneMatchState(persistedMatchState)
+        : null
+
+      return hasValidActiveSession
     } catch {
+      this.persistedSessionState = null
       return false
     }
   },
@@ -417,15 +522,177 @@ Page({
     app.globalData.matchState = nextState
   },
 
-  saveCurrentRuntimeState() {
+  saveCurrentRuntimeState(options = {}) {
     const app = this.getAppInstance()
 
     if (!app || !isValidRuntimeMatchState(app.globalData.matchState)) {
       return false
     }
 
-    saveState(app.globalData.matchState)
+    const shouldForcePersistence = isRecord(options) && options.force === true
+    this.enqueueRuntimeStatePersistence(app.globalData.matchState, {
+      force: shouldForcePersistence
+    })
+
     return true
+  },
+
+  enqueueRuntimeStatePersistence(matchState, options = {}) {
+    if (!isValidRuntimeMatchState(matchState)) {
+      return false
+    }
+
+    this.pendingRuntimeStatePersistence = {
+      runtimeState: cloneMatchState(matchState),
+      signature: serializeMatchStateForComparison(matchState)
+    }
+
+    const shouldForcePersistence = isRecord(options) && options.force === true
+
+    if (shouldForcePersistence) {
+      this.clearRuntimeStatePersistenceTimer()
+      this.drainRuntimeStatePersistenceQueue()
+      return true
+    }
+
+    this.scheduleRuntimeStatePersistenceDrain()
+    return true
+  },
+
+  scheduleRuntimeStatePersistenceDrain() {
+    if (this.runtimeStatePersistenceTimer !== null) {
+      return
+    }
+
+    if (typeof setTimeout !== 'function') {
+      this.drainRuntimeStatePersistenceQueue()
+      return
+    }
+
+    const configuredDebounceWindowMs =
+      Number.isFinite(this.persistenceDebounceWindowMs) &&
+      this.persistenceDebounceWindowMs >= 0
+        ? this.persistenceDebounceWindowMs
+        : PERSISTENCE_DEBOUNCE_WINDOW_MS
+
+    this.runtimeStatePersistenceTimer = setTimeout(() => {
+      this.runtimeStatePersistenceTimer = null
+      this.drainRuntimeStatePersistenceQueue()
+    }, configuredDebounceWindowMs)
+  },
+
+  clearRuntimeStatePersistenceTimer() {
+    if (this.runtimeStatePersistenceTimer === null) {
+      return
+    }
+
+    if (typeof clearTimeout === 'function') {
+      clearTimeout(this.runtimeStatePersistenceTimer)
+    }
+
+    this.runtimeStatePersistenceTimer = null
+  },
+
+  drainRuntimeStatePersistenceQueue() {
+    if (this.isRuntimeStatePersistenceInFlight) {
+      return this.runtimeStatePersistenceInFlightPromise
+    }
+
+    // Serialize persistence writes so rapid updates always commit in order,
+    // while replacing queued snapshots guarantees latest-state-wins behavior.
+    const processQueue = async () => {
+      this.isRuntimeStatePersistenceInFlight = true
+
+      try {
+        while (this.pendingRuntimeStatePersistence !== null) {
+          const nextPersistenceTask = this.pendingRuntimeStatePersistence
+          this.pendingRuntimeStatePersistence = null
+
+          if (
+            nextPersistenceTask.signature.length > 0 &&
+            nextPersistenceTask.signature === this.lastPersistedRuntimeStateSignature
+          ) {
+            continue
+          }
+
+          await this.persistRuntimeStateSnapshot(
+            nextPersistenceTask.runtimeState,
+            nextPersistenceTask.signature
+          )
+        }
+      } finally {
+        this.isRuntimeStatePersistenceInFlight = false
+      }
+
+      if (this.pendingRuntimeStatePersistence !== null) {
+        return this.drainRuntimeStatePersistenceQueue()
+      }
+
+      this.resolveRuntimeStatePersistenceIdle()
+    }
+
+    this.runtimeStatePersistenceInFlightPromise = processQueue()
+    return this.runtimeStatePersistenceInFlightPromise
+  },
+
+  async persistRuntimeStateSnapshot(runtimeState, signature) {
+    if (!isValidRuntimeMatchState(runtimeState)) {
+      return
+    }
+
+    saveState(runtimeState)
+
+    const persistedMatchStateSnapshot = createPersistedMatchStateSnapshot(
+      runtimeState,
+      this.persistedSessionState
+    )
+
+    if (persistedMatchStateSnapshot !== null) {
+      try {
+        await saveMatchState(persistedMatchStateSnapshot)
+        this.persistedSessionState = cloneMatchState(persistedMatchStateSnapshot)
+      } catch {
+        // Ignore schema persistence errors so gameplay interactions stay resilient.
+      }
+    }
+
+    this.lastPersistedRuntimeStateSignature =
+      signature.length > 0 ? signature : serializeMatchStateForComparison(runtimeState)
+  },
+
+  isRuntimeStatePersistenceIdle() {
+    return (
+      this.pendingRuntimeStatePersistence === null &&
+      this.runtimeStatePersistenceTimer === null &&
+      !this.isRuntimeStatePersistenceInFlight
+    )
+  },
+
+  resolveRuntimeStatePersistenceIdle() {
+    if (!this.isRuntimeStatePersistenceIdle()) {
+      return
+    }
+
+    const pendingResolvers = this.runtimeStatePersistenceIdleResolvers
+    this.runtimeStatePersistenceIdleResolvers = []
+
+    pendingResolvers.forEach((resolver) => {
+      try {
+        resolver()
+      } catch {
+        // Ignore test-only resolver callback failures.
+      }
+    })
+  },
+
+  waitForPersistenceIdle() {
+    if (this.isRuntimeStatePersistenceIdle()) {
+      return Promise.resolve()
+    }
+
+    return new Promise((resolve) => {
+      this.runtimeStatePersistenceIdleResolvers.push(resolve)
+    })
   },
 
   navigateToHomePage() {
@@ -446,7 +713,7 @@ Page({
   },
 
   handleBackToHome() {
-    this.saveCurrentRuntimeState()
+    this.saveCurrentRuntimeState({ force: true })
     this.navigateToHomePage()
   },
 

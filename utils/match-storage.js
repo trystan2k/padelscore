@@ -46,12 +46,29 @@ export class ZeppOsStorageAdapter {
   }
 
   /**
+   * @returns {ZeppSettingsStorage | null}
+   */
+  resolveStorage() {
+    if (this.storage) {
+      return this.storage
+    }
+
+    const runtimeStorage = resolveRuntimeStorage()
+
+    if (runtimeStorage) {
+      this.storage = runtimeStorage
+    }
+
+    return this.storage
+  }
+
+  /**
    * @param {string} key
    * @param {string} value
    * @returns {Promise<void>}
    */
   async save(key, value) {
-    const { storage } = this
+    const storage = this.resolveStorage()
 
     if (!storage || typeof storage.setItem !== 'function') {
       return
@@ -69,7 +86,7 @@ export class ZeppOsStorageAdapter {
    * @returns {Promise<string | null>}
    */
   async load(key) {
-    const { storage } = this
+    const storage = this.resolveStorage()
 
     if (!storage || typeof storage.getItem !== 'function') {
       return null
@@ -93,7 +110,7 @@ export class ZeppOsStorageAdapter {
    * @returns {Promise<void>}
    */
   async clear(key) {
-    const { storage } = this
+    const storage = this.resolveStorage()
 
     if (!storage) {
       return

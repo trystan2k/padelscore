@@ -868,14 +868,93 @@
         "id": "14",
         "title": "Integrate Lifecycle Persistence Triggers",
         "description": "Ensure state is saved automatically on app lifecycle events (sleep, exit, background) to meet reliability requirements.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "12"
         ],
         "priority": "high",
         "details": "Hook into Zepp OS lifecycle events (e.g., `page.onHide`, `app.onHide`, or specific sleep callbacks depending on API availability). In these handlers, retrieve the current runtime state and call `saveMatchState`. Additionally, ensure `saveMatchState` is called immediately after any scoring update (add/remove point).",
         "testStrategy": "Integration test: Start a match, score a few points, trigger a 'sleep' event or 'back' button press, and relaunch the app. Verify storage contains the latest score.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Zepp OS lifecycle event APIs",
+            "description": "Investigate and document available lifecycle hooks in Zepp OS for handling app sleep, background, exit, and page hide events.",
+            "dependencies": [],
+            "details": "Review Zepp OS documentation to identify all available lifecycle callbacks including page.onHide, app.onHide, sleep callbacks, and any relevant event emitters. Test which events fire reliably in different scenarios (app backgrounding, screen lock, device sleep, back button press). Create a reference mapping of available events to their trigger conditions and reliability characteristics.",
+            "status": "done",
+            "testStrategy": "Create a test script that logs all lifecycle events and verify which hooks fire in simulator/emulator during various app state transitions (background, foreground, back button, screen off).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:44.791Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement lifecycle event handler registration",
+            "description": "Create handler functions that retrieve current runtime state and call saveMatchState when lifecycle events trigger.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement lifecycle event handler registration in the main app or game screen initialization. Create wrapper functions for each relevant lifecycle hook that retrieve the current MatchState from the state manager and pass it to saveMatchState. Ensure handlers are registered at app startup and cleaned up appropriately if needed. Handle potential errors during save operations gracefully.",
+            "status": "done",
+            "testStrategy": "Manually trigger lifecycle events (back button, background app) and verify through logs that saveMatchState is called with the correct state object.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:45.867Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate automatic save on scoring updates",
+            "description": "Add calls to saveMatchState immediately after each scoring update operation (addPoint and removePoint).",
+            "dependencies": [
+              1
+            ],
+            "details": "Locate the addPoint and removePoint functions in the scoring logic. After each successful state mutation, call saveMatchState with the updated state. Ensure this happens synchronously before any UI updates to guarantee persistence. Verify that the save doesn't cause noticeable performance degradation in the UI. Consider batching if rapid scoring causes issues.",
+            "status": "done",
+            "testStrategy": "Add points multiple times rapidly and verify storage contains the correct final state after each operation. Test undo operations to ensure state persistence is maintained correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:47.307Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement debounce and atomic save mechanism",
+            "description": "Add debouncing logic to prevent race conditions and redundant save operations when multiple events trigger simultaneously.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement a debounced version of saveMatchState that coalesces rapid successive calls within a short window (e.g., 100-300ms). Use a flag or promise-based approach to ensure only one save operation runs at a time, preventing race conditions. The debounce should ensure the final state is saved even if multiple triggers occur in quick succession (e.g., scoring + back button pressed together). Ensure pending saves complete before app terminates.",
+            "status": "done",
+            "testStrategy": "Simulate rapid scoring followed immediately by a back button press. Verify only one save operation occurs and the final correct state is persisted. Test concurrent save requests to ensure no data corruption.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:48.507Z"
+          },
+          {
+            "id": 5,
+            "title": "Create integration tests for lifecycle persistence",
+            "description": "Implement automated tests that simulate app lifecycle events and verify state persists correctly across app restarts.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create integration test scenarios: 1) Start match, add points, trigger background/foreground cycle, verify state persists. 2) Add points, simulate sleep/power-off, relaunch, verify latest state. 3) Add points, press back, relaunch game screen, verify state restored. Mock or stub the Zepp OS lifecycle APIs if needed. Verify storage contains expected JSON structure and values. Test edge cases like empty state, zero scores, and finished matches.",
+            "status": "done",
+            "testStrategy": "Automated test suite covering all lifecycle scenarios with assertions on storage contents after each event. Manual testing on actual device if simulation is insufficient.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:49.732Z"
+          },
+          {
+            "id": 6,
+            "title": "Update documentation and code comments",
+            "description": "Document the persistence mechanism, lifecycle handling, and debouncing approach in code comments and project documentation.",
+            "dependencies": [
+              5
+            ],
+            "details": "Add comprehensive comments to lifecycle handler registration code explaining which events are hooked and why. Document the debouncing mechanism with explanation of the race condition problem it solves. Update README or technical documentation with details on automatic state persistence behavior. Add inline comments in scoring functions noting where automatic saves occur. Document any limitations or edge cases in the persistence system.",
+            "status": "done",
+            "testStrategy": "Review documentation for clarity and completeness. Have another developer verify they understand the persistence mechanism from the documentation alone.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T13:44:50.831Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T13:44:50.831Z"
       },
       {
         "id": "15",
@@ -978,9 +1057,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T11:36:22.871Z",
+      "lastModified": "2026-02-21T13:44:50.832Z",
       "taskCount": 21,
-      "completedCount": 13,
+      "completedCount": 14,
       "tags": [
         "master"
       ]
