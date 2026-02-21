@@ -676,14 +676,95 @@
         "id": "12",
         "title": "Implement Core Persistence Service (Save/Load)",
         "description": "Develop the utility functions to save the match state to local storage and load it back, including error handling for corrupted data.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "11"
         ],
         "priority": "high",
         "details": "Implement `saveMatchState(state: MatchState)` and `loadMatchState(): MatchState | null`. Use Zepp OS `localStorage` or `settingsStorage` API to persist the JSON stringified state. `saveMatchState` should update `updatedAt` timestamp. `loadMatchState` must be wrapped in a try-catch block to handle parsing errors or missing data gracefully, returning null if data is invalid/missing (safe failure).",
         "testStrategy": "Unit test saving a state object, verifying it exists in storage. Unit test loading the object back. Test loading with corrupted JSON to ensure it returns null instead of crashing.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define storage constants and initialize persistence module",
+            "description": "Create the persistence service module with storage key constants and basic structure.",
+            "dependencies": [],
+            "details": "Create a new file for the persistence service. Define the storage key constant (e.g., 'ACTIVE_MATCH_SESSION'). Export the module structure and any necessary imports for Zepp OS storage API (localStorage or settingsStorage).",
+            "status": "done",
+            "testStrategy": "Verify module imports correctly and constants are exported without errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:58:05.022Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement saveMatchState function with timestamp",
+            "description": "Create the saveMatchState function that updates timestamp and persists state to storage.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement saveMatchState(state: MatchState): void. Before saving, update state.updatedAt to current timestamp (Date.now()). Stringify the state using JSON.stringify(). Use Zepp OS localStorage.setItem() or settingsStorage.setItem() to persist the JSON string using the defined storage key constant.",
+            "status": "done",
+            "testStrategy": "Unit test saving a sample MatchState object. Verify storage contains the expected key and the stringified JSON includes the updated timestamp.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:58:08.348Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement loadMatchState with try-catch error handling",
+            "description": "Create the loadMatchState function with error handling for parsing and missing data.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement loadMatchState(): MatchState | null. Wrap the logic in try-catch block. Read from storage using localStorage.getItem() or settingsStorage.getItem(). If data is null/undefined, return null. Parse using JSON.parse(). If parsing fails (JSON error), catch the exception and return null. Return the parsed MatchState on success.",
+            "status": "done",
+            "testStrategy": "Unit test loading with no saved data (returns null). Test loading corrupted JSON (returns null). Test loading valid saved state (returns MatchState object).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:58:10.356Z"
+          },
+          {
+            "id": 4,
+            "title": "Add state validation for loaded data integrity",
+            "description": "Implement validation logic to ensure loaded state has required fields and valid structure.",
+            "dependencies": [
+              3
+            ],
+            "details": "After successfully parsing JSON in loadMatchState, validate the loaded object structure. Check for required fields (e.g., status, sets, currentSet, teams). Verify data types match expected MatchState interface. If validation fails, return null to prevent app crashes from corrupted state. Optionally log validation errors for debugging.",
+            "status": "done",
+            "testStrategy": "Unit test loading state with missing required fields (returns null). Test loading state with invalid data types (returns null). Test loading complete valid state (returns object).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:58:12.222Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement clearMatchState utility function",
+            "description": "Create a utility to delete saved match state from storage.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement clearMatchState(): void function. Use localStorage.removeItem() or settingsStorage.setItem(key, null) to delete the saved match state. This is required for Task 19 (New Match Reset) to clear existing sessions. Export this function for use by other modules.",
+            "status": "done",
+            "testStrategy": "Save a match state, call clearMatchState, verify storage key is removed or null. Verify no error when clearing empty storage.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:54:12.201Z"
+          },
+          {
+            "id": 6,
+            "title": "Write comprehensive unit tests for persistence service",
+            "description": "Create full test coverage for all persistence functions and edge cases.",
+            "dependencies": [
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Write unit tests covering: save functionality with timestamp verification, load with valid state, load with missing data, load with corrupted JSON, load with malformed/incomplete state, clear functionality, and sequential save-load operations. Mock the Zepp OS storage API to isolate tests. Test that updatedAt is properly updated during save.",
+            "status": "done",
+            "testStrategy": "Run all unit tests and ensure 100% code coverage. Verify all test cases pass including happy paths and error scenarios.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T09:58:15.911Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T09:58:15.911Z"
       },
       {
         "id": "13",
@@ -813,9 +894,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T09:19:11.291Z",
+      "lastModified": "2026-02-21T09:58:15.911Z",
       "taskCount": 21,
-      "completedCount": 11,
+      "completedCount": 12,
       "tags": [
         "master"
       ]

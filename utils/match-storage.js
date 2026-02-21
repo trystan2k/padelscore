@@ -1,9 +1,11 @@
 import {
-  STORAGE_KEY,
+  STORAGE_KEY as SCHEMA_STORAGE_KEY,
   deserializeMatchState,
   isMatchState,
   serializeMatchState
 } from './match-state-schema.js'
+
+export const ACTIVE_MATCH_SESSION_STORAGE_KEY = SCHEMA_STORAGE_KEY
 
 /**
  * @typedef StorageAdapter
@@ -135,50 +137,67 @@ export class MatchStorage {
       return
     }
 
-    await this.adapter.save(STORAGE_KEY, serializeMatchState(state))
+    state.updatedAt = Date.now()
+
+    await this.adapter.save(
+      ACTIVE_MATCH_SESSION_STORAGE_KEY,
+      serializeMatchState(state)
+    )
   }
 
   /**
    * @returns {Promise<import('./match-state-schema.js').MatchState | null>}
    */
   async loadMatchState() {
-    const serializedState = await this.adapter.load(STORAGE_KEY)
+    try {
+      const serializedState = await this.adapter.load(
+        ACTIVE_MATCH_SESSION_STORAGE_KEY
+      )
 
-    if (typeof serializedState !== 'string' || serializedState.length === 0) {
+      if (typeof serializedState !== 'string' || serializedState.length === 0) {
+        return null
+      }
+
+      const loadedState = deserializeMatchState(serializedState)
+
+      return isMatchState(loadedState) ? loadedState : null
+    } catch {
       return null
     }
-
-    return deserializeMatchState(serializedState)
   }
 
   /**
    * @returns {Promise<void>}
    */
   async clearMatchState() {
-    await this.adapter.clear(STORAGE_KEY)
+    try {
+      await this.adapter.clear(ACTIVE_MATCH_SESSION_STORAGE_KEY)
+    } catch {
+      // Ignore persistence errors to keep app runtime stable.
+    }
   }
 }
 
-const defaultMatchStorage = new MatchStorage()
+export const matchStorage = new MatchStorage()
 
 /**
  * @param {import('./match-state-schema.js').MatchState} state
  * @returns {Promise<void>}
  */
 export async function saveMatchState(state) {
-  await defaultMatchStorage.saveMatchState(state)
+  await matchStorage.saveMatchState(state)
 }
 
 /**
  * @returns {Promise<import('./match-state-schema.js').MatchState | null>}
  */
 export async function loadMatchState() {
-  return defaultMatchStorage.loadMatchState()
+  return matchStorage.loadMatchState()
 }
 
 /**
  * @returns {Promise<void>}
  */
 export async function clearMatchState() {
-  await defaultMatchStorage.clearMatchState()
+  await matchStorage.clearMatchState()
 }
