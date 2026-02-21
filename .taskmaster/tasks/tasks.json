@@ -1221,7 +1221,7 @@
         "id": "18",
         "title": "Implement Match Summary Screen",
         "description": "Create the Summary Screen to display the match winner, final set points, and per-set breakdown.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "11",
           "16"
@@ -1229,7 +1229,72 @@
         "priority": "medium",
         "details": "Build the 'Match Summary' view. Display: 'Team [A/B] Wins', Final Set Score (e.g., '2-1'), and a list of sets (e.g., 'Set 1: 6-4', 'Set 2: 4-6'). Iterate through the `setHistory` array from the `MatchState` to populate the list. Add 'Home' and 'Start New Game' buttons.",
         "testStrategy": "Visual QA: Complete a 3-set match. Verify summary shows the correct winner and all 3 set scores. Verify buttons are functional.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Match Summary screen UI structure",
+            "description": "Set up the basic screen layout container for the Match Summary view",
+            "dependencies": [],
+            "details": "Create the Match Summary screen component with Zepp OS configuration. Define the main layout structure including: header section for winner announcement, middle section for set breakdown list, and bottom section for action buttons. Configure proper screen dimensions and styling containers.",
+            "status": "done",
+            "testStrategy": "Verify the summary screen renders without errors when navigated to, displaying empty layout containers",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T21:10:33.854Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement winner and final set score display",
+            "description": "Add logic to determine and display the winning team and final match score",
+            "dependencies": [
+              1
+            ],
+            "details": "Extract the winning team from MatchState by comparing total sets won by Team A vs Team B. Display 'Team A Wins' or 'Team B Wins' in the header. Show the final set score (e.g., '2-1') based on the sets count from the state. Style the winner text prominently for visibility.",
+            "status": "done",
+            "testStrategy": "Test with both Team A and Team B winning scenarios; verify correct winner text and final score format displays accurately",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T21:10:33.857Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement set history list rendering",
+            "description": "Iterate through setHistory array and display each set's breakdown score",
+            "dependencies": [
+              2
+            ],
+            "details": "Map through the setHistory array from MatchState. For each set entry, create a list item showing 'Set N: X-Y' format where X is Team A's games and Y is Team B's games. Implement dynamic list rendering to handle variable number of sets (1-3+). Ensure proper spacing and formatting for readability.",
+            "status": "done",
+            "testStrategy": "Complete 2-set and 3-set matches; verify all sets display in correct order with accurate game scores (e.g., 'Set 1: 6-4', 'Set 2: 4-6', 'Set 3: 6-2')",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T21:10:33.858Z"
+          },
+          {
+            "id": 4,
+            "title": "Add Home and Start New Game buttons",
+            "description": "Create and wire up navigation buttons at the bottom of the summary screen",
+            "dependencies": [
+              3
+            ],
+            "details": "Add two action buttons in the bottom section: 'Home' button navigates back to the Home screen using navigation API. 'Start New Game' button triggers the new match flow (integration point for Task 19). Configure proper button sizing, spacing, and touch targets for usability on the device.",
+            "status": "done",
+            "testStrategy": "Verify both buttons are tappable and responsive; test 'Home' navigates correctly; verify 'Start New Game' button is ready for Task 19 integration",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T21:10:33.860Z"
+          },
+          {
+            "id": 5,
+            "title": "Integrate summary screen into match completion flow",
+            "description": "Connect Match Summary to trigger automatically when match ends and perform final testing",
+            "dependencies": [
+              4
+            ],
+            "details": "Update the scoring engine or state listener to detect when match status changes to 'finished'. Automatically navigate to Match Summary screen with the complete MatchState passed as parameter. Ensure the screen receives and displays the latest state data. Perform full end-to-end testing of the complete match-to-summary flow.",
+            "status": "done",
+            "testStrategy": "Visual QA: Complete a full 3-set match and verify summary shows correct winner and all 3 set scores. Test both navigation buttons. Verify edge case with 2-set finish.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T21:10:33.861Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T21:10:33.861Z"
       },
       {
         "id": "19",
@@ -1279,9 +1344,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T19:48:19.358Z",
+      "lastModified": "2026-02-21T21:10:33.861Z",
       "taskCount": 21,
-      "completedCount": 17,
+      "completedCount": 18,
       "tags": [
         "master"
       ]

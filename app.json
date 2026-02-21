@@ -26,7 +26,7 @@
     "gtr-3": {
       "module": {
         "page": {
-          "pages": ["page/index", "page/setup", "page/game"]
+          "pages": ["page/index", "page/setup", "page/game", "page/summary"]
         },
         "app-side": {
           "path": "app-side/index"
@@ -50,7 +50,7 @@
     "gts-3": {
       "module": {
         "page": {
-          "pages": ["page/index", "page/setup", "page/game"]
+          "pages": ["page/index", "page/setup", "page/game", "page/summary"]
         },
         "app-side": {
           "path": "app-side/index"

@@ -72,3 +72,33 @@ msgstr "Start Match"
 
 msgid "setup.saveFailed"
 msgstr "Could not save match setup"
+
+msgid "summary.title"
+msgstr "Match Summary"
+
+msgid "summary.teamAWins"
+msgstr "Team A Wins"
+
+msgid "summary.teamBWins"
+msgstr "Team B Wins"
+
+msgid "summary.matchFinished"
+msgstr "Match Finished"
+
+msgid "summary.matchUnavailable"
+msgstr "Summary unavailable"
+
+msgid "summary.finalScoreLabel"
+msgstr "Final Sets"
+
+msgid "summary.setHistoryTitle"
+msgstr "Set History"
+
+msgid "summary.noSetHistory"
+msgstr "No completed sets"
+
+msgid "summary.home"
+msgstr "Home"
+
+msgid "summary.startNewGame"
+msgstr "Start New Game"

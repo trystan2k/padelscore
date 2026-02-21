@@ -767,11 +767,13 @@ test('game screen renders resumed manager team labels and score context', async 
 test('game match completion persists set metadata and attempts summary navigation', async () => {
   const originalSettingsStorage = globalThis.settingsStorage
   const originalHmApp = globalThis.hmApp
+  const eventOrder = []
   const persistenceWrites = []
   const navigationCalls = []
 
   globalThis.settingsStorage = {
     setItem(key, value) {
+      eventOrder.push(`save:${key}`)
       persistenceWrites.push({ key, value })
     },
     getItem() {
@@ -782,6 +784,7 @@ test('game match completion persists set metadata and attempts summary navigatio
 
   globalThis.hmApp = {
     gotoPage(options) {
+      eventOrder.push(`navigate:${options?.url ?? ''}`)
       navigationCalls.push(options)
     }
   }
@@ -869,6 +872,14 @@ test('game match completion persists set metadata and attempts summary navigatio
         }
       ])
       assert.equal(persistedFinishedSession.winnerTeam, 'teamA')
+
+      const persistedSessionSaveIndex = eventOrder.lastIndexOf(
+        `save:${ACTIVE_MATCH_SESSION_STORAGE_KEY}`
+      )
+      const summaryNavigationIndex = eventOrder.indexOf('navigate:page/summary')
+
+      assert.equal(persistedSessionSaveIndex >= 0, true)
+      assert.equal(summaryNavigationIndex > persistedSessionSaveIndex, true)
     })
   } finally {
     if (typeof originalSettingsStorage === 'undefined') {
