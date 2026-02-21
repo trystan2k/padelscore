@@ -260,6 +260,16 @@ function isNumericText(value) {
   return typeof value === 'string' && /^[0-9]+$/.test(value)
 }
 
+function parseSetsWonCounterValue(textValue) {
+  if (typeof textValue !== 'string') {
+    return null
+  }
+
+  const parsedMatch = /^game\.setsWonLabel:\s*([0-9]+)$/.exec(textValue)
+
+  return parsedMatch ? parsedMatch[1] : null
+}
+
 function getPersistenceWritesByKey(writes, storageKey) {
   return writes
     .filter((entry) => entry.key === storageKey)
@@ -295,8 +305,10 @@ function createAcceptedInteractionTimeSource(
 
 function getRenderedScoreTextValues(createdWidgets) {
   const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT').filter(hasVisibleRect)
-  const setScoreWidgets = textWidgets
-    .filter((widget) => isNumericText(widget.properties.text))
+  const setScoreCandidates = textWidgets.filter((widget) => isNumericText(widget.properties.text))
+  const maxSetScoreRowY = Math.max(...setScoreCandidates.map((widget) => widget.properties.y))
+  const setScoreWidgets = setScoreCandidates
+    .filter((widget) => widget.properties.y === maxSetScoreRowY)
     .sort((left, right) => left.properties.x - right.properties.x)
   const gamePointsWidget = textWidgets.find(
     (widget) =>
@@ -311,6 +323,20 @@ function getRenderedScoreTextValues(createdWidgets) {
     teamASetGames: setScoreWidgets[0].properties.text,
     teamBSetGames: setScoreWidgets[1].properties.text,
     gamePoints: gamePointsWidget.properties.text
+  }
+}
+
+function getRenderedSetsWonTextValues(createdWidgets) {
+  const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT').filter(hasVisibleRect)
+  const setCounterWidgets = textWidgets
+    .filter((widget) => parseSetsWonCounterValue(widget.properties.text) !== null)
+    .sort((left, right) => left.properties.x - right.properties.x)
+
+  assert.equal(setCounterWidgets.length >= 2, true)
+
+  return {
+    teamASetsWon: parseSetsWonCounterValue(setCounterWidgets[0].properties.text),
+    teamBSetsWon: parseSetsWonCounterValue(setCounterWidgets[1].properties.text)
   }
 }
 
@@ -415,6 +441,73 @@ test('game screen renders expected bottom control button labels', async () => {
     'game.teamBRemovePoint',
     'game.backHome'
   ])
+})
+
+test('game screen renders sets-won counters with default 0-0 values', async () => {
+  const { createdWidgets } = await renderGameScreenForDimensions(390, 450)
+  const renderedSetCounters = getRenderedSetsWonTextValues(createdWidgets)
+
+  assert.deepEqual(renderedSetCounters, {
+    teamASetsWon: '0',
+    teamBSetsWon: '0'
+  })
+})
+
+test('game screen prioritizes runtime sets-won values and falls back to persisted session values', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    page.persistedSessionState = {
+      setsWon: {
+        teamA: 1,
+        teamB: 2
+      }
+    }
+
+    page.renderGameScreen()
+
+    assert.deepEqual(getRenderedSetsWonTextValues(createdWidgets), {
+      teamASetsWon: '1',
+      teamBSetsWon: '2'
+    })
+
+    app.globalData.matchState.setsWon = {
+      teamA: 3,
+      teamB: 4
+    }
+
+    page.renderGameScreen()
+
+    assert.deepEqual(getRenderedSetsWonTextValues(createdWidgets), {
+      teamASetsWon: '3',
+      teamBSetsWon: '4'
+    })
+  })
+})
+
+test('game screen reflects programmatic sets-won state changes on rerender', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    app.globalData.matchState.setsWon = {
+      teamA: 0,
+      teamB: 0
+    }
+
+    page.renderGameScreen()
+
+    app.globalData.matchState.setsWon.teamA = 2
+    page.renderGameScreen()
+
+    assert.deepEqual(getRenderedSetsWonTextValues(createdWidgets), {
+      teamASetsWon: '2',
+      teamBSetsWon: '0'
+    })
+
+    app.globalData.matchState.setsWon.teamB = 1
+    page.renderGameScreen()
+
+    assert.deepEqual(getRenderedSetsWonTextValues(createdWidgets), {
+      teamASetsWon: '2',
+      teamBSetsWon: '1'
+    })
+  })
 })
 
 test('game controls keep minimum 48x48 touch targets in active and finished states', async () => {

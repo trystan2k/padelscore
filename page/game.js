@@ -30,6 +30,7 @@ const GAME_TOKENS = Object.freeze({
     button: 0.038,
     label: 0.04,
     points: 0.1,
+    setCounter: 0.032,
     setScore: 0.078,
     setTeam: 0.034
   },
@@ -944,7 +945,9 @@ Page({
     }
 
     const matchState = this.getRuntimeMatchState()
-    const viewModel = createScoreViewModel(matchState)
+    const viewModel = createScoreViewModel(matchState, {
+      persistedMatchState: this.persistedSessionState
+    })
     const isMatchFinished = viewModel.status === 'finished'
     const leadingTeamId = getLeadingTeamId(viewModel)
     const { width, height } = this.getScreenMetrics()
@@ -952,7 +955,7 @@ Page({
 
     const baseSectionSideInset = Math.round(width * 0.06)
 
-    const setSectionHeight = Math.round(height * 0.12)
+    const setSectionHeight = Math.round(height * 0.17)
     const setSectionY = Math.round(height * GAME_TOKENS.spacingScale.setSectionTop)
     let setSectionSideInset = baseSectionSideInset
     if (isRoundScreen) {
@@ -972,9 +975,11 @@ Page({
     setSectionSideInset = clamp(setSectionSideInset, 0, maxSectionInset)
     const setSectionX = setSectionSideInset
     const setSectionWidth = Math.max(1, width - setSectionSideInset * 2)
-    const setLabelHeight = Math.round(setSectionHeight * 0.4)
-    const setScoreY = setSectionY + setLabelHeight
-    const setScoreHeight = setSectionHeight - setLabelHeight
+    const setLabelHeight = Math.round(setSectionHeight * 0.3)
+    const setCounterHeight = Math.round(setSectionHeight * 0.28)
+    const setCounterY = setSectionY + setLabelHeight
+    const setScoreY = setCounterY + setCounterHeight
+    const setScoreHeight = Math.max(1, setSectionHeight - setLabelHeight - setCounterHeight)
     const setTeamWidth = Math.round(setSectionWidth / 2)
     const rightTeamX = setSectionX + setTeamWidth
     let controlsSideInset = Math.round(
@@ -1097,6 +1102,30 @@ Page({
       color: GAME_TOKENS.colors.mutedText,
       text: viewModel.teamB.label,
       text_size: Math.round(width * GAME_TOKENS.fontScale.setTeam),
+      align_h: hmUI.align.CENTER_H,
+      align_v: hmUI.align.CENTER_V
+    })
+
+    this.createWidget(hmUI.widget.TEXT, {
+      x: setSectionX,
+      y: setCounterY,
+      w: setTeamWidth,
+      h: setCounterHeight,
+      color: GAME_TOKENS.colors.mutedText,
+      text: `${gettext('game.setsWonLabel')}: ${viewModel.setsWon.teamA}`,
+      text_size: Math.round(width * GAME_TOKENS.fontScale.setCounter),
+      align_h: hmUI.align.CENTER_H,
+      align_v: hmUI.align.CENTER_V
+    })
+
+    this.createWidget(hmUI.widget.TEXT, {
+      x: rightTeamX,
+      y: setCounterY,
+      w: setTeamWidth,
+      h: setCounterHeight,
+      color: GAME_TOKENS.colors.mutedText,
+      text: `${gettext('game.setsWonLabel')}: ${viewModel.setsWon.teamB}`,
+      text_size: Math.round(width * GAME_TOKENS.fontScale.setCounter),
       align_h: hmUI.align.CENTER_H,
       align_v: hmUI.align.CENTER_V
     })

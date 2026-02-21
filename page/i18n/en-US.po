@@ -19,6 +19,9 @@ msgstr "Set"
 msgid "game.gamesLabel"
 msgstr "Games"
 
+msgid "game.setsWonLabel"
+msgstr "Sets"
+
 msgid "game.teamAAddPoint"
 msgstr "+ Team A"
 

@@ -960,14 +960,93 @@
         "id": "15",
         "title": "Update Game Screen for Set Point Display",
         "description": "Modify the Game Screen UI to visualize the match-level set points (Sets Won) alongside current game scores.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "11"
         ],
         "priority": "medium",
         "details": "Update the Game View UI layout to include labels or indicators for `setsWon.teamA` and `setsWon.teamB`. Bind these UI elements to the current `MatchState` data. Ensure the display updates immediately when the underlying state changes.",
         "testStrategy": "Visual QA: Verify that upon entering a game, set counters are visible and set to 0. Verify UI updates when set counts change programmatically.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Game View layout structure",
+            "description": "Examine the existing Game View layout to determine optimal placement for set point indicators without disrupting current score display.",
+            "dependencies": [],
+            "details": "Open the current Game View layout file. Review the existing score display sections (Game Points and Set Scores). Identify the best position for adding the Sets Won indicators, likely in the top section near team labels or alongside existing set scores. Ensure placement maintains proper spacing and doesn't cause layout overflow on round/square screens.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.319Z"
+          },
+          {
+            "id": 2,
+            "title": "Add set point UI elements to Game View",
+            "description": "Create and position text labels or indicators for Team A and Team B Sets Won in the Game View layout.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add two new text label widgets to the Game View UI - one for Team A sets won and one for Team B sets won. Position them based on the analysis from subtask 1. Use appropriate UI component IDs (e.g., 'teamA-sets-won', 'teamB-sets-won') for later binding. Ensure labels have placeholder text initially (e.g., '0'). Apply proper alignment relative to team labels or score displays.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.321Z"
+          },
+          {
+            "id": 3,
+            "title": "Bind setsWon properties to UI elements",
+            "description": "Connect the new set point indicator labels to the MatchState setsWon.teamA and setsWon.teamB data properties.",
+            "dependencies": [
+              2
+            ],
+            "details": "In the Game View controller or binding logic, establish data bindings between the newly created UI labels and the MatchState.setsWon properties. Create reference bindings for teamA-sets-won to setsWon.teamA and teamB-sets-won to setsWon.teamB. Ensure the binding path correctly accesses the nested properties within the match state object.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.322Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement reactive state update mechanism",
+            "description": "Ensure the set point display updates immediately when the underlying MatchState setsWon values change.",
+            "dependencies": [
+              3
+            ],
+            "details": "Verify or implement reactive observers or state change listeners that trigger UI updates when setsWon properties are modified. Ensure the view re-renders or text content updates within 100ms of state change. If using a reactive framework (like Zepp's state management), confirm the bindings are properly reactive. If manual updates are needed, implement update functions called after state changes.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.323Z"
+          },
+          {
+            "id": 5,
+            "title": "Style set point indicators",
+            "description": "Apply consistent styling to the set point labels to match the existing design system and ensure visibility.",
+            "dependencies": [
+              2
+            ],
+            "details": "Apply design tokens (colors, fonts, font sizes) to the set point indicator labels. Ensure high contrast for readability. Match the styling approach used for existing score displays. Consider adding visual hierarchy - perhaps smaller than current game points but clearly visible. Test that the styling works on both round and square screen layouts without overlapping other elements.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.324Z"
+          },
+          {
+            "id": 6,
+            "title": "Verify set point display functionality",
+            "description": "Comprehensive testing of the set point display feature including initialization, updates, and visual consistency.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Test the complete feature: 1) Verify upon entering game, set counters are visible and correctly initialized to 0. 2) Programmatically change set counts and verify UI updates immediately. 3) Test by playing through a game and winning a set - confirm sets won increments. 4) Verify both Team A and Team B indicators update independently. 5) Check display on both round and square screen simulators for proper rendering.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-21T16:28:42.326Z"
+          }
+        ],
+        "updatedAt": "2026-02-21T16:28:42.326Z"
       },
       {
         "id": "16",
@@ -1057,9 +1136,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T13:44:50.832Z",
+      "lastModified": "2026-02-21T16:28:42.326Z",
       "taskCount": 21,
-      "completedCount": 14,
+      "completedCount": 15,
       "tags": [
         "master"
       ]
