@@ -5,6 +5,7 @@ import test from 'node:test'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { matchStorage } from '../utils/match-storage.js'
 import { createInitialMatchState } from '../utils/match-state.js'
+import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { MATCH_STATE_STORAGE_KEY } from '../utils/storage.js'
 
 let homePageImportCounter = 0
@@ -129,6 +130,10 @@ async function loadHomePageDefinition() {
   const matchStorageUrl = new URL('../utils/match-storage.js', import.meta.url)
   const matchStateSchemaUrl = new URL('../utils/match-state-schema.js', import.meta.url)
   const matchStateUrl = new URL('../utils/match-state.js', import.meta.url)
+  const startNewMatchFlowUrl = new URL(
+    './helpers/home-start-new-match-flow-bridge.js',
+    import.meta.url
+  )
   const storageUrl = new URL('../utils/storage.js', import.meta.url)
 
   let source = await readFile(sourceUrl, 'utf8')
@@ -139,6 +144,10 @@ async function loadHomePageDefinition() {
     .replace("from '../utils/match-storage.js'", `from '${matchStorageUrl.href}'`)
     .replace("from '../utils/match-state-schema.js'", `from '${matchStateSchemaUrl.href}'`)
     .replace("from '../utils/match-state.js'", `from '${matchStateUrl.href}'`)
+    .replace(
+      "from '../utils/start-new-match-flow.js'",
+      `from '${startNewMatchFlowUrl.href}'`
+    )
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
 
   const moduleUrl =
@@ -178,6 +187,9 @@ async function runHomePageScenario(options = {}, runAssertions) {
   const originalHmApp = globalThis.hmApp
   const originalGetApp = globalThis.getApp
   const originalSettingsStorage = globalThis.settingsStorage
+  const originalSetTimeout = globalThis.setTimeout
+  const originalClearTimeout = globalThis.clearTimeout
+  const originalStartNewMatchFlowBridge = globalThis.__homeScreenStartNewMatchFlow
   const originalMatchStorageAdapter = matchStorage.adapter
 
   const { hmUI, createdWidgets } = createHmUiRecorder()
@@ -216,6 +228,18 @@ async function runHomePageScenario(options = {}, runAssertions) {
     }
   }
   globalThis.getApp = () => app
+  globalThis.__homeScreenStartNewMatchFlow =
+    typeof options.startNewMatchFlow === 'function'
+      ? options.startNewMatchFlow
+      : (...args) => runStartNewMatchFlow(...args)
+  globalThis.setTimeout =
+    typeof options.setTimeoutFn === 'function'
+      ? options.setTimeoutFn
+      : originalSetTimeout
+  globalThis.clearTimeout =
+    typeof options.clearTimeoutFn === 'function'
+      ? options.clearTimeoutFn
+      : originalClearTimeout
   globalThis.settingsStorage = {
     getItem() {
       return options.legacyRuntimeState ?? null
@@ -292,6 +316,24 @@ async function runHomePageScenario(options = {}, runAssertions) {
       delete globalThis.settingsStorage
     } else {
       globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalSetTimeout === 'undefined') {
+      delete globalThis.setTimeout
+    } else {
+      globalThis.setTimeout = originalSetTimeout
+    }
+
+    if (typeof originalClearTimeout === 'undefined') {
+      delete globalThis.clearTimeout
+    } else {
+      globalThis.clearTimeout = originalClearTimeout
+    }
+
+    if (typeof originalStartNewMatchFlowBridge === 'undefined') {
+      delete globalThis.__homeScreenStartNewMatchFlow
+    } else {
+      globalThis.__homeScreenStartNewMatchFlow = originalStartNewMatchFlowBridge
     }
 
     matchStorage.adapter = originalMatchStorageAdapter
@@ -388,13 +430,18 @@ test('home screen hides Resume for invalid, corrupt, or load-failure payloads', 
   )
 })
 
-test('home screen start button clears persisted state, resets runtime state, and navigates', async () => {
+test('home screen start button requires confirmation before running hard reset flow', async () => {
   const savedState = createInitialMatchState(1700000002)
+  let startNewMatchFlowCalls = 0
 
   await runHomePageScenario(
     {
       legacyRuntimeState: JSON.stringify(savedState),
-      matchStorageLoadResponses: [serializePersistedMatchState({ status: 'active' })]
+      matchStorageLoadResponses: [serializePersistedMatchState({ status: 'active' })],
+      startNewMatchFlow() {
+        startNewMatchFlowCalls += 1
+        return runStartNewMatchFlow()
+      }
     },
     async ({
       app,
@@ -411,11 +458,85 @@ test('home screen start button clears persisted state, resets runtime state, and
 
       await startButton.properties.click_func()
 
+      assert.equal(startNewMatchFlowCalls, 0)
+      assert.deepEqual(removedLegacyStorageKeys, [])
+      assert.deepEqual(clearedMatchStorageKeys, [])
+      assert.deepEqual(navigationCalls, [])
+      assert.deepEqual(getVisibleButtonLabels(createdWidgets), [
+        'home.confirmStartNewGame',
+        'home.resumeGame'
+      ])
+
+      const confirmStartButton = getVisibleButtons(createdWidgets).find(
+        (widget) => widget.properties.text === 'home.confirmStartNewGame'
+      )
+
+      assert.ok(confirmStartButton)
+
+      await confirmStartButton.properties.click_func()
+
       assert.deepEqual(removedLegacyStorageKeys, [MATCH_STATE_STORAGE_KEY])
       assert.deepEqual(clearedMatchStorageKeys, [ACTIVE_MATCH_SESSION_STORAGE_KEY])
       assert.deepEqual(app.globalData.matchState, createInitialMatchState())
       assert.equal(app.globalData.matchHistory.clearCalls, 1)
+      assert.equal(startNewMatchFlowCalls, 1)
       assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+    }
+  )
+})
+
+test('home screen hard reset confirmation expires and returns to default start button', async () => {
+  const scheduledTimeouts = []
+  const clearedTimeouts = new Set()
+  let nextTimerId = 1
+  let startNewMatchFlowCalls = 0
+
+  await runHomePageScenario(
+    {
+      matchStorageLoadResponses: [serializePersistedMatchState({ status: 'active' })],
+      startNewMatchFlow() {
+        startNewMatchFlowCalls += 1
+        return Promise.resolve({ navigatedToSetup: true })
+      },
+      setTimeoutFn(callback) {
+        const timerId = nextTimerId
+        nextTimerId += 1
+        scheduledTimeouts.push({
+          id: timerId,
+          callback
+        })
+        return timerId
+      },
+      clearTimeoutFn(timerId) {
+        clearedTimeouts.add(timerId)
+      }
+    },
+    async ({ createdWidgets }) => {
+      const startButton = getVisibleButtons(createdWidgets).find(
+        (widget) => widget.properties.text === 'home.startNewGame'
+      )
+
+      assert.ok(startButton)
+
+      await startButton.properties.click_func()
+
+      assert.deepEqual(getVisibleButtonLabels(createdWidgets), [
+        'home.confirmStartNewGame',
+        'home.resumeGame'
+      ])
+      assert.equal(scheduledTimeouts.length, 1)
+      assert.equal(startNewMatchFlowCalls, 0)
+
+      const [armedConfirmationTimeout] = scheduledTimeouts
+      assert.equal(clearedTimeouts.has(armedConfirmationTimeout.id), false)
+
+      armedConfirmationTimeout.callback()
+
+      assert.deepEqual(getVisibleButtonLabels(createdWidgets), [
+        'home.startNewGame',
+        'home.resumeGame'
+      ])
+      assert.equal(startNewMatchFlowCalls, 0)
     }
   )
 })

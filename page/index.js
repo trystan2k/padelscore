@@ -1,13 +1,14 @@
 import { gettext } from 'i18n'
 import { createHistoryStack } from '../utils/history-stack.js'
-import { clearMatchState, loadMatchState } from '../utils/match-storage.js'
+import { loadMatchState } from '../utils/match-storage.js'
 import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
 import { createInitialMatchState } from '../utils/match-state.js'
-import { clearState } from '../utils/storage.js'
+import { startNewMatchFlow } from '../utils/start-new-match-flow.js'
 
 const PERSISTED_ADVANTAGE_POINT_VALUE = 50
 const PERSISTED_GAME_POINT_VALUE = 60
 const TIE_BREAK_ENTRY_GAMES = 6
+const HOME_HARD_RESET_CONFIRMATION_WINDOW_MS = 2500
 const REGULAR_GAME_POINT_VALUES = new Set([0, 15, 30, 40])
 
 const HOME_TOKENS = Object.freeze({
@@ -183,11 +184,16 @@ Page({
     this.widgets = []
     this.savedMatchState = null
     this.hasSavedGame = false
+    this.isStartingNewGame = false
+    this.isHardResetConfirmationArmed = false
+    this.hardResetConfirmationTimerId = null
     this.savedMatchStateRequestId = 0
     this.refreshSavedMatchState()
   },
 
   onShow() {
+    this.isStartingNewGame = false
+    this.disarmHardResetConfirmation()
     this.savedMatchState = null
     this.hasSavedGame = false
     this.renderHomeScreen()
@@ -199,6 +205,7 @@ Page({
   },
 
   onDestroy() {
+    this.clearHardResetConfirmationTimer()
     this.clearWidgets()
   },
 
@@ -282,6 +289,9 @@ Page({
       startButtonY +
       startButtonHeight +
       Math.round(height * HOME_TOKENS.spacingScale.primaryToSecondaryButton)
+    const startNewGameButtonText = this.isHardResetConfirmationArmed
+      ? gettext('home.confirmStartNewGame')
+      : gettext('home.startNewGame')
 
     this.clearWidgets()
 
@@ -327,7 +337,7 @@ Page({
       press_color: HOME_TOKENS.colors.primaryButtonPressed,
       color: HOME_TOKENS.colors.buttonText,
       text_size: Math.round(width * HOME_TOKENS.fontScale.button),
-      text: gettext('home.startNewGame'),
+      text: startNewGameButtonText,
       click_func: () => this.handleStartNewGame()
     })
 
@@ -350,14 +360,86 @@ Page({
     })
   },
 
+  clearHardResetConfirmationTimer() {
+    if (this.hardResetConfirmationTimerId === null) {
+      return
+    }
+
+    if (typeof clearTimeout === 'function') {
+      clearTimeout(this.hardResetConfirmationTimerId)
+    }
+
+    this.hardResetConfirmationTimerId = null
+  },
+
+  disarmHardResetConfirmation(options = {}) {
+    const shouldRender = options.shouldRender === true
+    const wasArmed = this.isHardResetConfirmationArmed === true
+
+    this.isHardResetConfirmationArmed = false
+    this.clearHardResetConfirmationTimer()
+
+    if (shouldRender && wasArmed) {
+      this.renderHomeScreen()
+    }
+  },
+
+  armHardResetConfirmation() {
+    this.isHardResetConfirmationArmed = true
+    this.clearHardResetConfirmationTimer()
+
+    if (typeof setTimeout === 'function') {
+      this.hardResetConfirmationTimerId = setTimeout(() => {
+        this.hardResetConfirmationTimerId = null
+
+        if (this.isHardResetConfirmationArmed !== true) {
+          return
+        }
+
+        this.isHardResetConfirmationArmed = false
+        this.renderHomeScreen()
+      }, HOME_HARD_RESET_CONFIRMATION_WINDOW_MS)
+    }
+
+    this.renderHomeScreen()
+  },
+
+  async handleHardResetStartNewGame() {
+    if (this.isStartingNewGame === true) {
+      return false
+    }
+
+    this.isStartingNewGame = true
+
+    try {
+      const flowResult = await startNewMatchFlow()
+      return flowResult?.navigatedToSetup === true
+    } catch {
+      return false
+    } finally {
+      this.isStartingNewGame = false
+    }
+  },
+
   async handleStartNewGame() {
-    clearState()
-    await clearMatchState()
-    this.resetRuntimeMatchState()
-    this.navigateToSetupPage()
+    if (this.isStartingNewGame === true) {
+      return false
+    }
+
+    if (this.isHardResetConfirmationArmed !== true) {
+      this.armHardResetConfirmation()
+      return false
+    }
+
+    this.disarmHardResetConfirmation()
+    return this.handleHardResetStartNewGame()
   },
 
   async handleResumeGame() {
+    this.disarmHardResetConfirmation({
+      shouldRender: true
+    })
+
     let savedMatchState = null
 
     try {
@@ -387,34 +469,6 @@ Page({
     this.restoreRuntimeMatchState(restoredRuntimeMatchState)
     this.navigateToGamePage()
     return true
-  },
-
-  resetRuntimeMatchState() {
-    if (typeof getApp !== 'function') {
-      return
-    }
-
-    const app = getApp()
-
-    if (!app || typeof app !== 'object') {
-      return
-    }
-
-    if (!app.globalData || typeof app.globalData !== 'object') {
-      app.globalData = {}
-    }
-
-    app.globalData.matchState = createInitialMatchState()
-
-    if (
-      app.globalData.matchHistory &&
-      typeof app.globalData.matchHistory.clear === 'function'
-    ) {
-      app.globalData.matchHistory.clear()
-      return
-    }
-
-    app.globalData.matchHistory = createHistoryStack()
   },
 
   restoreRuntimeMatchState(matchState) {
@@ -456,16 +510,6 @@ Page({
 
     hmApp.gotoPage({
       url: 'page/game'
-    })
-  },
-
-  navigateToSetupPage() {
-    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
-      return
-    }
-
-    hmApp.gotoPage({
-      url: 'page/setup'
     })
   }
 })

@@ -1300,7 +1300,7 @@
         "id": "19",
         "title": "Implement New Match Reset and Cleanup",
         "description": "Ensure starting a new match clears the existing active session and history properly.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "12",
           "13"
@@ -1308,7 +1308,71 @@
         "priority": "medium",
         "details": "Implement a `startNewMatchFlow` function. This should clear the persisted `ACTIVE_MATCH_SESSION` from storage (set to null or delete key). Reset the in-memory state manager. Then navigate to the Match Setup screen (Task 13). This must be triggered from the Summary screen 'Start New Game' button and potentially the Home screen if a hard reset is needed.",
         "testStrategy": "Functional test: Finish a match. Click 'Start New Game'. Check storage to ensure old 'finished' match is cleared or overwritten. Verify setup screen appears fresh.",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create storage clearing utility function",
+            "description": "Implement a utility function to clear the persisted active match session from storage.",
+            "dependencies": [],
+            "details": "Create a function `clearActiveMatchSession()` that uses the existing persistence API (from Task 12) to delete or set to null the `ACTIVE_MATCH_SESSION` key in local storage/settings storage. Ensure proper error handling is in place.",
+            "status": "done",
+            "testStrategy": "Unit test that verifies the storage key is removed or set to null after calling the function. Test with existing and non-existing session data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-22T09:27:37.458Z"
+          },
+          {
+            "id": 2,
+            "title": "Create state manager reset utility function",
+            "description": "Implement a utility function to reset the in-memory match state manager to initial values.",
+            "dependencies": [],
+            "details": "Create a function `resetMatchStateManager()` that resets the global match state to its initial state: scores to 0-0, history stack empty, setHistory empty, status to 'idle', and any other relevant properties to default values. This will use the logic from Task 4's state structure.",
+            "status": "done",
+            "testStrategy": "Unit test that verifies state manager is reset to initial values after calling the function, even after a simulated active match state exists.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-22T09:27:38.430Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement startNewMatchFlow main function",
+            "description": "Implement the main startNewMatchFlow function that orchestrates cleanup and navigation.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create `startNewMatchFlow()` that: 1) calls `clearActiveMatchSession()` to remove persisted data, 2) calls `resetMatchStateManager()` to clear in-memory state, 3) navigates to the Match Setup screen (Task 13). Wrap in try-catch for graceful error handling and ensure the flow completes or fails safely.",
+            "status": "done",
+            "testStrategy": "Integration test: simulate an active match, call startNewMatchFlow, verify storage is cleared, state is reset, and navigation occurs to Match Setup screen.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-22T09:27:39.543Z"
+          },
+          {
+            "id": 4,
+            "title": "Connect Summary screen Start New Game button",
+            "description": "Integrate the startNewMatchFlow function with the Summary screen's Start New Game button.",
+            "dependencies": [
+              3
+            ],
+            "details": "In the Summary Screen implementation (Task 18), locate the 'Start New Game' button and add a click event handler that calls `startNewMatchFlow()`. Ensure the handler provides visual feedback (e.g., loading state) if needed and prevents double-taps.",
+            "status": "done",
+            "testStrategy": "Functional test: Complete a match, view the Summary screen, click 'Start New Game', verify storage is cleared and Match Setup screen appears fresh without previous match data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-22T09:27:40.609Z"
+          },
+          {
+            "id": 5,
+            "title": "Add hard reset capability to Home screen",
+            "description": "Add optional hard reset functionality to the Home screen for emergency reset scenarios.",
+            "dependencies": [
+              3
+            ],
+            "details": "On the Home Screen (Task 17), implement a hard reset mechanism - either a dedicated button (for debugging/admin) or a long-press gesture on a UI element. When triggered, call `startNewMatchFlow()`. Consider adding a confirmation dialog to prevent accidental resets. Document this feature appropriately.",
+            "status": "done",
+            "testStrategy": "Functional test: With an active match in progress, trigger the hard reset on Home screen, verify confirmation appears (if implemented), confirm action, and verify state is cleared and Match Setup screen appears.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-22T09:27:41.728Z"
+          }
+        ],
+        "updatedAt": "2026-02-22T09:27:41.728Z"
       },
       {
         "id": "20",
@@ -1344,9 +1408,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-21T21:10:33.861Z",
+      "lastModified": "2026-02-22T09:27:41.728Z",
       "taskCount": 21,
-      "completedCount": 18,
+      "completedCount": 19,
       "tags": [
         "master"
       ]

@@ -5,6 +5,7 @@ import test from 'node:test'
 import { matchStorage } from '../utils/match-storage.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { createInitialMatchState } from '../utils/match-state.js'
+import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { MATCH_STATE_STORAGE_KEY } from '../utils/storage.js'
 
 let summaryPageImportCounter = 0
@@ -189,6 +190,10 @@ async function loadSummaryPageDefinition() {
   const matchStorageUrl = new URL('../utils/match-storage.js', import.meta.url)
   const matchStateSchemaUrl = new URL('../utils/match-state-schema.js', import.meta.url)
   const matchStateUrl = new URL('../utils/match-state.js', import.meta.url)
+  const startNewMatchFlowUrl = new URL(
+    './helpers/summary-start-new-match-flow-bridge.js',
+    import.meta.url
+  )
   const storageUrl = new URL('../utils/storage.js', import.meta.url)
 
   let source = await readFile(sourceUrl, 'utf8')
@@ -199,6 +204,10 @@ async function loadSummaryPageDefinition() {
     .replace("from '../utils/match-storage.js'", `from '${matchStorageUrl.href}'`)
     .replace("from '../utils/match-state-schema.js'", `from '${matchStateSchemaUrl.href}'`)
     .replace("from '../utils/match-state.js'", `from '${matchStateUrl.href}'`)
+    .replace(
+      "from '../utils/start-new-match-flow.js'",
+      `from '${startNewMatchFlowUrl.href}'`
+    )
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
 
   const moduleUrl =
@@ -238,6 +247,8 @@ async function runSummaryPageScenario(options = {}, runAssertions) {
   const originalHmApp = globalThis.hmApp
   const originalGetApp = globalThis.getApp
   const originalSettingsStorage = globalThis.settingsStorage
+  const originalStartNewMatchFlowBridge =
+    globalThis.__summaryScreenStartNewMatchFlow
   const originalMatchStorageAdapter = matchStorage.adapter
 
   const { hmUI, createdWidgets } = createHmUiRecorder()
@@ -277,6 +288,10 @@ async function runSummaryPageScenario(options = {}, runAssertions) {
     }
   }
   globalThis.getApp = () => app
+  globalThis.__summaryScreenStartNewMatchFlow =
+    typeof options.startNewMatchFlow === 'function'
+      ? options.startNewMatchFlow
+      : (...args) => runStartNewMatchFlow(...args)
   globalThis.settingsStorage = {
     getItem() {
       return null
@@ -356,6 +371,13 @@ async function runSummaryPageScenario(options = {}, runAssertions) {
       delete globalThis.settingsStorage
     } else {
       globalThis.settingsStorage = originalSettingsStorage
+    }
+
+    if (typeof originalStartNewMatchFlowBridge === 'undefined') {
+      delete globalThis.__summaryScreenStartNewMatchFlow
+    } else {
+      globalThis.__summaryScreenStartNewMatchFlow =
+        originalStartNewMatchFlowBridge
     }
 
     matchStorage.adapter = originalMatchStorageAdapter
@@ -507,11 +529,16 @@ test('summary start-new-game button clears state, resets runtime manager, and na
       }
     }
   }
+  let startNewMatchFlowCalls = 0
 
   await runSummaryPageScenario(
     {
       app,
-      matchStorageLoadResponses: [serializePersistedMatchState()]
+      matchStorageLoadResponses: [serializePersistedMatchState()],
+      startNewMatchFlow() {
+        startNewMatchFlowCalls += 1
+        return runStartNewMatchFlow()
+      }
     },
     async ({
       app,
@@ -530,7 +557,45 @@ test('summary start-new-game button clears state, resets runtime manager, and na
       assert.deepEqual(clearedMatchStorageKeys, [ACTIVE_MATCH_SESSION_STORAGE_KEY])
       assert.deepEqual(app.globalData.matchState, createInitialMatchState())
       assert.equal(app.globalData.matchHistory.clearCalls, 1)
+      assert.equal(startNewMatchFlowCalls, 1)
       assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+    }
+  )
+})
+
+test('summary start-new-game button ignores accidental double taps while flow is in progress', async () => {
+  let startNewMatchFlowCalls = 0
+  let resolveFlow = null
+
+  const pendingFlow = new Promise((resolve) => {
+    resolveFlow = resolve
+  })
+
+  await runSummaryPageScenario(
+    {
+      matchStorageLoadResponses: [serializePersistedMatchState()],
+      startNewMatchFlow() {
+        startNewMatchFlowCalls += 1
+        return pendingFlow
+      }
+    },
+    async ({ createdWidgets, navigationCalls }) => {
+      const startButton = findButtonByText(createdWidgets, 'summary.startNewGame')
+
+      assert.equal(typeof startButton?.properties.click_func, 'function')
+
+      const firstStartAttempt = startButton.properties.click_func()
+      const secondStartAttempt = startButton.properties.click_func()
+
+      assert.equal(startNewMatchFlowCalls, 1)
+
+      resolveFlow({
+        navigatedToSetup: true
+      })
+
+      assert.equal(await firstStartAttempt, true)
+      assert.equal(await secondStartAttempt, false)
+      assert.deepEqual(navigationCalls, [])
     }
   )
 })
