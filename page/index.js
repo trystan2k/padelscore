@@ -8,7 +8,6 @@ import { startNewMatchFlow } from '../utils/start-new-match-flow.js'
 const PERSISTED_ADVANTAGE_POINT_VALUE = 50
 const PERSISTED_GAME_POINT_VALUE = 60
 const TIE_BREAK_ENTRY_GAMES = 6
-const HOME_HARD_RESET_CONFIRMATION_WINDOW_MS = 2500
 const REGULAR_GAME_POINT_VALUES = new Set([0, 15, 30, 40])
 
 const HOME_TOKENS = Object.freeze({
@@ -185,14 +184,11 @@ Page({
     this.savedMatchState = null
     this.hasSavedGame = false
     this.isStartingNewGame = false
-    this.isHardResetConfirmationArmed = false
-    this.hardResetConfirmationTimerId = null
     this.refreshSavedMatchState()
   },
 
   onShow() {
     this.isStartingNewGame = false
-    this.disarmHardResetConfirmation()
     this.savedMatchState = null
     this.hasSavedGame = false
     this.renderHomeScreen()
@@ -204,7 +200,6 @@ Page({
   },
 
   onDestroy() {
-    this.clearHardResetConfirmationTimer()
     this.clearWidgets()
   },
 
@@ -281,9 +276,7 @@ Page({
       startButtonY +
       startButtonHeight +
       Math.round(height * HOME_TOKENS.spacingScale.primaryToSecondaryButton)
-    const startNewGameButtonText = this.isHardResetConfirmationArmed
-      ? gettext('home.confirmStartNewGame')
-      : gettext('home.startNewGame')
+    const startNewGameButtonText = gettext('home.startNewGame')
 
     this.clearWidgets()
 
@@ -352,51 +345,7 @@ Page({
     })
   },
 
-  clearHardResetConfirmationTimer() {
-    if (this.hardResetConfirmationTimerId === null) {
-      return
-    }
-
-    if (typeof clearTimeout === 'function') {
-      clearTimeout(this.hardResetConfirmationTimerId)
-    }
-
-    this.hardResetConfirmationTimerId = null
-  },
-
-  disarmHardResetConfirmation(options = {}) {
-    const shouldRender = options.shouldRender === true
-    const wasArmed = this.isHardResetConfirmationArmed === true
-
-    this.isHardResetConfirmationArmed = false
-    this.clearHardResetConfirmationTimer()
-
-    if (shouldRender && wasArmed) {
-      this.renderHomeScreen()
-    }
-  },
-
-  armHardResetConfirmation() {
-    this.isHardResetConfirmationArmed = true
-    this.clearHardResetConfirmationTimer()
-
-    if (typeof setTimeout === 'function') {
-      this.hardResetConfirmationTimerId = setTimeout(() => {
-        this.hardResetConfirmationTimerId = null
-
-        if (this.isHardResetConfirmationArmed !== true) {
-          return
-        }
-
-        this.isHardResetConfirmationArmed = false
-        this.renderHomeScreen()
-      }, HOME_HARD_RESET_CONFIRMATION_WINDOW_MS)
-    }
-
-    this.renderHomeScreen()
-  },
-
-  handleHardResetStartNewGame() {
+  handleStartNewGame() {
     if (this.isStartingNewGame === true) {
       return false
     }
@@ -413,25 +362,7 @@ Page({
     }
   },
 
-  handleStartNewGame() {
-    if (this.isStartingNewGame === true) {
-      return false
-    }
-
-    if (this.isHardResetConfirmationArmed !== true) {
-      this.armHardResetConfirmation()
-      return false
-    }
-
-    this.disarmHardResetConfirmation()
-    return this.handleHardResetStartNewGame()
-  },
-
   handleResumeGame() {
-    this.disarmHardResetConfirmation({
-      shouldRender: true
-    })
-
     let savedMatchState = null
 
     try {
