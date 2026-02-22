@@ -1516,6 +1516,20 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Add QA Controls with Husky, Biome, and Commitlint",
+        "description": "Set up code quality tooling for the project, including git hooks for pre-commit and commit-msg validation, automated linting with Biome, and test execution on pre-push.",
+        "details": "1. **Install Dependencies**: Run package manager commands to install `husky`, `@commitlint/cli`, `@commitlint/config-conventional`, `@biomejs/biome`, and `lint-staged` as dev dependencies.\n2. **Initialize Husky**: Run `npx husky install` to set up the git hooks infrastructure and configure the `prepare` script in `package.json` to ensure hooks are installed after `npm install`.\n3. **Configure Commitlint**: Create a `commitlint.config.js` file extending `@commitlint/config-conventional` to enforce commit message standards.\n4. **Configure Biome**: Create a `biome.json` configuration file to define linting and formatting rules for JavaScript and JSON files.\n5. **Configure lint-staged**: Create a `.lintstagedrc.json` file to map file extensions (`.js`, `.json`, `.ts`) to the Biome lint command.\n6. **Create Git Hooks**:\n   - **Pre-commit**: Create `.husky/pre-commit` containing `npx lint-staged` to run linters only on staged files.\n   - **Commit-msg**: Create `.husky/commit-msg` containing `npx commitlint --edit $1` to validate messages.\n   - **Pre-push**: Create `.husky/pre-push` containing `npm test` to ensure the test suite passes before pushing.\n7. **Update package.json Scripts**: Add scripts for `\"lint\"`, `\"format\"`, and `\"lint:fix\"` using Biome CLI commands (`biome check .`, `biome format --write .`, `biome check --write .`).",
+        "testStrategy": "1. **Pre-commit Verification**: Intentionally introduce a linting error (e.g., unused variable) in a JavaScript file, stage it, and attempt to commit. Verify that the commit is blocked by the pre-commit hook and the Biome error is displayed in the console.\n2. **Linting Fix**: Run the `npm run lint:fix` command, stage the changes, and verify the commit now succeeds.\n3. **Commit-msg Verification**: Attempt to commit with a message like 'bad message' and verify the commit-msg hook blocks it. Retry with a conventional commit like 'feat: add qa controls' and verify success.\n4. **Pre-push Verification**: Temporarily break a unit test, then attempt to `git push`. Verify that the pre-push hook blocks the push due to the test failure. Fix the test and verify the push succeeds.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          3
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
@@ -1528,7 +1542,7 @@
       ],
       "created": "2026-02-22T17:12:14.719Z",
       "description": "Tasks for master context",
-      "updated": "2026-02-22T17:13:30.521Z"
+      "updated": "2026-02-22T17:31:48.798Z"
     }
   },
   "qa-remediation-v1-1": {
