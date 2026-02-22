@@ -7,6 +7,9 @@ msgstr "Scoreboard"
 msgid "home.startNewGame"
 msgstr "Start New Game"
 
+msgid "home.confirmStartNewGame"
+msgstr "Tap Again to Reset"
+
 msgid "home.resumeGame"
 msgstr "Resume Game"
 

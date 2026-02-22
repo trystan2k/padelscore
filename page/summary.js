@@ -1,10 +1,8 @@
 import { gettext } from 'i18n'
 
-import { createHistoryStack } from '../utils/history-stack.js'
-import { clearMatchState, loadMatchState } from '../utils/match-storage.js'
+import { loadMatchState } from '../utils/match-storage.js'
 import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
-import { createInitialMatchState } from '../utils/match-state.js'
-import { clearState } from '../utils/storage.js'
+import { startNewMatchFlow } from '../utils/start-new-match-flow.js'
 
 const SUMMARY_TOKENS = Object.freeze({
   colors: {
@@ -178,10 +176,12 @@ Page({
     this.widgets = []
     this.finishedMatchState = null
     this.finishedMatchStateRequestId = 0
+    this.isStartingNewGame = false
     this.refreshFinishedMatchState()
   },
 
   onShow() {
+    this.isStartingNewGame = false
     this.refreshFinishedMatchState()
   },
 
@@ -280,26 +280,6 @@ Page({
     return this.finishedMatchState !== null
   },
 
-  resetRuntimeMatchState() {
-    const app = this.getAppInstance()
-
-    if (!app) {
-      return
-    }
-
-    app.globalData.matchState = createInitialMatchState()
-
-    if (
-      app.globalData.matchHistory &&
-      typeof app.globalData.matchHistory.clear === 'function'
-    ) {
-      app.globalData.matchHistory.clear()
-      return
-    }
-
-    app.globalData.matchHistory = createHistoryStack()
-  },
-
   navigateToHomePage() {
     if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
       return false
@@ -315,30 +295,25 @@ Page({
     }
   },
 
-  navigateToSetupPage() {
-    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
-      return false
-    }
-
-    try {
-      hmApp.gotoPage({
-        url: 'page/setup'
-      })
-      return true
-    } catch {
-      return false
-    }
-  },
-
   handleNavigateHome() {
     return this.navigateToHomePage()
   },
 
   async handleStartNewGame() {
-    clearState()
-    await clearMatchState()
-    this.resetRuntimeMatchState()
-    this.navigateToSetupPage()
+    if (this.isStartingNewGame === true) {
+      return false
+    }
+
+    this.isStartingNewGame = true
+
+    try {
+      const flowResult = await startNewMatchFlow()
+      return flowResult?.navigatedToSetup === true
+    } catch {
+      return false
+    } finally {
+      this.isStartingNewGame = false
+    }
   },
 
   renderSummaryScreen() {
