@@ -1378,7 +1378,7 @@
         "id": "20",
         "title": "Edge Case Handling and Data Validation",
         "description": "Robustness check to handle app interruptions before first point, corrupted data, and null reference safety.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "12",
           "17"
@@ -1386,7 +1386,8 @@
         "priority": "medium",
         "details": "Add defensive coding in `loadMatchState` and state consumers. Scenario 1: User exits immediately after setup (0 points). Ensure state saves 'active' status and loads correctly. Scenario 2: Partial data in storage. Logic must default to 'no active game' (hide resume) rather than crashing. Add checks in Game screen to ensure state exists before rendering UI.",
         "testStrategy": "QA Scenarios: 1. Setup match -> Press Back -> Open App -> Verify Resume works. 2. Manually corrupt storage file -> Open App -> Verify app loads Home safely without 'Resume'.",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-02-22T09:55:22.386Z"
       },
       {
         "id": "21",
@@ -1408,9 +1409,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-22T09:27:41.728Z",
+      "lastModified": "2026-02-22T09:55:22.387Z",
       "taskCount": 21,
-      "completedCount": 19,
+      "completedCount": 20,
       "tags": [
         "master"
       ]

@@ -172,7 +172,7 @@ Use this mapping when parent agents provide high-level intent:
 **MANDATORY**: Development logs **MUST** be saved with this exact filename format:
 
 ```
-Task [ID] [Full Task Title From Task Master].md
+Task [ID] [Full Task Title From Task Master]
 ```
 
 **CORRECT Examples:**
@@ -197,7 +197,7 @@ Output:
 
 - `Preconditions`: Basic Memory executable resolved to `basic-memory`; project configured.
 - `Command Resolution`: intent `create` mapped to installed version command `<bm> tool write-note`.
-- `Executed Commands`: `<bm> tool write-note --title "Task 42 Add Retry Logic for API Client.md" --content "<log-content>" --project <name> --folder "development-logs"`.
+- `Executed Commands`: `<bm> tool write-note --title "Task 42 Add Retry Logic for API Client" --content "<log-content>" --project <name> --folder "development-logs"`.
 - `Result Data`: development log entry created.
 - `Validation`: `<bm> tool search-notes "Task 42 Add Retry Logic" --project <name>` confirms entry exists.
 - `Final Status`: `success`.

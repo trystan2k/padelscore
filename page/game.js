@@ -1228,6 +1228,10 @@ Page({
       return
     }
 
+    if (!this.isSessionAccessGranted) {
+      return
+    }
+
     const matchState = this.getRuntimeMatchState()
     const viewModel = createScoreViewModel(matchState, {
       persistedMatchState: this.persistedSessionState
