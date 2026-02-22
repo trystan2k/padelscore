@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Project Initialization & Configuration",
         "description": "Set up the Zepp OS project structure, configuration files, and base directories.",
         "status": "done",
@@ -81,7 +81,7 @@
         "updatedAt": "2026-02-20T07:17:14.797Z"
       },
       {
-        "id": "2",
+        "id": 2,
         "title": "Data Model & State Management Design",
         "description": "Define the data structures for the game state, scoring history, and team configurations.",
         "status": "done",
@@ -132,7 +132,7 @@
         "updatedAt": "2026-02-20T13:23:14.673Z"
       },
       {
-        "id": "3",
+        "id": 3,
         "title": "Local Storage & Persistence Layer",
         "description": "Implement the mechanism to save and load the game state using the device's local storage.",
         "status": "done",
@@ -172,7 +172,7 @@
         "updatedAt": "2026-02-20T14:42:51.982Z"
       },
       {
-        "id": "4",
+        "id": 4,
         "title": "Padel Scoring Logic Engine",
         "description": "Develop the core state machine logic for handling points, games, sets, and tie-breaks.",
         "status": "done",
@@ -256,7 +256,7 @@
         "updatedAt": "2026-02-20T15:35:54.087Z"
       },
       {
-        "id": "5",
+        "id": 5,
         "title": "Undo & Remove Point Logic",
         "description": "Implement the logic to reverse the last score action using the history stack.",
         "status": "done",
@@ -334,7 +334,7 @@
         "updatedAt": "2026-02-20T16:26:03.053Z"
       },
       {
-        "id": "6",
+        "id": 6,
         "title": "Home Screen UI Implementation",
         "description": "Build the Home Screen with Start and Resume functionality based on the design reference.",
         "status": "done",
@@ -390,7 +390,7 @@
         "updatedAt": "2026-02-20T17:12:16.550Z"
       },
       {
-        "id": "7",
+        "id": 7,
         "title": "Game Screen Layout Construction",
         "description": "Create the layout for the Game Screen displaying scores and control buttons.",
         "status": "done",
@@ -446,7 +446,7 @@
         "updatedAt": "2026-02-20T18:09:24.012Z"
       },
       {
-        "id": "8",
+        "id": 8,
         "title": "Game Screen Interaction & Binding",
         "description": "Connect the UI buttons to the Scoring Logic and update the view dynamically.",
         "status": "done",
@@ -490,7 +490,7 @@
         "updatedAt": "2026-02-20T18:47:05.999Z"
       },
       {
-        "id": "9",
+        "id": 9,
         "title": "Navigation & Lifecycle Handling",
         "description": "Manage navigation between screens and handle app backgrounding/foregrounding events.",
         "status": "done",
@@ -531,7 +531,7 @@
         "updatedAt": "2026-02-20T21:30:28.703Z"
       },
       {
-        "id": "10",
+        "id": 10,
         "title": "Styling Refinement, Input Debouncing & Polish",
         "description": "Apply final design styles, implement input debouncing, and optimize performance.",
         "status": "done",
@@ -571,7 +571,7 @@
         "updatedAt": "2026-02-21T07:37:54.865Z"
       },
       {
-        "id": "11",
+        "id": 11,
         "title": "Define Match State Data Model and Storage Schema",
         "description": "Create the data structure interface for the match session that satisfies the persistence and scoring requirements defined in the PRD.",
         "status": "done",
@@ -673,7 +673,7 @@
         "updatedAt": "2026-02-21T09:19:11.291Z"
       },
       {
-        "id": "12",
+        "id": 12,
         "title": "Implement Core Persistence Service (Save/Load)",
         "description": "Develop the utility functions to save the match state to local storage and load it back, including error handling for corrupted data.",
         "status": "done",
@@ -767,7 +767,7 @@
         "updatedAt": "2026-02-21T09:58:15.911Z"
       },
       {
-        "id": "13",
+        "id": 13,
         "title": "Implement Pre-Match Setup UI and Logic",
         "description": "Create the Match Setup screen allowing users to select 1, 3, or 5 sets and initialize the match session.",
         "status": "done",
@@ -865,7 +865,7 @@
         "updatedAt": "2026-02-21T11:36:22.871Z"
       },
       {
-        "id": "14",
+        "id": 14,
         "title": "Integrate Lifecycle Persistence Triggers",
         "description": "Ensure state is saved automatically on app lifecycle events (sleep, exit, background) to meet reliability requirements.",
         "status": "done",
@@ -957,7 +957,7 @@
         "updatedAt": "2026-02-21T13:44:50.831Z"
       },
       {
-        "id": "15",
+        "id": 15,
         "title": "Update Game Screen for Set Point Display",
         "description": "Modify the Game Screen UI to visualize the match-level set points (Sets Won) alongside current game scores.",
         "status": "done",
@@ -1049,7 +1049,7 @@
         "updatedAt": "2026-02-21T16:28:42.326Z"
       },
       {
-        "id": "16",
+        "id": 16,
         "title": "Implement Set Completion and Match Completion Logic",
         "description": "Develop the logic to handle set wins, update set history, reset games, and determine the match winner based on the configured format.",
         "status": "done",
@@ -1127,7 +1127,7 @@
         "updatedAt": "2026-02-21T19:22:38.432Z"
       },
       {
-        "id": "17",
+        "id": 17,
         "title": "Implement Home Screen Resume Logic",
         "description": "Update the Home Screen to conditionally show 'Resume Game' and handle restoring the active match state.",
         "status": "done",
@@ -1218,7 +1218,7 @@
         "updatedAt": "2026-02-21T19:48:19.358Z"
       },
       {
-        "id": "18",
+        "id": 18,
         "title": "Implement Match Summary Screen",
         "description": "Create the Summary Screen to display the match winner, final set points, and per-set breakdown.",
         "status": "done",
@@ -1297,7 +1297,7 @@
         "updatedAt": "2026-02-21T21:10:33.861Z"
       },
       {
-        "id": "19",
+        "id": 19,
         "title": "Implement New Match Reset and Cleanup",
         "description": "Ensure starting a new match clears the existing active session and history properly.",
         "status": "done",
@@ -1375,7 +1375,7 @@
         "updatedAt": "2026-02-22T09:27:41.728Z"
       },
       {
-        "id": "20",
+        "id": 20,
         "title": "Edge Case Handling and Data Validation",
         "description": "Robustness check to handle app interruptions before first point, corrupted data, and null reference safety.",
         "status": "done",
@@ -1390,7 +1390,7 @@
         "updatedAt": "2026-02-22T09:55:22.386Z"
       },
       {
-        "id": "21",
+        "id": 21,
         "title": "Increase Add Point Button Size for Game Screen (Accessibility)",
         "description": "Refactor the Game Screen UI to ensure Add Point buttons meet the 44x44 px touch target requirement, optimizing layout for round and square Zepp OS screens without breaking existing functionality.",
         "details": "Modify the `page/game` layout to increase the dimensions of Team A and Team B Add/Remove point controls to a minimum of 44x44 px. Adjust the Points Display and Set Points display areas (referencing Task 15) to be more compact or repositioned to accommodate larger controls. Reduce non-essential UI elements (padding, chrome) if necessary to maximize space. Ensure layout logic handles dynamic sizing for Round (designWidth 454) and Square (designWidth 390) screens. Maintain event bindings established in Task 8 and ensure visual separation between interactive elements to prevent accidental adjacent taps.",
@@ -1408,7 +1408,7 @@
         "updatedAt": "2026-02-22T16:47:53.181Z"
       },
       {
-        "id": "22",
+        "id": 22,
         "title": "Redesign Game Screen UI for Enhanced Readability and Touch Interaction",
         "description": "Overhaul the Game Screen interface to improve readability by replacing the segmented card layout with a streamlined header for Sets and Games. Modify the scoring interaction to allow adding points by tapping the score display directly, with dedicated minus buttons positioned below.",
         "details": "Refactor the `page/game` layout to eliminate the segmented card style. Implement a new, cleaner header section that distinctly displays 'SETS' and 'GAMES' labels alongside the corresponding values for Team A and Team B. Apply design tokens to increase font sizes significantly across all text elements for better legibility. Redesign the central score area so that the Point Score (0, 15, 30, etc.) acts as a large, touch-sensitive button; tapping this area should trigger the `addPoint` logic. Place explicit, styled 'Minus' (-) buttons directly below the score displays to handle `removePoint` actions. Ensure the layout remains responsive for both Round (454px) and Square (390px) screens, adjusting padding and flex distribution to prevent overlap.",
@@ -1424,7 +1424,7 @@
         "updatedAt": "2026-02-22T17:04:07.334Z"
       },
       {
-        "id": "23",
+        "id": 23,
         "title": "Implement Scrollable Match History on Summary Screen",
         "description": "Replace static history text with a scrollable SCROLL_LIST widget to accommodate longer match histories, adjust font sizing, and remove the Start New Game button from the Summary Screen.",
         "details": "This task modifies the existing Match Summary Screen (Task 18) to enhance the match history display. Implementation steps:\n\n1. **Replace Static History with SCROLL_LIST**: Remove the current static text display for set history. Implement a SCROLL_LIST widget that dynamically populates with items from the `setHistory` array in the MatchState. Each list item should display a single set result (e.g., 'Set 1: 6-4'). Configure the scrollable list to handle histories longer than the screen viewport.\n\n2. **Increase Font Scale**: Update the body font scale property from 0.04 to 0.08 to improve text readability. This may require adjusting the scrollable list item height to prevent text clipping.\n\n3. **Remove Start New Game Button**: Delete the 'Start New Game' button from the Summary Screen UI. Ensure the 'Home' button remains and continues to navigate properly to the Home screen.\n\n4. **UI Adjustments**: Re-layout the Summary Screen components to accommodate the new scrollable list. The layout should flow: Winner announcement, final score, scrollable set history list, and Home button at the bottom.\n\nNote: The Start New Game functionality was already handled in Task 19, so removing this button is purely a UI change. The data source (setHistory from MatchState) remains unchanged from Task 16.",
@@ -1438,7 +1438,7 @@
         "subtasks": []
       },
       {
-        "id": "24",
+        "id": 24,
         "title": "Simplify New Game Start Flow on Home Screen",
         "description": "Remove the confirmation mechanism when starting a new game from the home screen to reduce friction and allow immediate game start without any intermediate confirmation step or timer logic.",
         "details": "Modify the Home Screen 'Start New Game' button behavior to eliminate the confirmation dialog flow. Remove any UI components related to the confirmation modal (dialog text, confirm/cancel buttons, backdrop). Delete state variables tracking confirmation visibility (e.g., `showConfirmDialog`, `isConfirming`). Remove any timer logic associated with auto-dismissing confirmation dialogs or countdown timers. Update the 'Start New Game' click event handler to directly execute the start sequence: 1) Call the match reset/cleanup function from Task 19 to clear existing session data, 2) Navigate immediately to the Match Setup screen. Ensure this simplification only affects the Home Screen start flow and does not impact other areas of the app that may use confirmation patterns. Clean up any unused CSS/styling and event listeners previously associated with the confirmation dialog.",
@@ -1452,7 +1452,7 @@
         "subtasks": []
       },
       {
-        "id": "25",
+        "id": 25,
         "title": "Implement Screen Keep-Awake During Active Game",
         "description": "Implement screen keep-awake functionality to prevent the watch from returning to the watchface when the screen turns off during an active game, with maximum brightness setting and simulator compatibility handling.",
         "details": "Implement screen keep-awake functionality for the Game Screen to ensure continuous gameplay visibility during active matches. On `page/game` initialization or `onShow` lifecycle event, call the Zepp OS screen wake API (e.g., `wearable.keepScreenOn()` or `wakelock.acquire()`) to prevent the screen from turning off. Set the bright screen time to maximum using the appropriate brightness settings API (e.g., `setBrightScreenDuration(MAX)`). Store the reference to the wake lock or screen keep setting in a module-level variable for cleanup. On page exit (`onHide`, `onDestroy`, or navigation away), release the wake lock or cancel the keep-awake request to restore normal power behavior. Wrap all API calls in try-catch blocks with feature detection (check if APIs exist before calling) to handle the simulator environment where these APIs may be unavailable. Add a fallback mechanism or graceful degradation if the APIs are not present (e.g., log a warning to console but allow the app to continue functioning). Ensure the implementation does not cause memory leaks by properly cleaning up references and avoiding multiple wake lock acquisitions.",
@@ -1465,7 +1465,7 @@
         "subtasks": []
       },
       {
-        "id": "26",
+        "id": 26,
         "title": "Update App Icons for GTR-3 and GTS-3 Devices",
         "description": "Replace the existing icon.png assets specifically for GTR-3 and GTS-3 device targets with updated versions. Additionally, update the project documentation to include a visual reference of the new sample icon.",
         "details": "Locate the asset directories specific to the GTR-3 and GTS-3 devices within the project structure (typically found under directories named or tagged with device identifiers). Replace the current `icon.png` files in these directories with the updated icon assets. Ensure that the new assets adhere to the specific resolution requirements for GTR-3 (usually 454x454 pixels) and GTS-3 (usually 390x390 pixels) and are in the supported format (e.g., PNG). Navigate to the project documentation file (e.g., README.md or docs folder) and insert the new sample icon image. Add a caption or label indicating it is the updated reference icon for the application.",
@@ -1476,7 +1476,7 @@
         "subtasks": []
       },
       {
-        "id": "27",
+        "id": 27,
         "title": "Refactor Tests to Use Synchronous Storage APIs",
         "description": "Update all test files to replace asynchronous storage calls with synchronous adapter methods, aligning test patterns with the production Zepp OS `hmFS` file system APIs.",
         "details": "Locate all test files that utilize the storage layer (specifically those testing `saveState`, `loadState`, or persistence logic). Remove `async`/`await` keywords from test function definitions and within the test bodies where storage operations occur. Replace the asynchronous calls with the synchronous `hmFS.SysProSetChars` and `hmFS.SysProGetChars` methods (or their synchronous adapter wrappers) to match the production implementation. Delete any `setTimeout`, `waitFor`, or promise-based delay logic that was previously required to wait for asynchronous storage operations to complete. Simplify test assertions by removing `await` prefixes and validating the state immediately following the synchronous function call. Ensure mock implementations in the test environment are updated to return values directly instead of resolving Promises.",
@@ -1484,6 +1484,35 @@
         "status": "pending",
         "dependencies": [
           "3"
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Fix Game Screen Navigation to Home Screen",
+        "description": "Correct the navigation logic for the Game Screen so that both the 'Return to Home' button and the swipe-back gesture route directly to the Home Screen instead of the Game Setup Screen.",
+        "details": "Locate the 'Return to Home' button event handler within the `page/game` implementation. Update the routing logic to navigate directly to `page/index` (Home Screen) instead of the Setup Screen. Implement or modify the `onBack` lifecycle event handler for the Game Screen to intercept system swipe-back gestures. Inside the `onBack` handler, explicitly set the navigation path to `page/index` and prevent the default behavior which currently routes to the Setup Screen. Ensure that match state is handled appropriately (e.g., saving) before navigation if the game is active.",
+        "testStrategy": "Functional Test: Start a new game from the Home Screen. Tap the 'Return to Home' button and verify the app navigates directly to the Home Screen without passing through the Setup Screen. Functional Test: Start a new game, perform a swipe-back gesture, and verify the app navigates directly to the Home Screen. Regression Test: Verify that starting a new game from the Home Screen still functions correctly and that the Resume Game button appears correctly when exiting an active match.",
+        "status": "pending",
+        "dependencies": [
+          7,
+          22
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Implement Match History Storage and Viewing",
+        "description": "Implement persistent match history storage using Zepp OS hmFS and add a Previous Matches feature to the home screen for reviewing completed matches.",
+        "details": "Implement a new history storage service using `hmFS` API to persist completed match results. Create a data structure for match history entries including: matchId (unique identifier), timestamp, date, time, finalScore, setsWon for both teams, setHistory array, matchDuration (in minutes), and setsToPlay format. Implement `saveMatchToHistory(matchState)` that generates a unique ID using timestamp, extracts relevant data, calculates match duration, and saves to hmFS with filename pattern `match_<timestamp>.json` or maintains a history index file. Implement `loadMatchHistory()` to read all stored matches and `loadMatchById(matchId)` for specific matches. Update Home Screen (Task 17) to add 'Previous Matches' button alongside Start and Resume. Create a new Match History screen with SCROLL_LIST displaying previous matches with date/time as primary label (e.g., '2024-01-15 14:30') and optional brief summary like 'Team A won 2-1'. Implement navigation so tapping a history item loads the match data and navigates to Summary Screen (Task 18) for display. Ensure Summary Screen can handle both active completed matches and historical matches. Handle edge cases: empty history, corrupted files, storage limits. Consider implementing a limit (e.g., last 50 matches) with cleanup logic.",
+        "testStrategy": "1. Functional test: Complete a match and verify it's saved to hmFS by checking file existence or listing history. 2. Persistence test: Save a match, restart watch/app, verify match appears in history list. 3. UI test: Navigate to home screen, verify 'Previous Matches' button appears. 4. Navigation test: Tap 'Previous Matches', verify history screen appears with list. 5. Detail test: Tap on a history item, verify summary screen displays correct match data. 6. Data integrity test: Verify stored data includes all required fields (date, time, scores, sets won, duration). 7. Multiple matches test: Complete multiple matches, verify all appear in history in chronological order. 8. Edge case test: Test with empty history (first install), verify graceful handling. 9. Display test: Verify date/time format is readable on watch screen. 10. Scroll test: With many matches in history, verify scrolling works correctly.",
+        "status": "pending",
+        "dependencies": [
+          16,
+          17,
+          18
         ],
         "priority": "medium",
         "subtasks": []
@@ -1496,7 +1525,10 @@
       "completedCount": 21,
       "tags": [
         "master"
-      ]
+      ],
+      "created": "2026-02-22T17:12:14.719Z",
+      "description": "Tasks for master context",
+      "updated": "2026-02-22T17:13:30.521Z"
     }
   },
   "qa-remediation-v1-1": {
