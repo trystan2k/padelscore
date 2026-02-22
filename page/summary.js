@@ -2,7 +2,6 @@ import { gettext } from 'i18n'
 
 import { loadMatchState } from '../utils/match-storage.js'
 import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
-import { startNewMatchFlow } from '../utils/start-new-match-flow.js'
 
 const SUMMARY_TOKENS = Object.freeze({
   colors: {
@@ -18,7 +17,7 @@ const SUMMARY_TOKENS = Object.freeze({
     text: 0xffffff
   },
   fontScale: {
-    body: 0.04,
+    body: 0.08,
     button: 0.044,
     score: 0.11,
     subtitle: 0.036,
@@ -175,12 +174,10 @@ Page({
   onInit() {
     this.widgets = []
     this.finishedMatchState = null
-    this.isStartingNewGame = false
     this.refreshFinishedMatchState()
   },
 
   onShow() {
-    this.isStartingNewGame = false
     this.refreshFinishedMatchState()
   },
 
@@ -291,23 +288,6 @@ Page({
     return this.navigateToHomePage()
   },
 
-  handleStartNewGame() {
-    if (this.isStartingNewGame === true) {
-      return false
-    }
-
-    this.isStartingNewGame = true
-
-    try {
-      const flowResult = startNewMatchFlow()
-      return flowResult?.navigatedToSetup === true
-    } catch {
-      return false
-    } finally {
-      this.isStartingNewGame = false
-    }
-  },
-
   renderSummaryScreen() {
     if (typeof hmUI === 'undefined') {
       return
@@ -326,16 +306,18 @@ Page({
           : SUMMARY_TOKENS.spacingScale.sideInset)
     )
     const buttonHeight = clamp(Math.round(height * 0.105), 48, 58)
-    const actionsSectionHeight = buttonHeight * 2 + sectionGap
+    // Only one button now (Home)
+    const actionsSectionHeight = buttonHeight
     const actionsSectionY = height - bottomInset - actionsSectionHeight
     const minimumHistoryHeight = 72
     const maxHeaderHeight = Math.max(
       64,
       actionsSectionY - topInset - sectionGap * 2 - minimumHistoryHeight
     )
-    const headerHeight = clamp(Math.round(height * 0.2), 64, maxHeaderHeight)
+    const headerHeight = clamp(Math.round(height * 0.36), 80, maxHeaderHeight)
     const headerY = topInset
-    const historyY = headerY + headerHeight + sectionGap
+    const historyGap = Math.round(height * 0.03)
+    const historyY = headerY + headerHeight + historyGap
     const historyHeight = Math.max(1, actionsSectionY - sectionGap - historyY)
     const maxSectionInset = Math.floor((width - 1) / 2)
 
@@ -369,12 +351,16 @@ Page({
     const scoreLabelHeight = clamp(Math.round(headerHeight * 0.18), 16, 24)
     const scoreValueY = headerY + titleHeight + winnerHeight + scoreLabelHeight
     const scoreValueHeight = Math.max(1, headerHeight - titleHeight - winnerHeight - scoreLabelHeight)
+
+    // History scroll list: each row height based on doubled font size
     const historyTitleHeight = clamp(Math.round(historyHeight * 0.24), 24, 32)
     const historyBodyY = historyY + historyTitleHeight
     const historyBodyHeight = Math.max(1, historyHeight - historyTitleHeight)
-    const maxHistoryRows = Math.max(1, Math.floor(historyBodyHeight / 20))
-    const visibleHistoryLines = viewModel.historyLines.slice(0, maxHistoryRows)
-    const historyRowHeight = Math.max(1, Math.floor(historyBodyHeight / visibleHistoryLines.length))
+    const historyRowHeight = clamp(
+      Math.round(width * SUMMARY_TOKENS.fontScale.body * 2.2),
+      28,
+      56
+    )
 
     this.clearWidgets()
 
@@ -386,6 +372,7 @@ Page({
       color: SUMMARY_TOKENS.colors.background
     })
 
+    // ── Header card ───────────────────────────────────────────────────────
     this.createWidget(hmUI.widget.FILL_RECT, {
       x: headerX,
       y: headerY,
@@ -443,6 +430,7 @@ Page({
       align_v: hmUI.align.CENTER_V
     })
 
+    // ── Set history card (scrollable) ─────────────────────────────────────
     this.createWidget(hmUI.widget.FILL_RECT, {
       x: historyX,
       y: historyY,
@@ -464,20 +452,41 @@ Page({
       align_v: hmUI.align.CENTER_V
     })
 
-    visibleHistoryLines.forEach((historyLine, index) => {
-      this.createWidget(hmUI.widget.TEXT, {
-        x: historyX,
-        y: historyBodyY + historyRowHeight * index,
-        w: historyWidth,
-        h: historyRowHeight,
-        color: SUMMARY_TOKENS.colors.text,
-        text: historyLine,
-        text_size: Math.round(width * SUMMARY_TOKENS.fontScale.body),
-        align_h: hmUI.align.CENTER_H,
-        align_v: hmUI.align.CENTER_V
-      })
+    // Build data array for SCROLL_LIST
+    const scrollDataArray = viewModel.historyLines.map((line) => ({ line }))
+
+    this.createWidget(hmUI.widget.SCROLL_LIST, {
+      x: historyX,
+      y: historyBodyY,
+      w: historyWidth,
+      h: historyBodyHeight,
+      item_space: 0,
+      item_config: [
+        {
+          type_id: 1,
+          item_height: historyRowHeight,
+          item_bg_color: SUMMARY_TOKENS.colors.cardBackground,
+          item_bg_radius: 0,
+          text_view: [
+            {
+              x: 0,
+              y: 0,
+              w: historyWidth,
+              h: historyRowHeight,
+              key: 'line',
+              color: SUMMARY_TOKENS.colors.text,
+              text_size: Math.round(width * SUMMARY_TOKENS.fontScale.body)
+            }
+          ],
+          text_view_count: 1
+        }
+      ],
+      item_config_count: 1,
+      data_array: scrollDataArray,
+      data_count: scrollDataArray.length
     })
 
+    // ── Home button ───────────────────────────────────────────────────────
     this.createWidget(hmUI.widget.BUTTON, {
       x: actionsX,
       y: actionsSectionY,
@@ -490,20 +499,6 @@ Page({
       text_size: Math.round(width * SUMMARY_TOKENS.fontScale.button),
       text: gettext('summary.home'),
       click_func: () => this.handleNavigateHome()
-    })
-
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: actionsX,
-      y: actionsSectionY + buttonHeight + sectionGap,
-      w: actionsWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
-      normal_color: SUMMARY_TOKENS.colors.accent,
-      press_color: SUMMARY_TOKENS.colors.accentPressed,
-      color: SUMMARY_TOKENS.colors.buttonText,
-      text_size: Math.round(width * SUMMARY_TOKENS.fontScale.button),
-      text: gettext('summary.startNewGame'),
-      click_func: () => this.handleStartNewGame()
     })
   }
 })
