@@ -175,7 +175,6 @@ Page({
   onInit() {
     this.widgets = []
     this.finishedMatchState = null
-    this.finishedMatchStateRequestId = 0
     this.isStartingNewGame = false
     this.refreshFinishedMatchState()
   },
@@ -254,20 +253,13 @@ Page({
     return cloneMatchState(app.globalData.matchState)
   },
 
-  async refreshFinishedMatchState() {
-    const requestId = this.finishedMatchStateRequestId + 1
-    this.finishedMatchStateRequestId = requestId
-
+  refreshFinishedMatchState() {
     let persistedMatchState = null
 
     try {
-      persistedMatchState = await loadMatchState()
+      persistedMatchState = loadMatchState()
     } catch {
       persistedMatchState = null
-    }
-
-    if (requestId !== this.finishedMatchStateRequestId) {
-      return false
     }
 
     if (isFinishedMatchState(persistedMatchState)) {
@@ -299,7 +291,7 @@ Page({
     return this.navigateToHomePage()
   },
 
-  async handleStartNewGame() {
+  handleStartNewGame() {
     if (this.isStartingNewGame === true) {
       return false
     }
@@ -307,7 +299,7 @@ Page({
     this.isStartingNewGame = true
 
     try {
-      const flowResult = await startNewMatchFlow()
+      const flowResult = startNewMatchFlow()
       return flowResult?.navigatedToSetup === true
     } catch {
       return false

@@ -50,18 +50,50 @@ export function clearState() {
 }
 
 /**
+ * Returns a storage adapter backed by hmFS.SysProSetChars / SysProGetChars
+ * which is the correct key-value string storage API for Zepp OS 1.0 device apps.
+ *
  * @returns {{ setItem: (key: string, value: string) => void, getItem: (key: string) => (string | null), removeItem: (key: string) => void } | null}
  */
 function resolveRuntimeStorage() {
-  if (typeof settingsStorage !== 'undefined' && settingsStorage) {
-    return settingsStorage
-  }
-
-  if (typeof globalThis !== 'undefined' && globalThis.settingsStorage) {
-    return globalThis.settingsStorage
+  if (typeof hmFS !== 'undefined' && typeof hmFS.SysProSetChars === 'function' && typeof hmFS.SysProGetChars === 'function') {
+    return createHmFsStorageAdapter()
   }
 
   return null
+}
+
+/**
+ * Wraps hmFS.SysProSetChars / SysProGetChars into a setItem/getItem/removeItem adapter.
+ * SysProSetChars persists across page transitions but clears on system reboot.
+ *
+ * @returns {{ setItem: (key: string, value: string) => void, getItem: (key: string) => (string | null), removeItem: (key: string) => void }}
+ */
+function createHmFsStorageAdapter() {
+  return {
+    setItem(key, value) {
+      try {
+        hmFS.SysProSetChars(key, value)
+      } catch {
+        // Ignore storage write errors so app runtime does not crash.
+      }
+    },
+    getItem(key) {
+      try {
+        const value = hmFS.SysProGetChars(key)
+        return typeof value === 'string' && value.length > 0 ? value : null
+      } catch {
+        return null
+      }
+    },
+    removeItem(key) {
+      try {
+        hmFS.SysProSetChars(key, '')
+      } catch {
+        // Ignore storage delete errors so app runtime does not crash.
+      }
+    }
+  }
 }
 
 /**

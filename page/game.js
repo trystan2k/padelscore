@@ -544,7 +544,6 @@ Page({
     this.widgets = []
     this.lastAcceptedScoringInteractionAt = null
     this.hasAttemptedSummaryNavigation = false
-    this.isSessionAccessCheckInFlight = false
     this.isSessionAccessGranted = false
     this.persistedSessionState = null
 
@@ -552,15 +551,22 @@ Page({
     this.runtimeStatePersistenceTimer = null
     this.pendingRuntimeStatePersistence = null
     this.isRuntimeStatePersistenceInFlight = false
-    this.runtimeStatePersistenceInFlightPromise = Promise.resolve()
-    this.runtimeStatePersistenceIdleResolvers = []
     this.lastPersistedRuntimeStateSignature = null
 
-    this.validateSessionAccessAndRender()
+    // Validate session synchronously before build() runs.
+    this.validateSessionAccess()
   },
 
   onShow() {
-    this.validateSessionAccessAndRender()
+    // Re-validate on return to page (e.g. back navigation).
+    // Only re-run if access was not yet granted (avoids redundant re-check on normal show).
+    if (!this.isSessionAccessGranted) {
+      this.validateSessionAccess()
+      if (this.isSessionAccessGranted) {
+        this.ensureRuntimeState()
+        this.renderGameScreen()
+      }
+    }
   },
 
   onHide() {
@@ -568,10 +574,23 @@ Page({
   },
 
   build() {
+    // build() always renders. If session access was denied, navigateToSetupPage()
+    // was already called in onInit via validateSessionAccess(), so this page will
+    // be replaced before the user sees it. Rendering a blank background here
+    // avoids a black screen flash between onInit and the navigation completing.
     if (!this.isSessionAccessGranted) {
+      if (typeof hmUI !== 'undefined') {
+        hmUI.createWidget(hmUI.widget.FILL_RECT, {
+          x: 0, y: 0,
+          w: this.getScreenMetrics().width,
+          h: this.getScreenMetrics().height,
+          color: GAME_TOKENS.colors.background
+        })
+      }
       return
     }
 
+    this.ensureRuntimeState()
     this.renderGameScreen()
   },
 
@@ -588,56 +607,29 @@ Page({
     return this.saveCurrentRuntimeState({ force: true })
   },
 
-  async validateSessionAccessAndRender() {
-    const hasSessionAccess = await this.validateSessionAccess()
-
-    if (!hasSessionAccess) {
-      return false
-    }
-
-    this.ensureRuntimeState()
-    this.renderGameScreen()
-    return true
-  },
-
-  async validateSessionAccess() {
+  validateSessionAccess() {
     if (this.isSessionAccessGranted) {
       return true
     }
 
-    if (this.isSessionAccessCheckInFlight) {
-      return false
-    }
-
-    this.isSessionAccessCheckInFlight = true
-
     try {
-      const hasValidActiveSession = await this.hasValidActiveSession()
+      const persistedMatchState = loadMatchState()
+      const hasValidActiveSession = isPersistedMatchStateActive(persistedMatchState)
 
       this.isSessionAccessGranted = hasValidActiveSession
+      this.persistedSessionState = hasValidActiveSession
+        ? cloneMatchState(persistedMatchState)
+        : null
 
       if (!hasValidActiveSession) {
         this.navigateToSetupPage()
       }
 
       return hasValidActiveSession
-    } finally {
-      this.isSessionAccessCheckInFlight = false
-    }
-  },
-
-  async hasValidActiveSession() {
-    try {
-      const persistedMatchState = await loadMatchState()
-      const hasValidActiveSession = isPersistedMatchStateActive(persistedMatchState)
-
-      this.persistedSessionState = hasValidActiveSession
-        ? cloneMatchState(persistedMatchState)
-        : null
-
-      return hasValidActiveSession
     } catch {
       this.persistedSessionState = null
+      this.isSessionAccessGranted = false
+      this.navigateToSetupPage()
       return false
     }
   },
@@ -835,47 +827,38 @@ Page({
 
   drainRuntimeStatePersistenceQueue() {
     if (this.isRuntimeStatePersistenceInFlight) {
-      return this.runtimeStatePersistenceInFlightPromise
+      return
     }
 
-    // Serialize persistence writes so rapid updates always commit in order,
-    // while replacing queued snapshots guarantees latest-state-wins behavior.
-    const processQueue = async () => {
-      this.isRuntimeStatePersistenceInFlight = true
+    this.isRuntimeStatePersistenceInFlight = true
 
-      try {
-        while (this.pendingRuntimeStatePersistence !== null) {
-          const nextPersistenceTask = this.pendingRuntimeStatePersistence
-          this.pendingRuntimeStatePersistence = null
+    try {
+      while (this.pendingRuntimeStatePersistence !== null) {
+        const nextPersistenceTask = this.pendingRuntimeStatePersistence
+        this.pendingRuntimeStatePersistence = null
 
-          if (
-            nextPersistenceTask.signature.length > 0 &&
-            nextPersistenceTask.signature === this.lastPersistedRuntimeStateSignature
-          ) {
-            continue
-          }
-
-          await this.persistRuntimeStateSnapshot(
-            nextPersistenceTask.runtimeState,
-            nextPersistenceTask.signature
-          )
+        if (
+          nextPersistenceTask.signature.length > 0 &&
+          nextPersistenceTask.signature === this.lastPersistedRuntimeStateSignature
+        ) {
+          continue
         }
-      } finally {
-        this.isRuntimeStatePersistenceInFlight = false
-      }
 
-      if (this.pendingRuntimeStatePersistence !== null) {
-        return this.drainRuntimeStatePersistenceQueue()
+        this.persistRuntimeStateSnapshot(
+          nextPersistenceTask.runtimeState,
+          nextPersistenceTask.signature
+        )
       }
-
-      this.resolveRuntimeStatePersistenceIdle()
+    } finally {
+      this.isRuntimeStatePersistenceInFlight = false
     }
 
-    this.runtimeStatePersistenceInFlightPromise = processQueue()
-    return this.runtimeStatePersistenceInFlightPromise
+    if (this.pendingRuntimeStatePersistence !== null) {
+      this.drainRuntimeStatePersistenceQueue()
+    }
   },
 
-  async persistRuntimeStateSnapshot(runtimeState, signature) {
+  persistRuntimeStateSnapshot(runtimeState, signature) {
     if (!isValidRuntimeMatchState(runtimeState)) {
       return
     }
@@ -889,7 +872,7 @@ Page({
 
     if (persistedMatchStateSnapshot !== null) {
       try {
-        await saveMatchState(persistedMatchStateSnapshot)
+        saveMatchState(persistedMatchStateSnapshot)
         this.persistedSessionState = cloneMatchState(persistedMatchStateSnapshot)
       } catch {
         // Ignore schema persistence errors so gameplay interactions stay resilient.
@@ -898,41 +881,6 @@ Page({
 
     this.lastPersistedRuntimeStateSignature =
       signature.length > 0 ? signature : serializeMatchStateForComparison(runtimeState)
-  },
-
-  isRuntimeStatePersistenceIdle() {
-    return (
-      this.pendingRuntimeStatePersistence === null &&
-      this.runtimeStatePersistenceTimer === null &&
-      !this.isRuntimeStatePersistenceInFlight
-    )
-  },
-
-  resolveRuntimeStatePersistenceIdle() {
-    if (!this.isRuntimeStatePersistenceIdle()) {
-      return
-    }
-
-    const pendingResolvers = this.runtimeStatePersistenceIdleResolvers
-    this.runtimeStatePersistenceIdleResolvers = []
-
-    pendingResolvers.forEach((resolver) => {
-      try {
-        resolver()
-      } catch {
-        // Ignore test-only resolver callback failures.
-      }
-    })
-  },
-
-  waitForPersistenceIdle() {
-    if (this.isRuntimeStatePersistenceIdle()) {
-      return Promise.resolve()
-    }
-
-    return new Promise((resolve) => {
-      this.runtimeStatePersistenceIdleResolvers.push(resolve)
-    })
   },
 
   navigateToSummaryPage() {
@@ -957,13 +905,8 @@ Page({
 
     this.hasAttemptedSummaryNavigation = true
 
-    this.waitForPersistenceIdle()
-      .then(() => {
-        this.navigateToSummaryPage()
-      })
-      .catch(() => {
-        // Keep the finished state rendered if summary navigation cannot run.
-      })
+    // Persistence is now synchronous, so navigate immediately.
+    this.navigateToSummaryPage()
   },
 
   navigateToHomePage() {

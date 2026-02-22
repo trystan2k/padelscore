@@ -187,7 +187,6 @@ Page({
     this.isStartingNewGame = false
     this.isHardResetConfirmationArmed = false
     this.hardResetConfirmationTimerId = null
-    this.savedMatchStateRequestId = 0
     this.refreshSavedMatchState()
   },
 
@@ -241,20 +240,13 @@ Page({
     return widget
   },
 
-  async refreshSavedMatchState() {
-    const requestId = this.savedMatchStateRequestId + 1
-    this.savedMatchStateRequestId = requestId
-
+  refreshSavedMatchState() {
     let savedMatchState = null
 
     try {
-      savedMatchState = await loadMatchState()
+      savedMatchState = loadMatchState()
     } catch {
       savedMatchState = null
-    }
-
-    if (requestId !== this.savedMatchStateRequestId) {
-      return false
     }
 
     const hasSavedGame = isActivePersistedMatchState(savedMatchState)
@@ -404,7 +396,7 @@ Page({
     this.renderHomeScreen()
   },
 
-  async handleHardResetStartNewGame() {
+  handleHardResetStartNewGame() {
     if (this.isStartingNewGame === true) {
       return false
     }
@@ -412,7 +404,7 @@ Page({
     this.isStartingNewGame = true
 
     try {
-      const flowResult = await startNewMatchFlow()
+      const flowResult = startNewMatchFlow()
       return flowResult?.navigatedToSetup === true
     } catch {
       return false
@@ -421,7 +413,7 @@ Page({
     }
   },
 
-  async handleStartNewGame() {
+  handleStartNewGame() {
     if (this.isStartingNewGame === true) {
       return false
     }
@@ -435,7 +427,7 @@ Page({
     return this.handleHardResetStartNewGame()
   },
 
-  async handleResumeGame() {
+  handleResumeGame() {
     this.disarmHardResetConfirmation({
       shouldRender: true
     })
@@ -443,7 +435,7 @@ Page({
     let savedMatchState = null
 
     try {
-      savedMatchState = await loadMatchState()
+      savedMatchState = loadMatchState()
     } catch {
       savedMatchState = null
     }

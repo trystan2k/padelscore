@@ -159,7 +159,7 @@ Page({
     this.renderSetupScreen()
   },
 
-  async handleStartMatch() {
+  handleStartMatch() {
     if (!this.isStartMatchEnabled()) {
       return false
     }
@@ -168,23 +168,10 @@ Page({
     this.startErrorMessage = ''
     this.renderSetupScreen()
 
-    let initializedMatchState = null
-    let hasVerifiedPersistedSession = false
-
     try {
-      initializedMatchState = initializeMatchState(this.selectedSetsToPlay)
-      await saveMatchState(initializedMatchState)
-      hasVerifiedPersistedSession = await this.verifyPersistedActiveSession(
-        this.selectedSetsToPlay
-      )
+      const initializedMatchState = initializeMatchState(this.selectedSetsToPlay)
+      saveMatchState(initializedMatchState)
     } catch {
-      this.startErrorMessage = gettext('setup.saveFailed')
-      this.isPersistingMatchState = false
-      this.renderSetupScreen()
-      return false
-    }
-
-    if (!hasVerifiedPersistedSession) {
       this.startErrorMessage = gettext('setup.saveFailed')
       this.isPersistingMatchState = false
       this.renderSetupScreen()
@@ -204,24 +191,7 @@ Page({
       return false
     }
 
-    if (typeof this.onStartMatch === 'function') {
-      this.onStartMatch(this.selectedSetsToPlay, initializedMatchState)
-    }
-
     return true
-  },
-
-  async verifyPersistedActiveSession(setsToPlay) {
-    if (!isValidSetsOption(setsToPlay)) {
-      return false
-    }
-
-    try {
-      const persistedMatchState = await loadMatchState()
-      return isVerifiedActiveSession(persistedMatchState, setsToPlay)
-    } catch {
-      return false
-    }
   },
 
   navigateToGamePage() {

@@ -8,70 +8,66 @@ import {
 export const ACTIVE_MATCH_SESSION_STORAGE_KEY = SCHEMA_STORAGE_KEY
 
 /**
- * @typedef StorageAdapter
- * @property {(key: string, value: string) => Promise<void>} save
- * @property {(key: string) => Promise<string | null>} load
- * @property {(key: string) => Promise<void>} clear
- */
-
-/**
- * @typedef ZeppSettingsStorage
- * @property {(key: string, value: string) => void} [setItem]
- * @property {(key: string) => (string | null | undefined)} [getItem]
- * @property {(key: string) => void} [removeItem]
- */
-
-/**
- * @returns {ZeppSettingsStorage | null}
+ * Returns a storage adapter backed by hmFS.SysProSetChars / SysProGetChars,
+ * which is the correct key-value string storage API for Zepp OS 1.0 device apps.
+ * Falls back to null if hmFS is unavailable (e.g. in tests or app-side context).
+ *
+ * @returns {{ setItem: (key: string, value: string) => void, getItem: (key: string) => (string | null), removeItem: (key: string) => void } | null}
  */
 function resolveRuntimeStorage() {
-  if (typeof settingsStorage !== 'undefined' && settingsStorage) {
-    return settingsStorage
-  }
-
-  if (typeof globalThis !== 'undefined' && globalThis.settingsStorage) {
-    return globalThis.settingsStorage
+  if (
+    typeof hmFS !== 'undefined' &&
+    typeof hmFS.SysProSetChars === 'function' &&
+    typeof hmFS.SysProGetChars === 'function'
+  ) {
+    return {
+      setItem(key, value) {
+        try {
+          hmFS.SysProSetChars(key, value)
+        } catch {
+          // Ignore write errors to keep app runtime stable.
+        }
+      },
+      getItem(key) {
+        try {
+          const value = hmFS.SysProGetChars(key)
+          return typeof value === 'string' && value.length > 0 ? value : null
+        } catch {
+          return null
+        }
+      },
+      removeItem(key) {
+        try {
+          hmFS.SysProSetChars(key, '')
+        } catch {
+          // Ignore delete errors to keep app runtime stable.
+        }
+      }
+    }
   }
 
   return null
 }
 
 export class ZeppOsStorageAdapter {
-  /**
-   * @param {ZeppSettingsStorage | null} [storage]
-   */
-  constructor(storage = resolveRuntimeStorage()) {
-    /** @type {ZeppSettingsStorage | null} */
-    this.storage = storage
-  }
-
-  /**
-   * @returns {ZeppSettingsStorage | null}
-   */
-  resolveStorage() {
-    if (this.storage) {
-      return this.storage
-    }
-
-    const runtimeStorage = resolveRuntimeStorage()
-
-    if (runtimeStorage) {
-      this.storage = runtimeStorage
-    }
-
-    return this.storage
+  constructor() {
+    /** @type {{ setItem: (key: string, value: string) => void, getItem: (key: string) => (string | null), removeItem: (key: string) => void } | null} */
+    this.storage = resolveRuntimeStorage()
   }
 
   /**
    * @param {string} key
    * @param {string} value
-   * @returns {Promise<void>}
    */
-  async save(key, value) {
-    const storage = this.resolveStorage()
+  save(key, value) {
+    const storage = this.storage || resolveRuntimeStorage()
 
-    if (!storage || typeof storage.setItem !== 'function') {
+    if (!storage) {
       return
+    }
+
+    if (!this.storage) {
+      this.storage = storage
     }
 
     try {
@@ -83,23 +79,21 @@ export class ZeppOsStorageAdapter {
 
   /**
    * @param {string} key
-   * @returns {Promise<string | null>}
+   * @returns {string | null}
    */
-  async load(key) {
-    const storage = this.resolveStorage()
+  load(key) {
+    const storage = this.storage || resolveRuntimeStorage()
 
-    if (!storage || typeof storage.getItem !== 'function') {
+    if (!storage) {
       return null
     }
 
+    if (!this.storage) {
+      this.storage = storage
+    }
+
     try {
-      const value = storage.getItem(key)
-
-      if (typeof value === 'string') {
-        return value
-      }
-
-      return value == null ? null : String(value)
+      return storage.getItem(key)
     } catch {
       return null
     }
@@ -107,69 +101,60 @@ export class ZeppOsStorageAdapter {
 
   /**
    * @param {string} key
-   * @returns {Promise<void>}
    */
-  async clear(key) {
-    const storage = this.resolveStorage()
+  clear(key) {
+    const storage = this.storage || resolveRuntimeStorage()
 
     if (!storage) {
       return
     }
 
-    if (typeof storage.removeItem === 'function') {
-      try {
-        storage.removeItem(key)
-      } catch {
-        // Ignore persistence errors to keep app runtime stable.
-      }
-
-      return
+    if (!this.storage) {
+      this.storage = storage
     }
 
-    if (typeof storage.setItem === 'function') {
-      try {
-        storage.setItem(key, '')
-      } catch {
-        // Ignore persistence errors to keep app runtime stable.
-      }
+    try {
+      storage.removeItem(key)
+    } catch {
+      // Ignore persistence errors to keep app runtime stable.
     }
   }
 }
 
 export class MatchStorage {
   /**
-   * @param {StorageAdapter} [adapter]
+   * @param {ZeppOsStorageAdapter} [adapter]
    */
   constructor(adapter = new ZeppOsStorageAdapter()) {
-    /** @type {StorageAdapter} */
     this.adapter = adapter
   }
 
   /**
    * @param {import('./match-state-schema.js').MatchState} state
-   * @returns {Promise<void>}
    */
-  async saveMatchState(state) {
+  saveMatchState(state) {
     if (!isMatchState(state)) {
       return
     }
 
     state.updatedAt = Date.now()
 
-    await this.adapter.save(
-      ACTIVE_MATCH_SESSION_STORAGE_KEY,
-      serializeMatchState(state)
-    )
+    try {
+      this.adapter.save(
+        ACTIVE_MATCH_SESSION_STORAGE_KEY,
+        serializeMatchState(state)
+      )
+    } catch {
+      // Ignore persistence errors to keep app runtime stable.
+    }
   }
 
   /**
-   * @returns {Promise<import('./match-state-schema.js').MatchState | null>}
+   * @returns {import('./match-state-schema.js').MatchState | null}
    */
-  async loadMatchState() {
+  loadMatchState() {
     try {
-      const serializedState = await this.adapter.load(
-        ACTIVE_MATCH_SESSION_STORAGE_KEY
-      )
+      const serializedState = this.adapter.load(ACTIVE_MATCH_SESSION_STORAGE_KEY)
 
       if (typeof serializedState !== 'string' || serializedState.length === 0) {
         return null
@@ -183,12 +168,9 @@ export class MatchStorage {
     }
   }
 
-  /**
-   * @returns {Promise<void>}
-   */
-  async clearMatchState() {
+  clearMatchState() {
     try {
-      await this.adapter.clear(ACTIVE_MATCH_SESSION_STORAGE_KEY)
+      this.adapter.clear(ACTIVE_MATCH_SESSION_STORAGE_KEY)
     } catch {
       // Ignore persistence errors to keep app runtime stable.
     }
@@ -199,22 +181,18 @@ export const matchStorage = new MatchStorage()
 
 /**
  * @param {import('./match-state-schema.js').MatchState} state
- * @returns {Promise<void>}
  */
-export async function saveMatchState(state) {
-  await matchStorage.saveMatchState(state)
+export function saveMatchState(state) {
+  matchStorage.saveMatchState(state)
 }
 
 /**
- * @returns {Promise<import('./match-state-schema.js').MatchState | null>}
+ * @returns {import('./match-state-schema.js').MatchState | null}
  */
-export async function loadMatchState() {
+export function loadMatchState() {
   return matchStorage.loadMatchState()
 }
 
-/**
- * @returns {Promise<void>}
- */
-export async function clearMatchState() {
-  await matchStorage.clearMatchState()
+export function clearMatchState() {
+  matchStorage.clearMatchState()
 }

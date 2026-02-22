@@ -4,38 +4,26 @@ import { createInitialMatchState } from './match-state.js'
 import { clearState } from './storage.js'
 
 /**
- * @typedef ClearActiveMatchSessionDependencies
- * @property {(() => Promise<void>) | (() => void)} [clearSchemaSession]
- * @property {(() => Promise<void>) | (() => void)} [clearLegacySession]
- */
-
-/**
  * Clears both schema and legacy persisted match session keys.
  * This operation is best-effort and idempotent.
  *
- * @param {ClearActiveMatchSessionDependencies} [dependencies]
- * @returns {Promise<{ clearedSchema: boolean, clearedLegacy: boolean }>}
+ * @returns {{ clearedSchema: boolean, clearedLegacy: boolean }}
  */
-export async function clearActiveMatchSession(dependencies = {}) {
-  const {
-    clearSchemaSession = clearMatchState,
-    clearLegacySession = clearState
-  } = dependencies
-
+export function clearActiveMatchSession() {
   const result = {
     clearedSchema: false,
     clearedLegacy: false
   }
 
   try {
-    await clearSchemaSession()
+    clearMatchState()
     result.clearedSchema = true
   } catch {
     // Ignore schema-clear failures to keep reset flow resilient.
   }
 
   try {
-    await clearLegacySession()
+    clearState()
     result.clearedLegacy = true
   } catch {
     // Ignore legacy-clear failures to keep reset flow resilient.
@@ -43,13 +31,6 @@ export async function clearActiveMatchSession(dependencies = {}) {
 
   return result
 }
-
-/**
- * @typedef ResetMatchStateManagerDependencies
- * @property {(() => unknown)} [getAppInstance]
- * @property {(() => import('./match-state.js').MatchState)} [createInitialState]
- * @property {(() => import('./history-stack.js').HistoryStack<import('./match-state.js').MatchState>)} [createHistory]
- */
 
 /**
  * @returns {Record<string, unknown> | null}
@@ -70,16 +51,9 @@ function resolveAppInstance() {
 /**
  * Resets runtime match manager data to initial defaults.
  *
- * @param {ResetMatchStateManagerDependencies} [dependencies]
  * @returns {{ didReset: boolean, resetMatchState: boolean, clearedMatchHistory: boolean, rehydratedMatchHistory: boolean }}
  */
-export function resetMatchStateManager(dependencies = {}) {
-  const {
-    getAppInstance = resolveAppInstance,
-    createInitialState = createInitialMatchState,
-    createHistory = createHistoryStack
-  } = dependencies
-
+export function resetMatchStateManager() {
   const result = {
     didReset: false,
     resetMatchState: false,
@@ -87,7 +61,7 @@ export function resetMatchStateManager(dependencies = {}) {
     rehydratedMatchHistory: false
   }
 
-  const app = getAppInstance()
+  const app = resolveAppInstance()
 
   if (!app || typeof app !== 'object') {
     return result
@@ -97,7 +71,7 @@ export function resetMatchStateManager(dependencies = {}) {
     app.globalData = {}
   }
 
-  app.globalData.matchState = createInitialState()
+  app.globalData.matchState = createInitialMatchState()
   result.resetMatchState = true
 
   if (
@@ -110,27 +84,11 @@ export function resetMatchStateManager(dependencies = {}) {
     return result
   }
 
-  app.globalData.matchHistory = createHistory()
+  app.globalData.matchHistory = createHistoryStack()
   result.rehydratedMatchHistory = true
   result.didReset = true
 
   return result
-}
-
-function createDefaultClearSessionResult() {
-  return {
-    clearedSchema: false,
-    clearedLegacy: false
-  }
-}
-
-function createDefaultResetManagerResult() {
-  return {
-    didReset: false,
-    resetMatchState: false,
-    clearedMatchHistory: false,
-    rehydratedMatchHistory: false
-  }
 }
 
 /**
@@ -153,91 +111,37 @@ function navigateToMatchSetupPage() {
 }
 
 /**
- * @param {unknown} value
- * @returns {{ clearedSchema: boolean, clearedLegacy: boolean }}
- */
-function normalizeClearSessionResult(value) {
-  const fallback = createDefaultClearSessionResult()
-
-  if (!value || typeof value !== 'object') {
-    return fallback
-  }
-
-  return {
-    clearedSchema: value.clearedSchema === true,
-    clearedLegacy: value.clearedLegacy === true
-  }
-}
-
-/**
- * @param {unknown} value
- * @returns {{ didReset: boolean, resetMatchState: boolean, clearedMatchHistory: boolean, rehydratedMatchHistory: boolean }}
- */
-function normalizeResetManagerResult(value) {
-  const fallback = createDefaultResetManagerResult()
-
-  if (!value || typeof value !== 'object') {
-    if (typeof value === 'boolean') {
-      fallback.didReset = value
-    }
-
-    return fallback
-  }
-
-  return {
-    didReset: value.didReset === true,
-    resetMatchState: value.resetMatchState === true,
-    clearedMatchHistory: value.clearedMatchHistory === true,
-    rehydratedMatchHistory: value.rehydratedMatchHistory === true
-  }
-}
-
-/**
- * @typedef StartNewMatchFlowDependencies
- * @property {(() => Promise<{ clearedSchema: boolean, clearedLegacy: boolean }>) | (() => { clearedSchema: boolean, clearedLegacy: boolean })} [clearSession]
- * @property {(() => Promise<{ didReset: boolean, resetMatchState: boolean, clearedMatchHistory: boolean, rehydratedMatchHistory: boolean }>) | (() => { didReset: boolean, resetMatchState: boolean, clearedMatchHistory: boolean, rehydratedMatchHistory: boolean })} [resetStateManager]
- * @property {(() => Promise<boolean>) | (() => boolean)} [navigateToSetup]
- */
-
-/**
  * Orchestrates clean reset + setup navigation for starting a new match.
  *
- * @param {StartNewMatchFlowDependencies} [dependencies]
- * @returns {Promise<{
+ * @returns {{
  *   clearSession: { clearedSchema: boolean, clearedLegacy: boolean },
  *   resetStateManager: { didReset: boolean, resetMatchState: boolean, clearedMatchHistory: boolean, rehydratedMatchHistory: boolean },
  *   navigatedToSetup: boolean,
  *   didEncounterError: boolean
- * }>}
+ * }}
  */
-export async function startNewMatchFlow(dependencies = {}) {
-  const {
-    clearSession = clearActiveMatchSession,
-    resetStateManager = resetMatchStateManager,
-    navigateToSetup = navigateToMatchSetupPage
-  } = dependencies
-
+export function startNewMatchFlow() {
   const result = {
-    clearSession: createDefaultClearSessionResult(),
-    resetStateManager: createDefaultResetManagerResult(),
+    clearSession: { clearedSchema: false, clearedLegacy: false },
+    resetStateManager: { didReset: false, resetMatchState: false, clearedMatchHistory: false, rehydratedMatchHistory: false },
     navigatedToSetup: false,
     didEncounterError: false
   }
 
   try {
-    result.clearSession = normalizeClearSessionResult(await clearSession())
+    result.clearSession = clearActiveMatchSession()
   } catch {
     result.didEncounterError = true
   }
 
   try {
-    result.resetStateManager = normalizeResetManagerResult(await resetStateManager())
+    result.resetStateManager = resetMatchStateManager()
   } catch {
     result.didEncounterError = true
   }
 
   try {
-    result.navigatedToSetup = (await navigateToSetup()) === true
+    result.navigatedToSetup = navigateToMatchSetupPage() === true
   } catch {
     result.didEncounterError = true
     result.navigatedToSetup = false
