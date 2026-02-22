@@ -23,13 +23,13 @@ const HOME_TOKENS = Object.freeze({
   fontScale: {
     button: 0.055,
     logo: 0.068,
-    title: 0.125
+    title: 0.0825
   },
   spacingScale: {
-    contentTop: 0.24,
+    contentTop: 0.10,
     logoToTitle: 0.012,
-    titleToPrimaryButton: 0.18,
-    primaryToSecondaryButton: 0.04
+    titleToPrimaryButton: 0.13,
+    primaryToSecondaryButton: 0.05
   }
 })
 
@@ -271,7 +271,7 @@ Page({
       Math.round(height * HOME_TOKENS.spacingScale.logoToTitle)
     const titleHeight = Math.round(height * 0.11)
     const startButtonWidth = Math.round(width * 0.62)
-    const startButtonHeight = Math.round(height * 0.108)
+    const startButtonHeight = Math.round(height * 0.216)
     const startButtonX = Math.round((width - startButtonWidth) / 2)
     const startButtonY =
       titleY +

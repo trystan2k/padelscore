@@ -24,25 +24,23 @@ const GAME_TOKENS = Object.freeze({
     buttonSecondaryText: 0xffffff,
     cardBackground: 0x111318,
     dangerText: 0xff6d78,
+    divider: 0x2a2d34,
     mutedText: 0x7d8289,
     text: 0xffffff
   },
   fontScale: {
     button: 0.038,
-    label: 0.04,
-    points: 0.1,
-    setCounter: 0.032,
-    setScore: 0.078,
-    setTeam: 0.034
+    headerLabel: 0.06,
+    headerValue: 0.048,
+    minusButton: 0.08,
+    points: 0.28,
+    teamLabel: 0.038
   },
   spacingScale: {
-    cardTop: 0.2,
-    controlsBottom: 0.07,
-    controlsColumnGap: 0.04,
-    controlsRowGap: 0.018,
-    controlsSideInset: 0.07,
-    controlsSideInsetRound: 0.12,
-    setSectionTop: 0.04,
+    headerTop: 0.04,
+    bottomInset: 0.07,
+    bottomInsetRound: 0.11,
+    headerToScore: 0.06,
     sectionGap: 0.03
   }
 })
@@ -1184,310 +1182,229 @@ Page({
     const { width, height } = this.getScreenMetrics()
     const isRoundScreen = Math.abs(width - height) <= Math.round(width * 0.04)
 
-    const baseSectionSideInset = Math.round(width * 0.06)
-
-    const setSectionHeight = Math.round(height * 0.17)
-    const setSectionY = Math.round(height * GAME_TOKENS.spacingScale.setSectionTop)
-    let setSectionSideInset = baseSectionSideInset
+    // ── Header: compact card with SETS and GAMES rows ──────────────────────
+    const headerSideInset = Math.round(width * 0.06)
+    const headerTop = Math.round(height * GAME_TOKENS.spacingScale.headerTop)
+    const headerRowHeight = Math.round(height * 0.055)
+    const headerHeight = headerRowHeight * 2
+    let headerX = headerSideInset
+    let headerWidth = Math.max(1, width - headerSideInset * 2)
     if (isRoundScreen) {
-      setSectionSideInset = Math.max(
-        setSectionSideInset,
-        calculateRoundSafeSectionSideInset(
-          width,
-          height,
-          setSectionY,
-          setSectionHeight,
-          Math.round(width * 0.01)
-        )
+      const safeInset = calculateRoundSafeSectionSideInset(
+        width, height, headerTop, headerHeight, Math.round(width * 0.01)
       )
+      headerX = Math.max(headerX, safeInset)
+      headerWidth = Math.max(1, width - headerX * 2)
     }
+    const setsRowY = headerTop
+    const gamesRowY = setsRowY + headerRowHeight
 
-    const maxSectionInset = Math.floor((width - 1) / 2)
-    setSectionSideInset = clamp(setSectionSideInset, 0, maxSectionInset)
-    const setSectionX = setSectionSideInset
-    const setSectionWidth = Math.max(1, width - setSectionSideInset * 2)
-    const setLabelHeight = Math.round(setSectionHeight * 0.3)
-    const setCounterHeight = Math.round(setSectionHeight * 0.28)
-    const setCounterY = setSectionY + setLabelHeight
-    const setScoreY = setCounterY + setCounterHeight
-    const setScoreHeight = Math.max(1, setSectionHeight - setLabelHeight - setCounterHeight)
-    const setTeamWidth = Math.round(setSectionWidth / 2)
-    const rightTeamX = setSectionX + setTeamWidth
-    let controlsSideInset = Math.round(
-      width *
-        (isRoundScreen
-          ? GAME_TOKENS.spacingScale.controlsSideInsetRound
-          : GAME_TOKENS.spacingScale.controlsSideInset)
-    )
-    const controlsColumnGap = Math.round(width * GAME_TOKENS.spacingScale.controlsColumnGap)
-    const controlsRowGap = Math.round(height * GAME_TOKENS.spacingScale.controlsRowGap)
-    const buttonHeight = clamp(Math.round(height * 0.104), 48, 58)
-    const controlsRows = isMatchFinished ? 1 : 3
-    const baseControlsBottomInset = Math.round(height * GAME_TOKENS.spacingScale.controlsBottom)
-    const controlsBottomInset = isRoundScreen
-      ? Math.max(baseControlsBottomInset, Math.round(height * 0.11))
-      : baseControlsBottomInset
-    const controlsSectionHeight =
-      buttonHeight * controlsRows + controlsRowGap * (controlsRows - 1)
-    const addButtonsY = height - controlsBottomInset - controlsSectionHeight
-    const removeButtonsY = addButtonsY + buttonHeight + controlsRowGap
-    const backHomeButtonY = removeButtonsY + buttonHeight + controlsRowGap
-    if (isRoundScreen) {
-      const controlsSectionSafeInset = calculateRoundSafeSectionSideInset(
-        width,
-        height,
-        addButtonsY,
-        controlsSectionHeight,
-        Math.round(width * 0.012)
-      )
+    // ── Bottom: back-home button ───────────────────────────────────────────
+    const backHomeButtonHeight = clamp(Math.round(height * 0.15), 48, 68)
+    const backHomeButtonWidth = clamp(Math.round(width * 0.40), 120, 180)
+    const baseBottomInset = Math.round(height * GAME_TOKENS.spacingScale.bottomInset)
+    const bottomInset = isRoundScreen
+      ? Math.max(baseBottomInset, Math.round(height * GAME_TOKENS.spacingScale.bottomInsetRound))
+      : baseBottomInset
+    const backHomeButtonY = height - bottomInset - backHomeButtonHeight
+    const backHomeButtonX = Math.round((width - backHomeButtonWidth) / 2)
 
-      controlsSideInset = Math.max(controlsSideInset, controlsSectionSafeInset)
-    }
+    // ── Score area: fills space between header and back button ─────────────
+    const sectionGap = Math.round(height * GAME_TOKENS.spacingScale.sectionGap)
+    const scoreAreaTop = headerTop + headerHeight + Math.round(height * GAME_TOKENS.spacingScale.headerToScore)
+    const scoreAreaBottom = backHomeButtonY - sectionGap
+    const scoreAreaHeight = Math.max(0, scoreAreaBottom - scoreAreaTop)
 
-    const maxControlsInset = Math.floor((width - controlsColumnGap - 2) / 2)
-    controlsSideInset = clamp(controlsSideInset, 0, maxControlsInset)
+    // Team label (A / B): top portion of score area
+    const teamLabelHeight = Math.round(scoreAreaHeight * 0.18)
+    const teamLabelY = scoreAreaTop
 
-    const buttonWidth = Math.round((width - controlsSideInset * 2 - controlsColumnGap) / 2)
-    const leftButtonX = controlsSideInset
-    const rightButtonX = leftButtonX + buttonWidth + controlsColumnGap
-    const backHomeButtonWidth = Math.max(1, buttonWidth * 2 + controlsColumnGap)
-    const pointsSectionY =
-      setSectionY + setSectionHeight + Math.round(height * GAME_TOKENS.spacingScale.sectionGap)
-    const pointsSectionBottom = addButtonsY - Math.round(height * GAME_TOKENS.spacingScale.sectionGap)
-    const pointsSectionHeight = Math.max(0, pointsSectionBottom - pointsSectionY)
-    let pointsSectionSideInset = baseSectionSideInset
-    if (isRoundScreen && pointsSectionHeight > 0) {
-      pointsSectionSideInset = Math.max(
-        pointsSectionSideInset,
-        calculateRoundSafeSectionSideInset(
-          width,
-          height,
-          pointsSectionY,
-          pointsSectionHeight,
-          Math.round(width * 0.01)
-        )
-      )
-    }
+    // Score number: large, tappable — centre of score area
+    const scoreHeight = Math.round(scoreAreaHeight * 0.5)
+    const scoreY = teamLabelY + teamLabelHeight
 
-    pointsSectionSideInset = clamp(pointsSectionSideInset, 0, maxSectionInset)
-    const pointsSectionX = pointsSectionSideInset
-    const pointsSectionWidth = Math.max(1, width - pointsSectionSideInset * 2)
-    const pointsLabelHeight = Math.round(pointsSectionHeight * 0.3)
-    const pointsValueY = pointsSectionY + pointsLabelHeight
-    const pointsValueHeight = pointsSectionHeight - pointsLabelHeight
+    // Minus button: small, below score
+    const minusButtonHeight = clamp(Math.round(height * 0.11), 50, 70)
+    const minusButtonWidth = clamp(Math.round(width * 0.18), 54, 88)
+    const minusButtonY = scoreY + scoreHeight + Math.round(scoreAreaHeight * 0.08)
+
+    // Half-widths for left (teamA) and right (teamB) columns
+    const halfWidth = Math.round(width / 2)
+    const leftColX = 0
+    const rightColX = halfWidth
+
+    // Divider line
+    const dividerX = halfWidth - 1
+    const dividerTop = scoreAreaTop + Math.round(scoreAreaHeight * 0.1)
+    const dividerBottom = minusButtonY + minusButtonHeight
+    const dividerHeight = Math.max(1, dividerBottom - dividerTop)
+
+    // Finished-state layout
     const pointsValueTextSize = isMatchFinished
       ? clamp(Math.round(width * 0.114), 36, 56)
-      : clamp(Math.round(width * 0.128), 44, 64)
-    const pointsLabelText = isMatchFinished ? gettext('game.finishedLabel') : gettext('game.title')
-    const pointsValueText = isMatchFinished
-      ? getFinishedMessage(viewModel)
-      : `${viewModel.teamA.points} - ${viewModel.teamB.points}`
-    const homeButtonWidth = isMatchFinished
-      ? clamp(Math.round(width * 0.42), 140, backHomeButtonWidth)
-      : backHomeButtonWidth
-    const homeButtonX = isMatchFinished ? Math.round((width - homeButtonWidth) / 2) : leftButtonX
-    const homeButtonY = isMatchFinished
-      ? clamp(
-          pointsValueY + Math.round(pointsValueHeight * 0.58),
-          pointsValueY,
-          height - controlsBottomInset - buttonHeight
-        )
-      : backHomeButtonY
+      : clamp(Math.round(width * GAME_TOKENS.fontScale.points), 72, 140)
 
     this.clearWidgets()
 
+    // Background
     this.createWidget(hmUI.widget.FILL_RECT, {
-      x: 0,
-      y: 0,
-      w: width,
-      h: height,
+      x: 0, y: 0, w: width, h: height,
       color: GAME_TOKENS.colors.background
     })
 
-    this.createWidget(hmUI.widget.FILL_RECT, {
-      x: setSectionX,
-      y: setSectionY,
-      w: setSectionWidth,
-      h: setSectionHeight,
-      radius: Math.round(setSectionHeight * 0.24),
-      color: GAME_TOKENS.colors.cardBackground
-    })
+    // ── Header ────────────────────────────────────────────────────────────
+    // Each row: [LABEL (muted, right-align)] [VALUE (accent, left-align)]
+    // The pair is centred as a group within headerWidth.
+    const headerTextSize = Math.round(width * GAME_TOKENS.fontScale.headerLabel)
+    const headerLabelWidth = Math.round(headerWidth * 0.42)
+    const headerValueWidth = Math.round(headerWidth * 0.52)
+    const headerPairWidth = headerLabelWidth + headerValueWidth
+    const headerPairX = headerX + Math.round((headerWidth - headerPairWidth) / 2)
+    const headerValueX = headerPairX + headerLabelWidth
 
+    // SETS row
     this.createWidget(hmUI.widget.TEXT, {
-      x: setSectionX,
-      y: setSectionY,
-      w: setTeamWidth,
-      h: setLabelHeight,
+      x: headerPairX, y: setsRowY, w: headerLabelWidth, h: headerRowHeight,
       color: GAME_TOKENS.colors.mutedText,
-      text: viewModel.teamA.label,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setTeam),
-      align_h: hmUI.align.CENTER_H,
+      text: gettext('game.setsLabel'),
+      text_size: headerTextSize,
+      align_h: hmUI.align.RIGHT,
+      align_v: hmUI.align.CENTER_V
+    })
+    this.createWidget(hmUI.widget.TEXT, {
+      x: headerValueX, y: setsRowY, w: headerValueWidth, h: headerRowHeight,
+      color: GAME_TOKENS.colors.accent,
+      text: `  ${viewModel.setsWon.teamA} – ${viewModel.setsWon.teamB}`,
+      text_size: headerTextSize,
+      align_h: hmUI.align.LEFT,
       align_v: hmUI.align.CENTER_V
     })
 
+    // GAMES row
     this.createWidget(hmUI.widget.TEXT, {
-      x: rightTeamX,
-      y: setSectionY,
-      w: setTeamWidth,
-      h: setLabelHeight,
+      x: headerPairX, y: gamesRowY, w: headerLabelWidth, h: headerRowHeight,
       color: GAME_TOKENS.colors.mutedText,
-      text: viewModel.teamB.label,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setTeam),
-      align_h: hmUI.align.CENTER_H,
+      text: gettext('game.gamesLabel'),
+      text_size: headerTextSize,
+      align_h: hmUI.align.RIGHT,
       align_v: hmUI.align.CENTER_V
     })
-
     this.createWidget(hmUI.widget.TEXT, {
-      x: setSectionX,
-      y: setCounterY,
-      w: setTeamWidth,
-      h: setCounterHeight,
-      color: GAME_TOKENS.colors.mutedText,
-      text: `${gettext('game.setsWonLabel')}: ${viewModel.setsWon.teamA}`,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setCounter),
-      align_h: hmUI.align.CENTER_H,
+      x: headerValueX, y: gamesRowY, w: headerValueWidth, h: headerRowHeight,
+      color: GAME_TOKENS.colors.accent,
+      text: `  ${viewModel.currentSetGames.teamA} – ${viewModel.currentSetGames.teamB}`,
+      text_size: headerTextSize,
+      align_h: hmUI.align.LEFT,
       align_v: hmUI.align.CENTER_V
     })
 
-    this.createWidget(hmUI.widget.TEXT, {
-      x: rightTeamX,
-      y: setCounterY,
-      w: setTeamWidth,
-      h: setCounterHeight,
-      color: GAME_TOKENS.colors.mutedText,
-      text: `${gettext('game.setsWonLabel')}: ${viewModel.setsWon.teamB}`,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setCounter),
-      align_h: hmUI.align.CENTER_H,
-      align_v: hmUI.align.CENTER_V
-    })
+    if (isMatchFinished) {
+      // ── Finished state: centred winner message ──────────────────────────
+      const finishedLabelHeight = Math.round(scoreAreaHeight * 0.25)
+      const finishedValueHeight = scoreAreaHeight - finishedLabelHeight
 
-    this.createWidget(hmUI.widget.TEXT, {
-      x: setSectionX,
-      y: setScoreY,
-      w: setTeamWidth,
-      h: setScoreHeight,
-      color:
-        leadingTeamId === 'teamB' && isMatchFinished
-          ? GAME_TOKENS.colors.mutedText
-          : GAME_TOKENS.colors.accent,
-      text: String(viewModel.currentSetGames.teamA),
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setScore),
-      align_h: hmUI.align.CENTER_H,
-      align_v: hmUI.align.CENTER_V
-    })
+      this.createWidget(hmUI.widget.TEXT, {
+        x: 0, y: scoreAreaTop, w: width, h: finishedLabelHeight,
+        color: GAME_TOKENS.colors.mutedText,
+        text: gettext('game.finishedLabel'),
+        text_size: Math.round(width * GAME_TOKENS.fontScale.headerLabel),
+        align_h: hmUI.align.CENTER_H,
+        align_v: hmUI.align.CENTER_V
+      })
 
-    this.createWidget(hmUI.widget.TEXT, {
-      x: rightTeamX,
-      y: setScoreY,
-      w: setTeamWidth,
-      h: setScoreHeight,
-      color:
-        leadingTeamId === 'teamA' && isMatchFinished
-          ? GAME_TOKENS.colors.mutedText
-          : GAME_TOKENS.colors.accent,
-      text: String(viewModel.currentSetGames.teamB),
-      text_size: Math.round(width * GAME_TOKENS.fontScale.setScore),
-      align_h: hmUI.align.CENTER_H,
-      align_v: hmUI.align.CENTER_V
-    })
+      this.createWidget(hmUI.widget.TEXT, {
+        x: 0, y: scoreAreaTop + finishedLabelHeight, w: width, h: finishedValueHeight,
+        color: GAME_TOKENS.colors.accent,
+        text: getFinishedMessage(viewModel),
+        text_size: pointsValueTextSize,
+        align_h: hmUI.align.CENTER_H,
+        align_v: hmUI.align.CENTER_V
+      })
+    } else {
+      // ── Active state ────────────────────────────────────────────────────
 
-    this.createWidget(hmUI.widget.FILL_RECT, {
-      x: pointsSectionX,
-      y: pointsSectionY,
-      w: pointsSectionWidth,
-      h: pointsSectionHeight,
-      radius: Math.round(pointsSectionWidth * 0.08),
-      color: GAME_TOKENS.colors.cardBackground
-    })
+      // Team A label
+      this.createWidget(hmUI.widget.TEXT, {
+        x: leftColX, y: teamLabelY, w: halfWidth, h: teamLabelHeight,
+        color: GAME_TOKENS.colors.mutedText,
+        text: 'A',
+        text_size: Math.round(width * GAME_TOKENS.fontScale.teamLabel),
+        align_h: hmUI.align.CENTER_H,
+        align_v: hmUI.align.CENTER_V
+      })
 
-    this.createWidget(hmUI.widget.TEXT, {
-      x: pointsSectionX,
-      y: pointsSectionY,
-      w: pointsSectionWidth,
-      h: pointsLabelHeight,
-      color: GAME_TOKENS.colors.mutedText,
-      text: pointsLabelText,
-      text_size: Math.round(width * GAME_TOKENS.fontScale.label),
-      align_h: hmUI.align.CENTER_H,
-      align_v: hmUI.align.CENTER_V
-    })
+      // Team B label
+      this.createWidget(hmUI.widget.TEXT, {
+        x: rightColX, y: teamLabelY, w: halfWidth, h: teamLabelHeight,
+        color: GAME_TOKENS.colors.mutedText,
+        text: 'B',
+        text_size: Math.round(width * GAME_TOKENS.fontScale.teamLabel),
+        align_h: hmUI.align.CENTER_H,
+        align_v: hmUI.align.CENTER_V
+      })
 
-    this.createWidget(hmUI.widget.TEXT, {
-      x: pointsSectionX,
-      y: pointsValueY,
-      w: pointsSectionWidth,
-      h: pointsValueHeight,
-      color: isMatchFinished ? GAME_TOKENS.colors.accent : GAME_TOKENS.colors.text,
-      text: pointsValueText,
-      text_size: pointsValueTextSize,
-      align_h: hmUI.align.CENTER_H,
-      align_v: hmUI.align.CENTER_V
-    })
-
-    if (!isMatchFinished) {
+      // Team A score (tappable — adds point)
       this.createWidget(hmUI.widget.BUTTON, {
-        x: leftButtonX,
-        y: addButtonsY,
-        w: buttonWidth,
-        h: buttonHeight,
-        radius: Math.round(buttonHeight / 2),
-        normal_color: GAME_TOKENS.colors.accent,
-        press_color: GAME_TOKENS.colors.accentPressed,
-        color: GAME_TOKENS.colors.buttonText,
-        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-        text: gettext('game.teamAAddPoint'),
+        x: leftColX, y: scoreY, w: halfWidth, h: scoreHeight,
+        radius: 0,
+        normal_color: GAME_TOKENS.colors.background,
+        press_color: GAME_TOKENS.colors.cardBackground,
+        color: GAME_TOKENS.colors.text,
+        text_size: pointsValueTextSize,
+        text: String(viewModel.teamA.points),
         click_func: () => this.handleAddPointForTeam('teamA')
       })
 
+      // Team B score (tappable — adds point)
       this.createWidget(hmUI.widget.BUTTON, {
-        x: rightButtonX,
-        y: addButtonsY,
-        w: buttonWidth,
-        h: buttonHeight,
-        radius: Math.round(buttonHeight / 2),
-        normal_color: GAME_TOKENS.colors.accent,
-        press_color: GAME_TOKENS.colors.accentPressed,
-        color: GAME_TOKENS.colors.buttonText,
-        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-        text: gettext('game.teamBAddPoint'),
+        x: rightColX, y: scoreY, w: halfWidth, h: scoreHeight,
+        radius: 0,
+        normal_color: GAME_TOKENS.colors.background,
+        press_color: GAME_TOKENS.colors.cardBackground,
+        color: GAME_TOKENS.colors.text,
+        text_size: pointsValueTextSize,
+        text: String(viewModel.teamB.points),
         click_func: () => this.handleAddPointForTeam('teamB')
       })
 
+      // Vertical divider
+      this.createWidget(hmUI.widget.FILL_RECT, {
+        x: dividerX, y: dividerTop, w: 1, h: dividerHeight,
+        color: GAME_TOKENS.colors.divider
+      })
+
+      // Team A minus button
+      const minusAX = Math.round(leftColX + (halfWidth - minusButtonWidth) / 2)
       this.createWidget(hmUI.widget.BUTTON, {
-        x: leftButtonX,
-        y: removeButtonsY,
-        w: buttonWidth,
-        h: buttonHeight,
-        radius: Math.round(buttonHeight / 2),
+        x: minusAX, y: minusButtonY, w: minusButtonWidth, h: minusButtonHeight,
+        radius: Math.round(minusButtonHeight / 2),
         normal_color: GAME_TOKENS.colors.buttonSecondary,
         press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
         color: GAME_TOKENS.colors.dangerText,
-        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-        text: gettext('game.teamARemovePoint'),
+        text_size: Math.round(width * GAME_TOKENS.fontScale.minusButton),
+        text: '−',
         click_func: () => this.handleRemovePointForTeam('teamA')
       })
 
+      // Team B minus button
+      const minusBX = Math.round(rightColX + (halfWidth - minusButtonWidth) / 2)
       this.createWidget(hmUI.widget.BUTTON, {
-        x: rightButtonX,
-        y: removeButtonsY,
-        w: buttonWidth,
-        h: buttonHeight,
-        radius: Math.round(buttonHeight / 2),
+        x: minusBX, y: minusButtonY, w: minusButtonWidth, h: minusButtonHeight,
+        radius: Math.round(minusButtonHeight / 2),
         normal_color: GAME_TOKENS.colors.buttonSecondary,
         press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
         color: GAME_TOKENS.colors.dangerText,
-        text_size: Math.round(width * GAME_TOKENS.fontScale.button),
-        text: gettext('game.teamBRemovePoint'),
+        text_size: Math.round(width * GAME_TOKENS.fontScale.minusButton),
+        text: '−',
         click_func: () => this.handleRemovePointForTeam('teamB')
       })
     }
 
+    // ── Back-home button (always shown at bottom centre) ──────────────────
     this.createWidget(hmUI.widget.BUTTON, {
-      x: homeButtonX,
-      y: homeButtonY,
-      w: homeButtonWidth,
-      h: buttonHeight,
-      radius: Math.round(buttonHeight / 2),
+      x: backHomeButtonX, y: backHomeButtonY,
+      w: backHomeButtonWidth, h: backHomeButtonHeight,
+      radius: Math.round(backHomeButtonHeight / 2),
       normal_color: GAME_TOKENS.colors.buttonSecondary,
       press_color: GAME_TOKENS.colors.buttonSecondaryPressed,
       color: GAME_TOKENS.colors.buttonSecondaryText,

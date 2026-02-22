@@ -32,7 +32,7 @@ const SETUP_TOKENS = Object.freeze({
     title: 0.1
   },
   spacingScale: {
-    cardTop: 0.2,
+    cardTop: 0.1,
     cardHorizontalInset: 0.07,
     helperToOptions: 0.03,
     optionsToStart: 0.08,
@@ -225,7 +225,7 @@ Page({
       titleHeight +
       Math.round(height * SETUP_TOKENS.spacingScale.titleToHelper)
     const helperHeight = Math.round(height * 0.05)
-    const optionButtonHeight = clamp(Math.round(height * 0.102), 48, 62)
+    const optionButtonHeight = clamp(Math.round(height * 0.216), 48, 130)
     const optionColumnGap = Math.round(width * 0.022)
     const optionsRowY =
       helperY +
@@ -236,7 +236,7 @@ Page({
       1,
       Math.round((cardWidth - optionsTotalGap) / MATCH_SET_OPTIONS.length)
     )
-    const startButtonHeight = clamp(Math.round(height * 0.105), 50, 64)
+    const startButtonHeight = clamp(Math.round(height * 0.216), 50, 130)
     const startButtonY =
       optionsRowY +
       optionButtonHeight +

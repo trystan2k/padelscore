@@ -19,8 +19,11 @@ msgstr "Match Score"
 msgid "game.setLabel"
 msgstr "Set"
 
+msgid "game.setsLabel"
+msgstr "SETS"
+
 msgid "game.gamesLabel"
-msgstr "Games"
+msgstr "GAMES"
 
 msgid "game.setsWonLabel"
 msgstr "Sets"
