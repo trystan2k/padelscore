@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0](https://github.com/trystan2k/padelbuddy/compare/v1.9.0...v1.10.0) (2026-03-02)
+
+### Features
+
+* introduce canonical match-session contract and stabilize Zepp runtime flow ([1328d7d](https://github.com/trystan2k/padelbuddy/commit/1328d7d165257fad573040ce2a20161d82aab182))
+
 ## [1.9.0](https://github.com/trystan2k/padelbuddy/compare/v1.8.0...v1.9.0) (2026-03-02)
 
 ### Features
