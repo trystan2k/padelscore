@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0](https://github.com/trystan2k/padelbuddy/compare/v1.8.0...v1.9.0) (2026-03-02)
+
+### Features
+
+* implement unified active-session storage service ([76130c6](https://github.com/trystan2k/padelbuddy/commit/76130c6f91ed5d17da413bc8c5f50765b888cbb8))
+
 ## [1.8.0](https://github.com/trystan2k/padelbuddy/compare/v1.7.1...v1.8.0) (2026-03-02)
 
 ### Features
