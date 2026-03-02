@@ -132,6 +132,24 @@ test('getActiveSession falls back to legacy runtime storage when canonical paylo
   })
 })
 
+test('clearActiveSession removes legacy runtime storage so stale state cannot be restored', () => {
+  const runtimeLegacySession = loadLegacyFixture('legacy-runtime-session.json')
+  const { mock, fileStore } = createHmFsMock({
+    [LEGACY_RUNTIME_FILENAME]: JSON.stringify(runtimeLegacySession)
+  })
+
+  withMockedHmFs(mock, () => {
+    const preClearSession = getActiveSession()
+
+    assert.notEqual(preClearSession, null)
+    assert.equal(fileStore.has(LEGACY_RUNTIME_FILENAME), true)
+
+    assert.equal(clearActiveSession(), true)
+    assert.equal(fileStore.has(LEGACY_RUNTIME_FILENAME), false)
+    assert.equal(getActiveSession(), null)
+  })
+})
+
 test('migrateLegacySessions selects newest legacy source and cleans up idempotently', () => {
   const runtimeLegacySession = loadLegacyFixture('legacy-runtime-session.json')
   const canonicalLegacySession = loadLegacyFixture(

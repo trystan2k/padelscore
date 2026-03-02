@@ -126,6 +126,17 @@ export function saveActiveSession(session, options = {}) {
  * @returns {boolean}
  */
 export function clearActiveSession() {
+  let didClearLegacyRuntime = true
+
+  try {
+    clearLegacyActiveSession()
+  } catch {
+    log('warn', 'failed to clear legacy runtime storage key', {
+      key: LEGACY_RUNTIME_STORAGE_KEY
+    })
+    didClearLegacyRuntime = false
+  }
+
   if (!isHmFsAvailable()) {
     return false
   }
@@ -145,7 +156,7 @@ export function clearActiveSession() {
     })
   }
 
-  return didClearCanonical && didClearLegacyActiveFile
+  return didClearCanonical && didClearLegacyActiveFile && didClearLegacyRuntime
 }
 
 /**
