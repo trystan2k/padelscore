@@ -10,6 +10,7 @@ const FS_O_CREAT = 64 // 0x40
 const FS_O_TRUNC = 512 // 0x200
 
 export const MATCH_STATE_STORAGE_KEY = 'padel-buddy.match-state'
+export const LEGACY_MATCH_STATE_STORAGE_KEY = MATCH_STATE_STORAGE_KEY
 
 const scorePointSet = new Set(SCORE_POINT_SEQUENCE)
 const fallbackStorage = createInMemoryStorageAdapter()
@@ -55,6 +56,17 @@ export function loadState() {
 
 export function clearState() {
   getSettingsStorage().removeItem(MATCH_STATE_STORAGE_KEY)
+}
+
+/**
+ * @returns {import('./match-state.js').MatchState | null}
+ */
+export function loadLegacyActiveSession() {
+  return loadState()
+}
+
+export function clearLegacyActiveSession() {
+  clearState()
 }
 
 // ---------------------------------------------------------------------------

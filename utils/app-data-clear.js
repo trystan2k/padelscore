@@ -2,11 +2,12 @@
  * App Data Clear Utility
  *
  * Clears all application data including:
- * - Active match session (dual storage: storage.js + match-storage.js)
+ * - Active match session (canonical file + legacy compatibility files)
  * - Match history
  * - In-memory data structures
  */
 
+import { ACTIVE_SESSION_FILE_PATH } from './active-session-storage.js'
 import {
   clearMatchHistory as clearHistoryViaRemove,
   HISTORY_STORAGE_KEY,
@@ -25,6 +26,20 @@ import { clearState } from './storage.js'
 function overwriteWithNull(filename) {
   const result = saveToFile(filename, 'null')
   return result
+}
+
+/**
+ * @param {string} filePath
+ * @returns {string}
+ */
+function dataPathToFilename(filePath) {
+  if (typeof filePath !== 'string') {
+    return ''
+  }
+
+  return filePath.startsWith('/data/')
+    ? filePath.slice('/data/'.length)
+    : filePath
 }
 
 /**
@@ -59,8 +74,7 @@ function clearMatchHistoryReliable() {
 export function clearAllAppData() {
   let success = true
 
-  // Clear active match state - BOTH storage systems!
-  // The app writes to both storage.js and match-storage.js
+  // Clear active match state from canonical + legacy compatibility locations.
 
   // 1. Clear 'padel-buddy.match-state' from storage.js
   try {
@@ -71,14 +85,15 @@ export function clearAllAppData() {
   // Also overwrite the file directly (more reliable than remove)
   overwriteWithNull('padel-buddy_match-state.json')
 
-  // 2. Clear 'ACTIVE_MATCH_SESSION' from match-storage.js
+  // 2. Clear schema/canonical active-session persistence
   try {
     clearMatchState()
   } catch (_e) {
     success = false
   }
-  // Also overwrite the file directly (more reliable than remove)
+  // Also overwrite known persistence files directly (more reliable than remove)
   overwriteWithNull('ACTIVE_MATCH_SESSION.json')
+  overwriteWithNull(dataPathToFilename(ACTIVE_SESSION_FILE_PATH))
 
   // 3. Clear match history
   try {

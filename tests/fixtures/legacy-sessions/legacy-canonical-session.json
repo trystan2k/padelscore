@@ -1,0 +1,46 @@
+{
+  "status": "active",
+  "setsToPlay": 3,
+  "setsNeededToWin": 2,
+  "setsWon": {
+    "teamA": 1,
+    "teamB": 1
+  },
+  "currentSet": {
+    "number": 3,
+    "games": {
+      "teamA": 2,
+      "teamB": 1
+    }
+  },
+  "currentGame": {
+    "points": {
+      "teamA": 15,
+      "teamB": 0
+    }
+  },
+  "setHistory": [
+    {
+      "setNumber": 1,
+      "teamAGames": 6,
+      "teamBGames": 4
+    },
+    {
+      "setNumber": 2,
+      "teamAGames": 3,
+      "teamBGames": 6
+    }
+  ],
+  "teams": {
+    "teamA": {
+      "id": "teamA",
+      "label": "Equipo Nino"
+    },
+    "teamB": {
+      "id": "teamB",
+      "label": "Equipe Sao Paulo"
+    }
+  },
+  "updatedAt": 1700000003000,
+  "schemaVersion": 1
+}

@@ -3365,12 +3365,92 @@
         "description": "Implement a single, authoritative active-session storage service to replace the current dual-path approaches, providing a deterministic API with UTF-8 encoding and match history integration.",
         "details": "Design and implement a unified storage service API with the following methods:\n\n1. **getActiveSession()**: Reads and returns the current active session from the single on-disk location using UTF-8 encoding. Returns null if no session exists.\n\n2. **saveActiveSession(session)**: Serializes the session object using the canonical contract defined in PAD-53, encodes as UTF-8, and persists to the single unified storage location.\n\n3. **clearActiveSession()**: Removes the active session file from storage, used when starting a new match.\n\n4. **migrateLegacySessions()**: Scans for legacy storage paths (in-memory/globalData + localStorage/file), reads existing session data, converts to canonical schema, and saves to the new unified location. Should handle migration idempotently.\n\nImplementation requirements:\n- Use a single, platform-agnostic file path for active session storage (e.g., '/data/active_session.json')\n- Ensure UTF-8 encoding is used for all file I/O operations\n- Serialize/deserialize using the canonical contract from PAD-53\n- Integrate with match history by ensuring session data references are compatible with Task 29's history storage\n- Handle file system errors gracefully (return null on read errors, log warnings on write errors)\n- Include unit tests for serialization, UTF-8 encoding verification, and migration logic\n\nMigration helpers should:\n- Check for legacy data in both storage paths\n- Prioritize data from the more recent timestamp if conflicts exist\n- Clean up legacy data after successful migration\n- Log migration status for debugging",
         "testStrategy": "1. **Unit Tests for Serialization**: Create tests that verify session objects are correctly serialized to the canonical contract and deserialized back. Test with various session states (empty, in-progress, finished).\n\n2. **UTF-8 Encoding Verification**: Write tests that save a session with special characters (UTF-8 strings) and verify they are correctly preserved when read back.\n\n3. **Migration Logic Tests**: Test the migrateLegacySessions function by:\n   - Creating mock legacy data in both storage paths\n   - Running migration\n   - Verifying data appears in the unified location\n   - Confirming legacy data is cleaned up\n   - Testing idempotency (running migration twice doesn't duplicate data)\n\n4. **Integration Test**: Manually verify app startup loads active session from unified location by:\n   - Starting a match and exiting mid-game\n   - Restarting the app\n   - Confirming the match state is correctly restored\n   - Checking that no duplicate files are created in legacy paths\n\n5. **Match History Integration**: Confirm match history entries reference canonical schema by completing a match and verifying the history entry data structure matches the expected format.\n\n6. **Error Handling Tests**: Test with corrupted or missing files to ensure the service handles errors gracefully (returns null, logs appropriate messages).",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "53"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design unified storage API and types aligned with PAD-53",
+            "description": "Define TypeScript interfaces and types for the unified storage service that align with the canonical contract from PAD-53, including schema versioning support.",
+            "dependencies": [],
+            "details": "Create TypeScript interfaces for ActiveSession, SessionMetadata, and StorageService. Define schema version constant and type definitions compatible with PAD-53 canonical contract. Design the service interface with method signatures for getActiveSession(), saveActiveSession(), clearActiveSession(), and migrateLegacySessions(). Document the platform-agnostic file path constant (e.g., '/data/active_session.json').",
+            "status": "done",
+            "testStrategy": "Review type definitions for TypeScript compilation and alignment with PAD-53 contract. Verify all required session fields are properly typed.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.218Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement core storage methods with UTF-8 file I/O",
+            "description": "Implement getActiveSession(), saveActiveSession(), and clearActiveSession() methods with UTF-8 encoding and platform-agnostic path resolution.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement file system operations using UTF-8 encoding for all read/write operations. Create path resolution logic that works across platforms. getActiveSession() should read from the unified location, deserialize JSON, and return null if file doesn't exist or read fails. saveActiveSession() should serialize using canonical contract, encode as UTF-8, and persist to disk. clearActiveSession() should remove the file using fs.unlink or equivalent.",
+            "status": "done",
+            "testStrategy": "Write unit tests verifying UTF-8 encoding preserves special characters, serialization produces valid JSON, and methods correctly handle missing files and existing session data.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.222Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement migrateLegacySessions with conflict resolution",
+            "description": "Implement migration logic to detect legacy storage paths, select the most recent session based on timestamps, perform idempotent migration, and clean up legacy data.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create migration detection logic that scans in-memory/globalData, localStorage, and file-based legacy paths. Implement timestamp comparison to resolve conflicts by choosing the most recent session. Convert legacy data to canonical schema format using PAD-53 contract. Save migrated session to unified location. Implement cleanup to remove legacy files after successful migration. Add migration status logging including source path, timestamp decision, and success/failure. Ensure idempotency by checking if unified session already exists.",
+            "status": "done",
+            "testStrategy": "Create test fixtures for both legacy storage formats. Write tests verifying migration picks correct session when timestamps differ, handles idempotent re-runs, properly converts schema, and cleans up legacy files.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.225Z"
+          },
+          {
+            "id": 4,
+            "title": "Integrate storage service with match history (Task 29)",
+            "description": "Ensure the unified storage service integrates with Task 29's match history storage, making session data references compatible and maintaining consistency.",
+            "dependencies": [
+              2
+            ],
+            "details": "Review Task 29's history storage implementation to understand session reference structure. Ensure saveActiveSession() creates session IDs/history references compatible with history storage. Add methods or modify existing ones to update history when session is saved or cleared. Verify that session metadata includes necessary fields for history correlation. Test that session lifecycle events properly trigger history updates.",
+            "status": "done",
+            "testStrategy": "Integration tests verifying that saving sessions updates match history correctly, clearing sessions maintains history integrity, and session references resolve properly between storage and history systems.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.228Z"
+          },
+          {
+            "id": 5,
+            "title": "Add robust error handling and logging for I/O operations",
+            "description": "Implement comprehensive error handling that returns null on read errors, logs warnings on write errors, and gracefully handles migration failures.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Wrap all file system operations in try-catch blocks. For getActiveSession(), catch read errors and return null without throwing. For saveActiveSession() and clearActiveSession(), catch errors and log warnings while allowing operation to continue. For migrateLegacySessions(), log detailed error information including source path and failure reason without stopping overall execution. Implement structured logging with appropriate log levels (error, warn, info, debug). Ensure errors don't crash the application but provide sufficient diagnostic information.",
+            "status": "done",
+            "testStrategy": "Write tests simulating file system errors (permission denied, disk full, corrupted JSON) and verify proper error handling and logging. Verify read errors return null and write errors log warnings without exceptions.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.231Z"
+          },
+          {
+            "id": 6,
+            "title": "Create unit and integration tests with legacy data fixtures",
+            "description": "Develop comprehensive test suite covering serialization, UTF-8 preservation, migration idempotency, error cases, and include test fixtures for legacy data formats.",
+            "dependencies": [
+              5
+            ],
+            "details": "Create test files for unit and integration tests. Build test fixtures representing various legacy session data formats (in-memory, localStorage, file-based). Write unit tests for: serialization to/from canonical contract, UTF-8 character preservation, individual method behavior. Write integration tests for: migration idempotency, conflict resolution with timestamps, cleanup verification, match history integration. Create error case tests for: missing files, corrupted data, permission issues. Set up test data directory with fixture files.",
+            "status": "done",
+            "testStrategy": "Execute full test suite locally before commit. Verify all serialization round-trips preserve data integrity. Confirm migration produces identical output on repeated runs. Validate UTF-8 encoding tests pass with unicode characters.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T10:19:03.234Z"
+          }
+        ],
+        "updatedAt": "2026-03-02T10:19:03.234Z"
       },
       {
         "id": "55",
@@ -3601,9 +3681,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-02T09:00:48.618Z",
+      "lastModified": "2026-03-02T10:19:03.234Z",
       "taskCount": 70,
-      "completedCount": 49,
+      "completedCount": 50,
       "tags": [
         "master"
       ]

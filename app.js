@@ -1,3 +1,4 @@
+import { migrateLegacySessions } from './utils/active-session-storage.js'
 import { createHistoryStack } from './utils/history-stack.js'
 import { createInitialMatchState } from './utils/match-state.js'
 import {
@@ -90,6 +91,14 @@ App({
       typeof hmApp.setScreenKeep === 'function'
     ) {
       hmApp.setScreenKeep(true)
+    }
+
+    try {
+      migrateLegacySessions({
+        globalData: this.globalData
+      })
+    } catch {
+      // Best-effort startup migration; never block app initialization.
     }
   },
 

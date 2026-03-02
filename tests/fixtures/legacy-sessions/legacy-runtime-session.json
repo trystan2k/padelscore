@@ -1,0 +1,41 @@
+{
+  "teams": {
+    "teamA": {
+      "id": "teamA",
+      "label": "Pareja A"
+    },
+    "teamB": {
+      "id": "teamB",
+      "label": "Pareja B"
+    }
+  },
+  "teamA": {
+    "points": "Ad",
+    "games": 4
+  },
+  "teamB": {
+    "points": 30,
+    "games": 4
+  },
+  "currentSetStatus": {
+    "number": 2,
+    "teamAGames": 4,
+    "teamBGames": 4
+  },
+  "currentSet": 2,
+  "setsToPlay": 3,
+  "setsNeededToWin": 2,
+  "setsWon": {
+    "teamA": 1,
+    "teamB": 0
+  },
+  "setHistory": [
+    {
+      "setNumber": 1,
+      "teamAGames": 6,
+      "teamBGames": 4
+    }
+  ],
+  "status": "active",
+  "updatedAt": 1700000001000
+}

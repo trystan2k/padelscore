@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { getActiveSession } from '../utils/active-session-storage.js'
 import {
   createDefaultMatchState,
   STORAGE_KEY,
@@ -12,6 +13,7 @@ import {
   matchStorage,
   ZeppOsStorageAdapter
 } from '../utils/match-storage.js'
+import { createHmFsMock } from './helpers/hmfs-mock.js'
 
 test('persistence module exports canonical storage key and initialized service', () => {
   assert.equal(ACTIVE_MATCH_SESSION_STORAGE_KEY, STORAGE_KEY)
@@ -298,6 +300,35 @@ test('MatchStorage supports sequential save-load cycles with latest state wins',
     assert.deepEqual(matchStorage.loadMatchState(), secondState)
   } finally {
     Date.now = originalDateNow
+  }
+})
+
+test('MatchStorage saveMatchState keeps updatedAt deterministic with canonical persistence', () => {
+  const { mock } = createHmFsMock()
+  const originalHmFS = globalThis.hmFS
+  const originalDateNow = Date.now
+  const dateNowValues = [1700000003000, 1700000004000]
+  const state = createDefaultMatchState()
+  const storage = new MatchStorage()
+
+  globalThis.hmFS = mock
+  Date.now = () => dateNowValues.shift() ?? 1700000004000
+
+  try {
+    storage.saveMatchState(state)
+    const persistedState = getActiveSession()
+
+    assert.notEqual(persistedState, null)
+    assert.equal(state.updatedAt, 1700000003000)
+    assert.equal(persistedState?.updatedAt, 1700000003000)
+  } finally {
+    Date.now = originalDateNow
+
+    if (typeof originalHmFS === 'undefined') {
+      delete globalThis.hmFS
+    } else {
+      globalThis.hmFS = originalHmFS
+    }
   }
 })
 
