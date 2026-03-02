@@ -87,10 +87,38 @@ export class MatchStorage {
     }
 
     const updatedAt = Date.now()
+    const updatedAtIso = toIsoTimestampSafe(updatedAt)
+
     state.updatedAt = updatedAt
-    if (state.timing && typeof state.timing === 'object') {
-      state.timing.updatedAt = toIsoTimestampSafe(updatedAt)
+
+    if (!state.timing || typeof state.timing !== 'object') {
+      state.timing = {
+        createdAt: updatedAtIso,
+        updatedAt: updatedAtIso,
+        startedAt: updatedAtIso,
+        finishedAt: state.status === 'finished' ? updatedAtIso : null
+      }
+    } else {
+      state.timing.updatedAt = updatedAtIso
+
+      if (typeof state.timing.startedAt !== 'string') {
+        state.timing.startedAt =
+          typeof state.timing.createdAt === 'string'
+            ? state.timing.createdAt
+            : updatedAtIso
+      }
+
+      if (typeof state.timing.createdAt !== 'string') {
+        state.timing.createdAt = state.timing.startedAt
+      }
+
+      if (state.status !== 'finished') {
+        state.timing.finishedAt = null
+      } else if (typeof state.timing.finishedAt !== 'string') {
+        state.timing.finishedAt = updatedAtIso
+      }
     }
+
     const serialized = serializeMatchState(state)
     syncStateWithSerializedSnapshot(state, serialized)
 

@@ -3698,13 +3698,80 @@
         "description": "Investigate and fix inconsistencies in matchStartTime initialization and propagation. Ensure matchStartTime is always set at the canonical contract's required point and remains immutable unless a migration/repair operation is run.",
         "details": "Audit all code paths that set or modify matchStartTime throughout the codebase, including session creation, state updates, and persistence operations. Verify that the canonical contract schema (from PAD-53) includes explicit rules for matchStartTime initialization, default values, and immutability constraints. Ensure the unified storage service (from PAD-54) properly handles matchStartTime during session creation, serialization, and retrieval operations. Implement a migration policy for existing sessions that lack matchStartTime, documenting the approach for timestamp derivation (e.g., using earliest available timestamp or session creation metadata). Update the session creation flow to set matchStartTime deterministically at the moment of creation, before any state changes occur. Add guards or validation to prevent matchStartTime from being modified after initialization, except during documented migration/repair operations. Ensure all code paths that create or restore sessions adhere to the schema rules.",
         "testStrategy": "Write unit tests to verify matchStartTime is set correctly at session creation and is immutable thereafter, attempting modifications to confirm they fail as expected. Create migration tests that verify existing sessions without matchStartTime are properly migrated with the documented policy, checking edge cases like corrupted or missing metadata. Run integration tests with the unified storage service to ensure matchStartTime persists correctly across save/load cycles. Execute full test suite including unit tests and migration tests to ensure no regressions in existing functionality. Manually verify historical sessions show correct timestamps after running migration scripts in a test environment.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "53",
           "54"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit matchStartTime code paths and verify canonical contract schema",
+            "description": "Conduct a comprehensive audit of all code paths that set or modify matchStartTime throughout the codebase and verify the canonical contract schema includes proper rules.",
+            "dependencies": [],
+            "details": "Search the entire codebase for all references to matchStartTime, including session creation, state updates, and persistence operations. Document each location where matchStartTime is set, modified, or read. Verify that the canonical contract schema from PAD-53 includes explicit rules for matchStartTime initialization, default values, and immutability constraints. If the schema lacks these rules, identify what needs to be added to PAD-53 to ensure matchStartTime is properly defined.",
+            "status": "done",
+            "testStrategy": "Document all findings in an audit report. Create a test that verifies the canonical contract schema enforces matchStartTime as a required field with immutability constraints.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T22:27:16.474Z"
+          },
+          {
+            "id": 2,
+            "title": "Ensure unified storage service properly handles matchStartTime",
+            "description": "Update the unified storage service from PAD-54 to correctly handle matchStartTime during session creation, serialization, and retrieval operations.",
+            "dependencies": [
+              1
+            ],
+            "details": "Review the unified storage service implementation (getActiveSession, saveActiveSession, clearActiveSession) to ensure matchStartTime is properly handled. During session creation, matchStartTime must be set deterministically. During serialization, ensure matchStartTime is included in the canonical contract format. During retrieval, ensure matchStartTime is correctly deserialized and preserved. Make any necessary updates to the storage service to enforce proper handling of matchStartTime at all stages.",
+            "status": "done",
+            "testStrategy": "Write unit tests that verify matchStartTime is correctly serialized, stored, and retrieved by the unified storage service. Test with various session states including sessions with and without matchStartTime.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T22:27:16.480Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement migration policy for existing sessions without matchStartTime",
+            "description": "Design and implement a migration policy for existing sessions that lack matchStartTime, documenting the timestamp derivation approach.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create a migration function that identifies sessions without matchStartTime and assigns them a timestamp based on documented rules. The timestamp derivation should use the earliest available timestamp (e.g., session creation metadata, first state change, or file creation time). Document the exact policy and priority order for timestamp derivation. Implement the migration logic as a standalone function that can be run as a repair operation. Ensure the migration marks sessions as migrated to avoid re-processing.",
+            "status": "done",
+            "testStrategy": "Create test fixtures representing legacy session data without matchStartTime. Run migration tests that verify sessions are properly assigned timestamps according to the documented policy and that the resulting matchStartTime values are consistent.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T22:27:16.482Z"
+          },
+          {
+            "id": 4,
+            "title": "Update session creation flow for deterministic matchStartTime initialization",
+            "description": "Modify the session creation flow to set matchStartTime deterministically at the moment of creation, before any state changes occur.",
+            "dependencies": [
+              2
+            ],
+            "details": "Identify all entry points for session creation in the codebase. Update each entry point to set matchStartTime immediately upon session initialization, before any state mutations or storage operations. Use the current system time as the matchStartTime value. Ensure this is done consistently across all session creation paths. Add validation to verify matchStartTime is present before allowing any state transitions to occur.",
+            "status": "done",
+            "testStrategy": "Write unit tests that verify matchStartTime is set immediately when a session is created and that the timestamp is captured before any state changes. Test all session creation entry points to ensure consistent behavior.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T22:27:16.485Z"
+          },
+          {
+            "id": 5,
+            "title": "Add immutability guards and comprehensive validation tests",
+            "description": "Add guards or validation to prevent matchStartTime from being modified after initialization and write comprehensive tests to verify the fix.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement validation logic that prevents matchStartTime from being modified after initial setting, except during documented migration/repair operations. This can be done through setters that check if matchStartTime already exists, or through a session state flag indicating initialization is complete. Add explicit error messages when attempts are made to modify matchStartTime improperly. Ensure the migration function from subtask 3 has special permissions to bypass these guards. Verify all code paths that create or restore sessions adhere to the schema rules.",
+            "status": "done",
+            "testStrategy": "Write unit tests to verify matchStartTime is set correctly at session creation and is immutable thereafter. Attempt modifications to confirm they fail as expected with appropriate error messages. Create tests for migration paths to verify they can properly set matchStartTime on existing sessions. Run the full test suite to ensure no regressions.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T22:27:16.488Z"
+          }
+        ],
+        "updatedAt": "2026-03-02T22:27:16.488Z"
       },
       {
         "id": "59",
@@ -3880,9 +3947,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-02T21:12:10.823Z",
+      "lastModified": "2026-03-02T22:27:16.488Z",
       "taskCount": 70,
-      "completedCount": 53,
+      "completedCount": 54,
       "tags": [
         "master"
       ]

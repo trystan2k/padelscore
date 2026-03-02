@@ -116,6 +116,23 @@ test('initializeMatchState creates active match state for 5-set match', () => {
   }
 })
 
+test('initializeMatchState keeps created/started/updated timing aligned from first initialization timestamp', () => {
+  const originalDateNow = Date.now
+  const timestamps = [1700000002100, 1700000003100]
+
+  Date.now = () => timestamps.shift() ?? 1700000003100
+
+  try {
+    const state = initializeMatchState(SETS_TO_PLAY.THREE)
+
+    assert.equal(state.updatedAt, 1700000002100)
+    assert.equal(state.timing.createdAt, state.timing.startedAt)
+    assert.equal(state.timing.startedAt, state.timing.updatedAt)
+  } finally {
+    Date.now = originalDateNow
+  }
+})
+
 test('initializeMatchState computes setsNeededToWin using ceiling division', () => {
   const oneSetState = initializeMatchState(1)
   const threeSetState = initializeMatchState(3)

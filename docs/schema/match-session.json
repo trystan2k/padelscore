@@ -83,7 +83,7 @@
           "format": "date-time"
         },
         "startedAt": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "date-time"
         },
         "finishedAt": {

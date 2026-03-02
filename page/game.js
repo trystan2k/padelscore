@@ -5,7 +5,10 @@ import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createScorePageLayout } from '../utils/layout-presets.js'
 import { createInitialMatchState } from '../utils/match-state.js'
-import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
+import {
+  MATCH_STATUS as PERSISTED_MATCH_STATUS,
+  toIsoTimestampSafe
+} from '../utils/match-state-schema.js'
 import { getActiveSession, saveActiveSession } from '../utils/match-storage.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
@@ -506,6 +509,8 @@ function createPersistedMatchStateSnapshot(
   // validator) which triggers toISOString() and crashes on Zepp OS v1.0.
   // Build a minimal safe base state inline instead of calling createDefaultPersistedMatchState()
   // which also invokes the schema and may trigger toISOString() on the device.
+  const fallbackTimestamp = Date.now()
+  const fallbackTimestampIso = toIsoTimestampSafe(fallbackTimestamp)
   const baseState = isPersistedMatchStateActive(basePersistedMatchState)
     ? cloneMatchState(basePersistedMatchState)
     : {
@@ -517,7 +522,13 @@ function createPersistedMatchStateSnapshot(
         currentGame: { points: { teamA: 0, teamB: 0 } },
         setHistory: [],
         schemaVersion: 1,
-        updatedAt: Date.now()
+        updatedAt: fallbackTimestamp,
+        timing: {
+          createdAt: fallbackTimestampIso,
+          updatedAt: fallbackTimestampIso,
+          startedAt: fallbackTimestampIso,
+          finishedAt: null
+        }
       }
 
   const setsNeededToWin = toPositiveInteger(

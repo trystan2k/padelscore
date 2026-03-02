@@ -69,6 +69,53 @@ test('saveActiveSession/getActiveSession/clearActiveSession round-trip canonical
   })
 })
 
+test('saveActiveSession preserves existing startedAt unless explicit repair option is enabled', () => {
+  const seedSession = createDefaultMatchState()
+  const { mock } = createHmFsMock()
+
+  withMockedHmFs(mock, () => {
+    assert.equal(
+      saveActiveSession(seedSession, { preserveUpdatedAt: true }),
+      true
+    )
+
+    const persistedSeed = getActiveSession()
+    assert.notEqual(persistedSeed, null)
+
+    const overwriteAttempt = {
+      ...seedSession,
+      timing: {
+        ...seedSession.timing,
+        startedAt: '2030-01-01T00:00:00.000Z'
+      }
+    }
+
+    assert.equal(
+      saveActiveSession(overwriteAttempt, { preserveUpdatedAt: true }),
+      true
+    )
+
+    const preservedSession = getActiveSession()
+    assert.notEqual(preservedSession, null)
+    assert.equal(
+      preservedSession?.timing?.startedAt,
+      persistedSeed?.timing?.startedAt
+    )
+
+    assert.equal(
+      saveActiveSession(overwriteAttempt, {
+        preserveUpdatedAt: true,
+        allowStartTimeRepair: true
+      }),
+      true
+    )
+
+    const repairedSession = getActiveSession()
+    assert.notEqual(repairedSession, null)
+    assert.equal(repairedSession?.timing?.startedAt, '2030-01-01T00:00:00.000Z')
+  })
+})
+
 test('save/get preserves UTF-8 labels including accents and emoji', () => {
   const session = createDefaultMatchState()
   session.teams = {
@@ -236,6 +283,30 @@ test('migrateLegacySessions uses runtime legacy source when it is newer', () => 
     assert.notEqual(loadedSession, null)
     assert.equal(loadedSession?.updatedAt, 1700000005000)
     assert.equal(loadedSession?.currentGame?.points?.teamA, 50)
+  })
+})
+
+test('migrateLegacySessions derives startedAt from earliest reliable legacy timestamps', () => {
+  const runtimeLegacySession = loadLegacyFixture('legacy-runtime-session.json')
+  runtimeLegacySession.updatedAt = 1700000005000
+  runtimeLegacySession.matchStartTime = 1700000001200
+  runtimeLegacySession.startedAt = 1700000001500
+  runtimeLegacySession.created_at = 1700000001000
+
+  const { mock } = createHmFsMock({
+    [LEGACY_RUNTIME_FILENAME]: JSON.stringify(runtimeLegacySession)
+  })
+
+  withMockedHmFs(mock, () => {
+    const migration = migrateLegacySessions()
+
+    assert.equal(migration.migrated, true)
+    assert.equal(migration.source, 'legacy-runtime-storage')
+
+    const loadedSession = getActiveSession()
+    assert.notEqual(loadedSession, null)
+    assert.equal(loadedSession?.timing?.createdAt, '2023-11-14T22:13:21.000Z')
+    assert.equal(loadedSession?.timing?.startedAt, '2023-11-14T22:13:21.200Z')
   })
 })
 
@@ -408,6 +479,54 @@ test('updateActiveSession helpers preserve canonical schema fields and updatedAt
       true
     )
     assert.equal(timestampUpdated?.schemaVersion, seedSession.schemaVersion)
+  })
+})
+
+test('updateActiveSession helpers do not overwrite initialized startedAt without repair option', () => {
+  const seedSession = createDefaultMatchState()
+  seedSession.updatedAt = 1700000008450
+  const { mock } = createHmFsMock()
+
+  withMockedHmFs(mock, () => {
+    assert.equal(
+      saveActiveSession(seedSession, { preserveUpdatedAt: true }),
+      true
+    )
+
+    const persistedSeed = getActiveSession()
+    assert.notEqual(persistedSeed, null)
+
+    const updatedSession = updateActiveSessionPartial(
+      {
+        timing: {
+          ...seedSession.timing,
+          startedAt: '2042-01-01T00:00:00.000Z'
+        }
+      },
+      { preserveUpdatedAt: true }
+    )
+
+    assert.notEqual(updatedSession, null)
+    assert.equal(
+      updatedSession?.timing?.startedAt,
+      persistedSeed?.timing?.startedAt
+    )
+
+    const repairedSession = updateActiveSessionPartial(
+      {
+        timing: {
+          ...seedSession.timing,
+          startedAt: '2042-01-01T00:00:00.000Z'
+        }
+      },
+      {
+        preserveUpdatedAt: true,
+        allowStartTimeRepair: true
+      }
+    )
+
+    assert.notEqual(repairedSession, null)
+    assert.equal(repairedSession?.timing?.startedAt, '2042-01-01T00:00:00.000Z')
   })
 })
 

@@ -71,7 +71,7 @@
  * @typedef MatchTiming
  * @property {string} createdAt
  * @property {string} updatedAt
- * @property {string | null} startedAt
+ * @property {string} startedAt
  * @property {string | null} finishedAt
  */
 
@@ -520,7 +520,7 @@ function tryNormalizeMatchState(value) {
 
   const teams = normalizeTeams(value.teams)
   const metadata = normalizeMetadata(value.metadata, updatedAt)
-  const timing = normalizeTiming(value.timing, updatedAt, value.status)
+  const timing = normalizeTiming(value.timing, updatedAt, value.status, value)
 
   if (!timing) {
     return null
@@ -995,20 +995,23 @@ function normalizeMetadata(value, fallbackTimestamp) {
  * @param {unknown} value
  * @param {number} fallbackTimestamp
  * @param {MatchStatus} status
+ * @param {unknown} source
  * @returns {MatchTiming | null}
  */
-function normalizeTiming(value, fallbackTimestamp, status) {
+function normalizeTiming(value, fallbackTimestamp, status, source) {
   const updatedAt = fallbackTimestamp
-  const createdAt = readTimestampCandidate(value?.createdAt) ?? updatedAt
+  const createdAt =
+    readTimestampCandidate(value?.createdAt) ??
+    readTimestampCandidate(source?.createdAt) ??
+    readTimestampCandidate(source?.created_at) ??
+    updatedAt
 
   const normalizedCreatedAt = toIsoTimestamp(createdAt)
   const normalizedUpdatedAt = toIsoTimestamp(updatedAt)
 
-  const startedAtCandidate = readTimestampCandidate(value?.startedAt)
-  const startedAt =
-    startedAtCandidate === null
-      ? normalizedCreatedAt
-      : toIsoTimestamp(startedAtCandidate)
+  const startedAt = toIsoTimestamp(
+    deriveStartedAtTimestamp(value, source, createdAt)
+  )
 
   if (!isIsoTimestampString(normalizedCreatedAt)) {
     return null
@@ -1045,6 +1048,58 @@ function normalizeTiming(value, fallbackTimestamp, status) {
     startedAt,
     finishedAt: null
   }
+}
+
+/**
+ * @param {unknown} timing
+ * @param {unknown} source
+ * @param {number} fallbackCreatedAt
+ * @returns {number}
+ */
+function deriveStartedAtTimestamp(timing, source, fallbackCreatedAt) {
+  const earliestExplicitStartedAt = readEarliestTimestampCandidate([
+    timing?.startedAt,
+    source?.timing?.startedAt,
+    source?.matchStartTime,
+    source?.match_start_time,
+    source?.startedAt,
+    source?.started_at,
+    source?.startTime,
+    source?.start_time
+  ])
+
+  if (earliestExplicitStartedAt !== null) {
+    return earliestExplicitStartedAt
+  }
+
+  return (
+    readTimestampCandidate(source?.created_at) ??
+    readTimestampCandidate(source?.createdAt) ??
+    readTimestampCandidate(timing?.createdAt) ??
+    fallbackCreatedAt
+  )
+}
+
+/**
+ * @param {unknown[]} values
+ * @returns {number | null}
+ */
+function readEarliestTimestampCandidate(values) {
+  let earliestTimestamp = null
+
+  for (const value of values) {
+    const candidate = readTimestampCandidate(value)
+
+    if (candidate === null) {
+      continue
+    }
+
+    if (earliestTimestamp === null || candidate < earliestTimestamp) {
+      earliestTimestamp = candidate
+    }
+  }
+
+  return earliestTimestamp
 }
 
 /**
@@ -1185,7 +1240,7 @@ function isMatchTiming(value, status) {
     return false
   }
 
-  if (!isNullableIsoTimestamp(value.startedAt)) {
+  if (!isIsoTimestampString(value.startedAt)) {
     return false
   }
 
@@ -1353,7 +1408,7 @@ function readCanonicalIsoTimestamp(value) {
  * @param {unknown} value
  * @returns {number | null}
  */
-function readTimestampCandidate(value) {
+export function readTimestampCandidate(value) {
   if (isNonNegativeInteger(value)) {
     return value
   }

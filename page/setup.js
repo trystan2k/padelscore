@@ -147,7 +147,8 @@ function _isVerifiedActiveSession(matchState, setsToPlay) {
     isRecord(matchState) &&
     matchState.status === MATCH_STATUS.ACTIVE &&
     matchState.setsToPlay === setsToPlay &&
-    matchState.setsNeededToWin === Math.ceil(setsToPlay / 2)
+    matchState.setsNeededToWin === Math.ceil(setsToPlay / 2) &&
+    typeof matchState?.timing?.startedAt === 'string'
   )
 }
 

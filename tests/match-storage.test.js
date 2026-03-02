@@ -364,6 +364,42 @@ test('MatchStorage saveMatchState keeps updatedAt deterministic with canonical p
   }
 })
 
+test('MatchStorage saveMatchState preserves persisted startedAt on subsequent saves', () => {
+  const { mock } = createHmFsMock()
+  const originalHmFS = globalThis.hmFS
+  const originalDateNow = Date.now
+  const dateNowValues = [1700000005000, 1700000006000]
+  const state = createDefaultMatchState()
+  const storage = new MatchStorage()
+
+  globalThis.hmFS = mock
+  Date.now = () => dateNowValues.shift() ?? 1700000006000
+
+  try {
+    storage.saveMatchState(state)
+    const firstPersisted = getActiveSession()
+    assert.notEqual(firstPersisted, null)
+
+    state.timing.startedAt = '2040-01-01T00:00:00.000Z'
+    storage.saveMatchState(state)
+
+    const secondPersisted = getActiveSession()
+    assert.notEqual(secondPersisted, null)
+    assert.equal(
+      secondPersisted?.timing?.startedAt,
+      firstPersisted?.timing?.startedAt
+    )
+  } finally {
+    Date.now = originalDateNow
+
+    if (typeof originalHmFS === 'undefined') {
+      delete globalThis.hmFS
+    } else {
+      globalThis.hmFS = originalHmFS
+    }
+  }
+})
+
 test('MatchStorage loadMatchState never throws when adapter load fails', async () => {
   const matchStorage = new MatchStorage({
     save() {},

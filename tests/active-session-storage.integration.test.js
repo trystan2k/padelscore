@@ -119,6 +119,66 @@ test('app startup migration is one-time and idempotent per app lifecycle', async
   }
 })
 
+test('startup migration derives and preserves timing.startedAt across later saves', async () => {
+  const runtimeLegacySession = loadLegacyFixture('legacy-runtime-session.json')
+  runtimeLegacySession.created_at = 1700000000000
+  runtimeLegacySession.matchStartTime = 1700000000100
+
+  const { mock } = createHmFsMock({
+    [LEGACY_RUNTIME_FILENAME]: JSON.stringify(runtimeLegacySession)
+  })
+
+  const originalHmFS = globalThis.hmFS
+  const originalHmApp = globalThis.hmApp
+
+  globalThis.hmFS = mock
+  globalThis.hmApp = {
+    setScreenKeep() {}
+  }
+
+  try {
+    const app = await loadAppDefinition()
+    app.onCreate.call(app, {})
+
+    const migratedSession = getActiveSession()
+    assert.notEqual(migratedSession, null)
+    assert.equal(migratedSession?.timing?.startedAt, '2023-11-14T22:13:20.100Z')
+
+    assert.equal(
+      saveActiveSession(
+        {
+          ...migratedSession,
+          timing: {
+            ...migratedSession.timing,
+            startedAt: '2030-01-01T00:00:00.000Z'
+          }
+        },
+        { preserveUpdatedAt: true }
+      ),
+      true
+    )
+
+    const persistedAfterSave = getActiveSession()
+    assert.notEqual(persistedAfterSave, null)
+    assert.equal(
+      persistedAfterSave?.timing?.startedAt,
+      migratedSession?.timing?.startedAt
+    )
+  } finally {
+    if (typeof originalHmFS === 'undefined') {
+      delete globalThis.hmFS
+    } else {
+      globalThis.hmFS = originalHmFS
+    }
+
+    if (typeof originalHmApp === 'undefined') {
+      delete globalThis.hmApp
+    } else {
+      globalThis.hmApp = originalHmApp
+    }
+  }
+})
+
 test('canonical active session payload remains compatible with Task 29 history storage', () => {
   const { mock } = createHmFsMock()
   const originalHmFS = globalThis.hmFS

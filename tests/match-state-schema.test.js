@@ -287,6 +287,44 @@ test('deserializeMatchSession accepts parseable string timing fields and normali
   assert.equal(validateMatchSession(deserialized), true)
 })
 
+test('deserializeMatchSession repairs missing startedAt using earliest reliable start timestamp', () => {
+  const candidate = {
+    ...emptyNewSession,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    matchStartTime: '2024-01-01T00:00:05Z',
+    startedAt: '2024-01-01T00:00:20Z',
+    timing: {
+      ...emptyNewSession.timing,
+      createdAt: '2024-01-01T00:00:30Z',
+      updatedAt: '2024-01-01T00:05:00Z',
+      startedAt: null,
+      finishedAt: null
+    },
+    updatedAt: 1704067500000
+  }
+
+  const deserialized = deserializeMatchSession(JSON.stringify(candidate))
+
+  assert.notEqual(deserialized, null)
+  assert.equal(deserialized?.timing.startedAt, '2024-01-01T00:00:05.000Z')
+  assert.equal(validateMatchSession(deserialized), true)
+})
+
+test('deserializeMatchSession maps legacy created_at semantics to createdAt and startedAt fallback', () => {
+  const legacyV1Payload = {
+    ...createLegacyV0Payload(),
+    schemaVersion: 1,
+    created_at: 1704067000000
+  }
+
+  const deserialized = deserializeMatchSession(JSON.stringify(legacyV1Payload))
+
+  assert.notEqual(deserialized, null)
+  assert.equal(deserialized?.timing.createdAt, '2023-12-31T23:56:40.000Z')
+  assert.equal(deserialized?.timing.startedAt, '2023-12-31T23:56:40.000Z')
+  assert.equal(validateMatchSession(deserialized), true)
+})
+
 test('validateMatchSession rejects invalid status and timing combinations', () => {
   const invalidStatus = {
     ...emptyNewSession,

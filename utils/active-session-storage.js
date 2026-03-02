@@ -5,9 +5,11 @@ import {
   STORAGE_KEY as LEGACY_ACTIVE_SESSION_STORAGE_KEY,
   MATCH_STATUS,
   migrateMatchState,
+  readTimestampCandidate,
   SETS_NEEDED_TO_WIN,
   SETS_TO_PLAY,
-  serializeMatchState
+  serializeMatchState,
+  toIsoTimestampSafe
 } from './match-state-schema.js'
 import {
   clearLegacyActiveSession,
@@ -23,7 +25,15 @@ import {
  *   },
  *   winnerTeam?: 'teamA' | 'teamB',
  *   winner?: { team?: 'teamA' | 'teamB' },
- *   completedAt?: number
+ *   completedAt?: number,
+ *   createdAt?: string | number,
+ *   created_at?: string | number,
+ *   startedAt?: string | number,
+ *   started_at?: string | number,
+ *   startTime?: string | number,
+ *   start_time?: string | number,
+ *   matchStartTime?: string | number,
+ *   match_start_time?: string | number
  * }} ActiveSession
  */
 
@@ -88,7 +98,7 @@ export function getActiveSession() {
 
 /**
  * @param {ActiveSession} session
- * @param {{ preserveUpdatedAt?: boolean }} [options]
+ * @param {{ preserveUpdatedAt?: boolean, allowStartTimeRepair?: boolean }} [options]
  * @returns {boolean}
  */
 export function saveActiveSession(session, options = {}) {
@@ -106,22 +116,18 @@ export function saveActiveSession(session, options = {}) {
       ? toNonNegativeInteger(session.updatedAt, Date.now())
       : Date.now()
 
-  const nextSession = {
-    ...session,
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    updatedAt
-  }
+  const existingCanonicalSession = loadSessionFromPath(
+    ACTIVE_SESSION_FILE_PATH,
+    'canonical',
+    false
+  )
 
-  // Keep timing.updatedAt in sync with updatedAt so canonical validation passes
-  if (isRecord(nextSession.timing)) {
-    nextSession.timing = {
-      ...nextSession.timing,
-      updatedAt:
-        typeof nextSession.timing.updatedAt === 'string'
-          ? nextSession.timing.updatedAt // preserve existing ISO/fallback string
-          : updatedAt
-    }
-  }
+  const nextSession = applySessionWriteNormalization({
+    session,
+    existingCanonicalSession,
+    updatedAt,
+    allowStartTimeRepair: options.allowStartTimeRepair === true
+  })
 
   const payload = serializeMatchState(nextSession)
 
@@ -136,8 +142,88 @@ export function saveActiveSession(session, options = {}) {
 }
 
 /**
+ * @param {{
+ *   session: ActiveSession,
+ *   existingCanonicalSession: ActiveSession | null,
+ *   updatedAt: number,
+ *   allowStartTimeRepair: boolean
+ * }} params
+ * @returns {ActiveSession}
+ */
+function applySessionWriteNormalization(params) {
+  const updatedAt = toNonNegativeInteger(params.updatedAt, Date.now())
+  const updatedAtIso = toIsoTimestampSafe(updatedAt)
+
+  const existingTiming = isRecord(params.existingCanonicalSession?.timing)
+    ? params.existingCanonicalSession.timing
+    : null
+  const sessionTiming = isRecord(params.session?.timing)
+    ? params.session.timing
+    : null
+
+  const createdAtTimestamp =
+    readTimestampCandidate(sessionTiming?.createdAt) ??
+    readTimestampCandidate(existingTiming?.createdAt) ??
+    readTimestampCandidate(params.session?.createdAt) ??
+    readTimestampCandidate(params.session?.created_at) ??
+    updatedAt
+
+  const existingStartedAtTimestamp = readTimestampCandidate(
+    existingTiming?.startedAt
+  )
+  const requestedStartedAtTimestamp = readPreferredStartTimestamp(
+    params.session,
+    sessionTiming
+  )
+
+  let nextStartedAtTimestamp = requestedStartedAtTimestamp
+
+  if (
+    existingStartedAtTimestamp !== null &&
+    params.allowStartTimeRepair !== true
+  ) {
+    nextStartedAtTimestamp = existingStartedAtTimestamp
+
+    if (
+      requestedStartedAtTimestamp !== null &&
+      requestedStartedAtTimestamp !== existingStartedAtTimestamp
+    ) {
+      log('warn', 'ignored attempt to overwrite match start time', {
+        previousStartedAt: toIsoTimestampSafe(existingStartedAtTimestamp),
+        requestedStartedAt: toIsoTimestampSafe(requestedStartedAtTimestamp)
+      })
+    }
+  }
+
+  if (nextStartedAtTimestamp === null) {
+    nextStartedAtTimestamp = createdAtTimestamp
+    log('info', 'derived missing match start time from created_at semantics')
+  }
+
+  const finishedAt =
+    params.session.status === MATCH_STATUS.FINISHED
+      ? toIsoTimestampSafe(
+          readTimestampCandidate(sessionTiming?.finishedAt) ?? updatedAt
+        )
+      : null
+
+  return {
+    ...params.session,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    updatedAt,
+    timing: {
+      ...(sessionTiming ?? {}),
+      createdAt: toIsoTimestampSafe(createdAtTimestamp),
+      updatedAt: updatedAtIso,
+      startedAt: toIsoTimestampSafe(nextStartedAtTimestamp),
+      finishedAt
+    }
+  }
+}
+
+/**
  * @param {(session: ActiveSession) => ActiveSession | null | void} updaterFn
- * @param {{ preserveUpdatedAt?: boolean }} [options]
+ * @param {{ preserveUpdatedAt?: boolean, allowStartTimeRepair?: boolean }} [options]
  * @returns {ActiveSession | null}
  */
 export function updateActiveSession(updaterFn, options = {}) {
@@ -196,7 +282,7 @@ export function updateActiveSession(updaterFn, options = {}) {
 
 /**
  * @param {Partial<ActiveSession>} patch
- * @param {{ preserveUpdatedAt?: boolean }} [options]
+ * @param {{ preserveUpdatedAt?: boolean, allowStartTimeRepair?: boolean }} [options]
  * @returns {ActiveSession | null}
  */
 export function updateActiveSessionPartial(patch, options = {}) {
@@ -306,7 +392,8 @@ export function migrateLegacySessions() {
 
   if (shouldWriteCanonical) {
     const didSaveCanonical = saveActiveSession(bestCandidate.session, {
-      preserveUpdatedAt: true
+      preserveUpdatedAt: true,
+      allowStartTimeRepair: true
     })
 
     if (!didSaveCanonical) {
@@ -519,7 +606,16 @@ function normalizeLegacyRuntimeState(runtimeState) {
     },
     setHistory: normalizeSetHistory(runtimeState?.setHistory),
     updatedAt: toNonNegativeInteger(runtimeState.updatedAt, Date.now()),
-    schemaVersion: CURRENT_SCHEMA_VERSION
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    timing: runtimeState?.timing,
+    createdAt: runtimeState?.createdAt,
+    created_at: runtimeState?.created_at,
+    startedAt: runtimeState?.startedAt,
+    started_at: runtimeState?.started_at,
+    startTime: runtimeState?.startTime,
+    start_time: runtimeState?.start_time,
+    matchStartTime: runtimeState?.matchStartTime,
+    match_start_time: runtimeState?.match_start_time
   }
 
   const migratedSession = migrateMatchState(normalizedSession)
@@ -845,6 +941,39 @@ function isPositiveInteger(value) {
  */
 function toPositiveInteger(value, fallback) {
   return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+/**
+ * @param {ActiveSession} session
+ * @param {Record<string, any> | null} sessionTiming
+ * @returns {number | null}
+ */
+function readPreferredStartTimestamp(session, sessionTiming) {
+  let earliestTimestamp = null
+
+  const candidates = [
+    sessionTiming?.startedAt,
+    session?.matchStartTime,
+    session?.match_start_time,
+    session?.startedAt,
+    session?.started_at,
+    session?.startTime,
+    session?.start_time
+  ]
+
+  for (const candidateValue of candidates) {
+    const candidateTimestamp = readTimestampCandidate(candidateValue)
+
+    if (candidateTimestamp === null) {
+      continue
+    }
+
+    if (earliestTimestamp === null || candidateTimestamp < earliestTimestamp) {
+      earliestTimestamp = candidateTimestamp
+    }
+  }
+
+  return earliestTimestamp
 }
 
 /**

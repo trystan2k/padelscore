@@ -31,8 +31,15 @@ export function initializeMatchState(setsToPlay) {
   }
 
   const matchState = createDefaultMatchState()
-  const updatedAt = Date.now()
-  const updatedAtIso = toIsoTimestampSafe(updatedAt)
+  const initializedAt =
+    Number.isInteger(matchState.updatedAt) && matchState.updatedAt >= 0
+      ? matchState.updatedAt
+      : Date.now()
+  const initializedAtIso = toIsoTimestampSafe(initializedAt)
+  const startedAt =
+    typeof matchState?.timing?.startedAt === 'string'
+      ? matchState.timing.startedAt
+      : initializedAtIso
   const setsNeededToWin = Math.ceil(setsToPlay / 2)
   const canonicalSetsWon = {
     teamA: 0,
@@ -89,11 +96,12 @@ export function initializeMatchState(setsToPlay) {
     },
     timing: {
       ...matchState.timing,
-      updatedAt: updatedAtIso,
-      startedAt: matchState.timing.startedAt ?? updatedAtIso,
+      createdAt: matchState?.timing?.createdAt ?? startedAt,
+      updatedAt: initializedAtIso,
+      startedAt,
       finishedAt: null
     },
     setHistory: [],
-    updatedAt
+    updatedAt: initializedAt
   }
 }
