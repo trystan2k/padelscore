@@ -1,7 +1,8 @@
 import {
   createDefaultMatchState,
   MATCH_STATUS,
-  SETS_TO_PLAY
+  SETS_TO_PLAY,
+  toIsoTimestampSafe
 } from './match-state-schema.js'
 
 export const SUPPORTED_SETS_TO_PLAY = Object.freeze([
@@ -30,30 +31,69 @@ export function initializeMatchState(setsToPlay) {
   }
 
   const matchState = createDefaultMatchState()
+  const updatedAt = Date.now()
+  const updatedAtIso = toIsoTimestampSafe(updatedAt)
+  const setsNeededToWin = Math.ceil(setsToPlay / 2)
+  const canonicalSetsWon = {
+    teamA: 0,
+    teamB: 0
+  }
+  const canonicalCurrentSet = {
+    number: 1,
+    games: {
+      teamA: 0,
+      teamB: 0
+    }
+  }
+  const canonicalCurrentGame = {
+    points: {
+      teamA: 0,
+      teamB: 0
+    }
+  }
+
+  const mirroredSetsWon = {
+    teamA: canonicalSetsWon.teamA,
+    teamB: canonicalSetsWon.teamB
+  }
+  const mirroredCurrentSet = {
+    number: canonicalCurrentSet.number,
+    games: {
+      teamA: canonicalCurrentSet.games.teamA,
+      teamB: canonicalCurrentSet.games.teamB
+    }
+  }
+  const mirroredCurrentGame = {
+    points: {
+      teamA: canonicalCurrentGame.points.teamA,
+      teamB: canonicalCurrentGame.points.teamB
+    }
+  }
 
   return {
     ...matchState,
     status: MATCH_STATUS.ACTIVE,
     setsToPlay,
-    setsNeededToWin: Math.ceil(setsToPlay / 2),
-    setsWon: {
-      teamA: 0,
-      teamB: 0
+    setsNeededToWin,
+    setsWon: mirroredSetsWon,
+    currentSet: mirroredCurrentSet,
+    currentGame: mirroredCurrentGame,
+    settings: {
+      setsToPlay,
+      setsNeededToWin
     },
-    currentSet: {
-      number: 1,
-      games: {
-        teamA: 0,
-        teamB: 0
-      }
+    scores: {
+      setsWon: canonicalSetsWon,
+      currentSet: canonicalCurrentSet,
+      currentGame: canonicalCurrentGame
     },
-    currentGame: {
-      points: {
-        teamA: 0,
-        teamB: 0
-      }
+    timing: {
+      ...matchState.timing,
+      updatedAt: updatedAtIso,
+      startedAt: matchState.timing.startedAt ?? updatedAtIso,
+      finishedAt: null
     },
     setHistory: [],
-    updatedAt: Date.now()
+    updatedAt
   }
 }

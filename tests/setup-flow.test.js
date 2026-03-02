@@ -197,12 +197,14 @@ async function runWithSetupPage(options = {}, runScenario) {
     onSave = null,
     onLoad = null,
     onNavigate = null,
-    loadOverride
+    loadOverride,
+    getAppImpl
   } = options
 
   const originalHmUI = globalThis.hmUI
   const originalHmSetting = globalThis.hmSetting
   const originalHmApp = globalThis.hmApp
+  const originalGetApp = globalThis.getApp
   const originalAdapter = matchStorage.adapter
 
   const { hmUI, createdWidgets } = createHmUiRecorder()
@@ -234,6 +236,10 @@ async function runWithSetupPage(options = {}, runScenario) {
     }
   }
 
+  if (typeof getAppImpl === 'function') {
+    globalThis.getApp = getAppImpl
+  }
+
   matchStorage.adapter = mockAdapter
 
   try {
@@ -263,6 +269,12 @@ async function runWithSetupPage(options = {}, runScenario) {
       delete globalThis.hmApp
     } else {
       globalThis.hmApp = originalHmApp
+    }
+
+    if (typeof originalGetApp === 'undefined') {
+      delete globalThis.getApp
+    } else {
+      globalThis.getApp = originalGetApp
     }
 
     matchStorage.adapter = originalAdapter
@@ -475,6 +487,7 @@ test('setup page persists state before navigating to game', async () => {
   assert.deepEqual(eventOrder, [
     'before-start',
     'save',
+    'load',
     'navigate',
     'after-start'
   ])
@@ -615,6 +628,67 @@ test('setup page prevents duplicate start while persisting', async () => {
 
     assert.equal(successCount, 1)
   })
+})
+
+test('setup page start succeeds even when runtime app instance access throws', async () => {
+  await runWithSetupPage(
+    {
+      getAppImpl() {
+        throw new Error('getApp failed')
+      }
+    },
+    async ({ page, createdWidgets, mockAdapter, navigationCalls }) => {
+      page.onInit()
+      page.build()
+
+      const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const threeSetsButton = findButtonByText(
+        buttons,
+        'setup.option.threeSets'
+      )
+
+      threeSetsButton.properties.click_func()
+
+      const didStartMatch = await page.handleStartMatch()
+
+      assert.equal(didStartMatch, true)
+      assert.equal(mockAdapter.savedPayloads.length, 1)
+      assert.equal(navigationCalls.length, 1)
+      assert.equal(page.startErrorMessage, '')
+    }
+  )
+})
+
+test('setup page start succeeds when Date.parse returns NaN', async () => {
+  const originalDateParse = Date.parse
+  Date.parse = () => Number.NaN
+
+  try {
+    await runWithSetupPage(
+      {},
+      async ({ page, createdWidgets, mockAdapter, navigationCalls }) => {
+        page.onInit()
+        page.build()
+
+        const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+        const threeSetsButton = findButtonByText(
+          buttons,
+          'setup.option.threeSets'
+        )
+
+        threeSetsButton.properties.click_func()
+
+        const didStartMatch = await page.handleStartMatch()
+
+        assert.equal(didStartMatch, true)
+        assert.equal(mockAdapter.savedPayloads.length, 1)
+        assert.equal(navigationCalls.length, 1)
+        assert.equal(page.startErrorMessage, '')
+      }
+    )
+  } finally {
+    Date.parse = originalDateParse
+  }
 })
 
 test('setup page resets error message when user changes selection', async () => {

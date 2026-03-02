@@ -132,6 +132,35 @@ test('getActiveSession falls back to legacy runtime storage when canonical paylo
   })
 })
 
+test('getActiveSession ignores clearly invalid legacy runtime blobs', () => {
+  const invalidRuntimeBlob = {
+    status: 'active',
+    teamA: {
+      points: 'bad-value'
+    },
+    teamB: {
+      points: 15
+    },
+    currentSetStatus: {
+      number: 1,
+      teamAGames: 0,
+      teamBGames: 0
+    },
+    setsWon: {
+      teamA: 0,
+      teamB: 0
+    },
+    updatedAt: 1700000010000
+  }
+  const { mock } = createHmFsMock({
+    [LEGACY_RUNTIME_FILENAME]: JSON.stringify(invalidRuntimeBlob)
+  })
+
+  withMockedHmFs(mock, () => {
+    assert.equal(getActiveSession(), null)
+  })
+})
+
 test('clearActiveSession removes legacy runtime storage so stale state cannot be restored', () => {
   const runtimeLegacySession = loadLegacyFixture('legacy-runtime-session.json')
   const { mock, fileStore } = createHmFsMock({

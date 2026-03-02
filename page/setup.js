@@ -5,7 +5,11 @@ import { resolveLayout } from '../utils/layout-engine.js'
 import { createPageWithFooterButton } from '../utils/layout-presets.js'
 import { initializeMatchState } from '../utils/match-session-init.js'
 import { MATCH_STATUS } from '../utils/match-state-schema.js'
-import { clearMatchState, saveMatchState } from '../utils/match-storage.js'
+import {
+  clearMatchState,
+  loadMatchState,
+  saveMatchState
+} from '../utils/match-storage.js'
 import { getScreenMetrics } from '../utils/screen-utils.js'
 import { clearState } from '../utils/storage.js'
 import {
@@ -232,23 +236,25 @@ Page({
     this.startErrorMessage = ''
     this.renderSetupScreen()
 
+    let initializedMatchState = null
+
     try {
-      const initializedMatchState = initializeMatchState(
-        this.selectedSetsToPlay
-      )
-      clearMatchState()
-      saveMatchState(initializedMatchState)
-
-      // Clear the in-memory runtime state to ensure the game page
-      // loads fresh data from storage instead of using stale state
-      // from a previously completed match
-      this.clearRuntimeMatchState()
-
-      // Also pass the new session state through globalData as a fallback
-      // for devices where SysProGetChars does not reliably persist across
-      // page transitions. The game page will consume this on validateSessionAccess.
-      this.storeSessionHandoff(initializedMatchState)
+      initializedMatchState = initializeMatchState(this.selectedSetsToPlay)
     } catch {
+      this.startErrorMessage = gettext('setup.saveFailed')
+      this.isPersistingMatchState = false
+      this.renderSetupScreen()
+      return false
+    }
+
+    const didStoreRuntimeHandoff = this.prepareRuntimeForGameStart(
+      initializedMatchState
+    )
+    const didPersistMatchState = this.persistMatchStateForGameStart(
+      initializedMatchState
+    )
+
+    if (!didPersistMatchState && !didStoreRuntimeHandoff) {
       this.startErrorMessage = gettext('setup.saveFailed')
       this.isPersistingMatchState = false
       this.renderSetupScreen()
@@ -271,6 +277,40 @@ Page({
     return true
   },
 
+  prepareRuntimeForGameStart(persistedMatchState) {
+    let didStoreHandoff = false
+
+    try {
+      this.clearRuntimeMatchState()
+    } catch {
+      // Non-blocking runtime cleanup failure should not prevent navigation.
+    }
+
+    try {
+      didStoreHandoff = this.storeSessionHandoff(persistedMatchState) === true
+    } catch {
+      // Non-blocking handoff failure should not prevent navigation.
+    }
+
+    return didStoreHandoff
+  },
+
+  persistMatchStateForGameStart(matchState) {
+    try {
+      clearMatchState()
+      saveMatchState(matchState)
+
+      const persistedMatchState = loadMatchState()
+
+      return _isVerifiedActiveSession(
+        persistedMatchState,
+        this.selectedSetsToPlay
+      )
+    } catch {
+      return false
+    }
+  },
+
   clearRuntimeMatchState() {
     const app = this.getAppInstance()
 
@@ -291,23 +331,32 @@ Page({
       return null
     }
 
-    const app = getApp()
+    try {
+      const app = getApp()
 
-    if (!isRecord(app)) {
+      if (!isRecord(app)) {
+        return null
+      }
+
+      return app
+    } catch {
       return null
     }
-
-    return app
   },
 
   storeSessionHandoff(persistedMatchState) {
     const app = this.getAppInstance()
 
-    if (!app || !isRecord(app.globalData)) {
-      return
+    if (!app) {
+      return false
+    }
+
+    if (!isRecord(app.globalData)) {
+      app.globalData = {}
     }
 
     app.globalData.pendingPersistedMatchState = persistedMatchState
+    return true
   },
 
   navigateToGamePage() {
@@ -326,12 +375,15 @@ Page({
   },
 
   navigateBack() {
-    if (typeof hmApp === 'undefined' || typeof hmApp.goBack !== 'function') {
+    // Navigate directly to home instead of goBack() to avoid returning to
+    // game.js when setup was opened from a new-match flow (game redirects
+    // back to setup when session is invalid, causing an infinite loop).
+    if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
       return false
     }
 
     try {
-      hmApp.goBack()
+      hmApp.gotoPage({ url: 'page/index' })
       return true
     } catch {
       return false

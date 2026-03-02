@@ -3458,12 +3458,81 @@
         "description": "Define a canonical JSON schema and in-memory contract for a match session that serves as the single source of truth across the app, covering active session, match history, UI binding, and persistence with clear type definitions and validation rules.",
         "details": "This task establishes the single source of truth for match session data across the entire application. The contract must specify:\n\n**Schema Definition:**\n- Create a JSON Schema file at /docs/schema/match-session.json\n- Define all required and optional fields with explicit types\n- Specify timestamp formats using ISO 8601 standard\n- Include validation rules for each field (min/max, patterns, enums)\n\n**Core Fields to Include:**\n- Player identities (teamA, teamB names or identifiers)\n- Scores: points, games, sets for both teams\n- Timing: matchStartTime (ISO 8601), pointTime (ISO 8601), updatedAt\n- Settings: setsToPlay (1|3|5), setsNeededToWin (1|2|3)\n- Status: 'active' | 'finished' | 'paused'\n- Match metadata: matchId (unique identifier), matchDuration\n- History: setHistory array with setNumber, teamAGames, teamBGames\n- Migration version field (e.g., 'schemaVersion')\n\n**Migration Versioning:**\n- Define a schema version field (integer or semantic version)\n- Document backward compatibility policy (e.g., fields are additive)\n- Create a migration guide for future schema changes\n\n**Reference Implementation:**\n- Provide JavaScript/TypeScript serializer/deserializer functions\n- Include runtime validation against the JSON Schema\n- Create example session objects covering different states:\n  - Empty/new session\n  - Active in-progress match\n  - Finished match with history\n  - Match with special characters in team names\n\n**Documentation:**\n- Add schema file to /docs/schema directory\n- Document all fields with descriptions and examples\n- Specify any constraints or invariants",
         "testStrategy": "1. **Schema Validation Tests**: Create test suite that validates example session objects against the JSON Schema. Verify:\n   - Valid session objects pass validation\n   - Invalid objects (missing required fields, wrong types, out-of-range values) fail with appropriate error messages\n\n2. **Serializer/Deserializer Tests**: Implement tests for the reference implementation:\n   - Round-trip test: serialize then deserialize and verify data integrity\n   - Test with various session states (empty, in-progress, finished)\n   - Test with edge cases (special characters, maximum values, minimum values)\n   - Verify ISO 8601 timestamp handling\n\n3. **Cross-team Validation**: Share the schema with relevant teams and obtain sign-off:\n   - Verify schema covers all use cases for PAD-54 (storage service)\n   - Confirm compatibility with UI binding requirements\n   - Validate against history storage needs\n\n4. **Documentation Review**: Ensure:\n   - Schema file is properly formatted and valid JSON Schema\n   - All fields are documented with clear descriptions\n   - Examples are accurate and comprehensive\n   - Migration policy is clear and actionable",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "53"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create canonical JSON Schema for match session",
+            "description": "Create the JSON Schema file at /docs/schema/match-session.json with all required and optional fields, explicit types, ISO 8601 timestamp formats, and validation rules for each field.",
+            "dependencies": [],
+            "details": "Create /docs/schema/match-session.json defining the complete match session schema. Include core fields: matchId (string, unique), teamA/teamB (string identifiers), scores (points, games, sets objects), timing (matchStartTime, pointTime, updatedAt as ISO 8601), settings (setsToPlay enum 1|3|5, setsNeededToWin enum 1|2|3), status enum ('active'|'finished'|'paused'), matchDuration (number), setHistory array (each with setNumber, teamAGames, teamBGames), and schemaVersion (integer). Add validation rules: min/max for numeric fields, patterns for IDs, required fields, and timestamp format enforcement.",
+            "status": "done",
+            "testStrategy": "Validate the JSON Schema structure using a schema validator linter. Verify all required fields are defined with correct types and validation constraints apply as expected.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T14:18:07.273Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement TypeScript type definitions and interfaces",
+            "description": "Create TypeScript interfaces and types that mirror the JSON Schema, establishing the in-memory contract for match session objects used throughout the application.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create types/MatchSession.ts with exported interfaces: MatchSession (main interface), TeamScores (points, games, sets), MatchSettings (setsToPlay, setsNeededToWin), SetHistoryEntry (setNumber, teamAGames, teamBGames), MatchStatus type, and SchemaVersion type. Include JSDoc comments for each field describing purpose, constraints, and examples. Ensure strict type alignment with the JSON Schema defined in subtask 1.",
+            "status": "done",
+            "testStrategy": "Compile TypeScript code to verify type definitions. Create sample objects matching the interfaces to ensure type checking works correctly and catches invalid assignments.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T14:18:07.276Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement runtime validation and serialization functions",
+            "description": "Create serializer/deserializer functions with runtime validation against the JSON Schema to ensure data integrity across persistence and in-memory operations.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create services/MatchSessionContract.ts with functions: validateMatchSession(session) that validates against the JSON Schema and returns ValidationResult { isValid: boolean, errors: string[] }, serializeMatchSession(session) that converts to JSON string with UTF-8 encoding, and deserializeMatchSession(jsonString) that parses and validates, returning the typed MatchSession or throwing ValidationException. Use a JSON Schema validation library (e.g., ajv) for runtime validation. Include proper error messages for debugging.",
+            "status": "done",
+            "testStrategy": "Write unit tests for validateMatchSession with valid objects passing and invalid objects (missing fields, wrong types, out-of-range) failing with descriptive errors. Test serialization/deserialization round-trip preserves all data correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T14:18:07.279Z"
+          },
+          {
+            "id": 4,
+            "title": "Create example session objects for different states",
+            "description": "Generate representative example match session objects covering all common scenarios including new, active, finished matches and edge cases with special characters.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create fixtures/matchSessionExamples.ts with exported example objects: emptySession (minimal valid session with default values), activeInProgressMatch (mid-match with scores and history), finishedMatchWithHistory (completed match with full set history), and matchWithSpecialCharacters (team names with unicode, emojis, special chars). Each example must be valid per the TypeScript types and JSON Schema. Include comments explaining the state each example represents.",
+            "status": "done",
+            "testStrategy": "Validate each example object against the JSON Schema and TypeScript types. Ensure all examples pass validation and represent realistic match scenarios developers can reference.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T14:18:07.282Z"
+          },
+          {
+            "id": 5,
+            "title": "Create comprehensive schema and migration documentation",
+            "description": "Document the match session contract including field descriptions, constraints, invariants, and migration guide for future schema changes.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create /docs/schema/match-session.md documenting: overview of the canonical contract purpose, detailed field reference table with descriptions, types, constraints, and examples; invariants (e.g., matchStartTime immutable after creation); backward compatibility policy (fields are additive, never remove); migration guide for schemaVersion changes with step-by-step process; and usage examples showing common operations. Link to the JSON Schema file and TypeScript definitions for reference.",
+            "status": "done",
+            "testStrategy": "Review documentation for completeness and clarity. Verify all fields from the schema are documented. Ensure examples in docs match the actual implementation and examples created in subtask 4.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-02T14:18:07.285Z"
+          }
+        ],
+        "updatedAt": "2026-03-02T14:18:07.285Z"
       },
       {
         "id": "56",
@@ -3681,9 +3750,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-02T10:19:03.234Z",
+      "lastModified": "2026-03-02T14:18:07.285Z",
       "taskCount": 70,
-      "completedCount": 50,
+      "completedCount": 51,
       "tags": [
         "master"
       ]

@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://padelbuddy.local/schema/match-session.json",
+  "title": "Padel Buddy Match Session",
+  "description": "Canonical match session contract used by storage, resume, and history flows.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "teams",
+    "scores",
+    "settings",
+    "status",
+    "metadata",
+    "timing",
+    "setHistory",
+    "schemaVersion",
+    "setsToPlay",
+    "setsNeededToWin",
+    "setsWon",
+    "currentSet",
+    "currentGame",
+    "updatedAt"
+  ],
+  "properties": {
+    "teams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["teamA", "teamB"],
+      "properties": {
+        "teamA": {
+          "$ref": "#/$defs/teamIdentityA"
+        },
+        "teamB": {
+          "$ref": "#/$defs/teamIdentityB"
+        }
+      }
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setsWon", "currentSet", "currentGame"],
+      "properties": {
+        "setsWon": {
+          "$ref": "#/$defs/teamPairScore"
+        },
+        "currentSet": {
+          "$ref": "#/$defs/currentSetState"
+        },
+        "currentGame": {
+          "$ref": "#/$defs/currentGameState"
+        }
+      }
+    },
+    "settings": {
+      "$ref": "#/$defs/matchSettings"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "paused", "finished"]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matchId"],
+      "properties": {
+        "matchId": {
+          "type": "string",
+          "pattern": "^match-[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdAt", "updatedAt", "startedAt", "finishedAt"],
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "startedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "finishedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "setHistory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/setHistoryEntry"
+      }
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "setsToPlay": {
+      "type": "integer",
+      "enum": [1, 3, 5]
+    },
+    "setsNeededToWin": {
+      "type": "integer",
+      "enum": [1, 2, 3]
+    },
+    "setsWon": {
+      "$ref": "#/$defs/teamPairScore"
+    },
+    "currentSet": {
+      "$ref": "#/$defs/currentSetState"
+    },
+    "currentGame": {
+      "$ref": "#/$defs/currentGameState"
+    },
+    "updatedAt": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "winnerTeam": {
+      "type": "string",
+      "enum": ["teamA", "teamB"]
+    },
+    "winner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["team"],
+      "properties": {
+        "team": {
+          "type": "string",
+          "enum": ["teamA", "teamB"]
+        }
+      }
+    },
+    "completedAt": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "finished"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "timing": {
+            "properties": {
+              "finishedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "timing": {
+            "properties": {
+              "finishedAt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "teamIdentityA": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "const": "teamA"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "teamIdentityB": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "const": "teamB"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "teamPairScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["teamA", "teamB"],
+      "properties": {
+        "teamA": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "teamB": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "currentSetState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "games"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "games": {
+          "$ref": "#/$defs/teamPairScore"
+        }
+      }
+    },
+    "currentGameState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["points"],
+      "properties": {
+        "points": {
+          "$ref": "#/$defs/teamPairScore"
+        }
+      }
+    },
+    "setHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setNumber", "teamAGames", "teamBGames"],
+      "properties": {
+        "setNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "teamAGames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "teamBGames": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "matchSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setsToPlay", "setsNeededToWin"],
+      "oneOf": [
+        {
+          "properties": {
+            "setsToPlay": {
+              "const": 1
+            },
+            "setsNeededToWin": {
+              "const": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "setsToPlay": {
+              "const": 3
+            },
+            "setsNeededToWin": {
+              "const": 2
+            }
+          }
+        },
+        {
+          "properties": {
+            "setsToPlay": {
+              "const": 5
+            },
+            "setsNeededToWin": {
+              "const": 3
+            }
+          }
+        }
+      ]
+    }
+  }
+}

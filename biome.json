@@ -24,6 +24,9 @@
       "suspicious": {
         "noConsole": "off",
         "useIterableCallbackReturn": "off"
+      },
+      "style": {
+        "useTemplate": "error"
       }
     }
   },

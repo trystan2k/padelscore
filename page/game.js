@@ -5,11 +5,7 @@ import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createScorePageLayout } from '../utils/layout-presets.js'
 import { createInitialMatchState } from '../utils/match-state.js'
-import {
-  createDefaultMatchState as createDefaultPersistedMatchState,
-  isMatchState as isPersistedMatchState,
-  MATCH_STATUS as PERSISTED_MATCH_STATUS
-} from '../utils/match-state-schema.js'
+import { MATCH_STATUS as PERSISTED_MATCH_STATUS } from '../utils/match-state-schema.js'
 import { loadMatchState, saveMatchState } from '../utils/match-storage.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
@@ -426,7 +422,9 @@ function mergeRuntimeStateWithPersistedSession(
 
   const mergedState = cloneMatchState(runtimeMatchState)
 
-  if (!isPersistedMatchState(persistedMatchState)) {
+  // Use runtime-safe active check — avoid calling the schema validator which
+  // triggers toISOString() and crashes on Zepp OS v1.0.
+  if (!isPersistedMatchStateActive(persistedMatchState)) {
     return mergedState
   }
 
@@ -434,10 +432,12 @@ function mergeRuntimeStateWithPersistedSession(
     persistedMatchState?.currentSet?.number,
     toPositiveInteger(mergedState.currentSetStatus.number, 1)
   )
+
   const teamAGames = toNonNegativeInteger(
     persistedMatchState?.currentSet?.games?.teamA,
     toNonNegativeInteger(mergedState.currentSetStatus.teamAGames, 0)
   )
+
   const teamBGames = toNonNegativeInteger(
     persistedMatchState?.currentSet?.games?.teamB,
     toNonNegativeInteger(mergedState.currentSetStatus.teamBGames, 0)
@@ -457,6 +457,7 @@ function mergeRuntimeStateWithPersistedSession(
     tieBreakMode,
     mergedState.teamA.points
   )
+
   mergedState.teamB.points = toRuntimePointValue(
     persistedMatchState?.currentGame?.points?.teamB,
     tieBreakMode,
@@ -467,6 +468,7 @@ function mergeRuntimeStateWithPersistedSession(
     persistedMatchState.setsNeededToWin,
     toPositiveInteger(mergedState.setsNeededToWin, 2)
   )
+
   mergedState.setsWon = {
     teamA: toNonNegativeInteger(
       persistedMatchState?.setsWon?.teamA,
@@ -477,6 +479,7 @@ function mergeRuntimeStateWithPersistedSession(
       toNonNegativeInteger(mergedState?.setsWon?.teamB, 0)
     )
   }
+
   mergedState.setHistory = cloneSetHistory(persistedMatchState.setHistory)
   mergedState.status =
     persistedMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
@@ -500,9 +503,23 @@ function createPersistedMatchStateSnapshot(
     return null
   }
 
-  const baseState = isPersistedMatchState(basePersistedMatchState)
+  // Use runtime-safe active check — avoid calling isPersistedMatchState (schema
+  // validator) which triggers toISOString() and crashes on Zepp OS v1.0.
+  // Build a minimal safe base state inline instead of calling createDefaultPersistedMatchState()
+  // which also invokes the schema and may trigger toISOString() on the device.
+  const baseState = isPersistedMatchStateActive(basePersistedMatchState)
     ? cloneMatchState(basePersistedMatchState)
-    : createDefaultPersistedMatchState()
+    : {
+        status: PERSISTED_MATCH_STATUS.ACTIVE,
+        setsToPlay: DEFAULT_SETS_TO_PLAY,
+        setsNeededToWin: Math.ceil(DEFAULT_SETS_TO_PLAY / 2),
+        setsWon: { teamA: 0, teamB: 0 },
+        currentSet: { number: 1, games: { teamA: 0, teamB: 0 } },
+        currentGame: { points: { teamA: 0, teamB: 0 } },
+        setHistory: [],
+        schemaVersion: 1,
+        updatedAt: Date.now()
+      }
 
   const setsNeededToWin = toPositiveInteger(
     runtimeMatchState.setsNeededToWin,
@@ -705,6 +722,7 @@ Page({
     // was already called in onInit via validateSessionAccess(), so this page will
     // be replaced before the user sees it. Rendering a blank background here
     // avoids a black screen flash between onInit and the navigation completing.
+
     if (!this.isSessionAccessGranted) {
       if (typeof hmUI !== 'undefined') {
         hmUI.createWidget(hmUI.widget.FILL_RECT, {
@@ -910,14 +928,6 @@ Page({
         ? cloneMatchState(persistedMatchState)
         : null
 
-      if (hasValidActiveSession) {
-        // Track match start time when session is validated
-        // For resumed matches, this won't be exact, but history service handles it
-        if (this.matchStartTime === null) {
-          this.matchStartTime = Date.now()
-        }
-      }
-
       if (!hasValidActiveSession) {
         this.navigateToSetupPage()
       }
@@ -932,6 +942,8 @@ Page({
   },
 
   consumeSessionHandoff() {
+    // The only reliable cross-page handoff channel on Zepp OS v1.0 is
+    // app.globalData — module-level singletons are reset on each page load.
     try {
       if (typeof getApp !== 'function') {
         return null
@@ -1007,17 +1019,21 @@ Page({
       return null
     }
 
-    const app = getApp()
+    try {
+      const app = getApp()
 
-    if (!isRecord(app)) {
+      if (!isRecord(app)) {
+        return null
+      }
+
+      if (!isRecord(app.globalData)) {
+        app.globalData = {}
+      }
+
+      return app
+    } catch {
       return null
     }
-
-    if (!isRecord(app.globalData)) {
-      app.globalData = {}
-    }
-
-    return app
   },
 
   ensureRuntimeState() {
@@ -1193,6 +1209,8 @@ Page({
 
     if (persistedMatchStateSnapshot !== null) {
       try {
+        // saveMatchState internally calls isMatchState (schema validator).
+        // Wrap in try/catch so a schema crash never breaks gameplay.
         saveMatchState(persistedMatchStateSnapshot)
         this.persistedSessionState = cloneMatchState(
           persistedMatchStateSnapshot
@@ -1205,7 +1223,13 @@ Page({
           app.globalData._lastPersistedSchemaState = this.persistedSessionState
         }
       } catch {
-        // Ignore schema persistence errors so gameplay interactions stay resilient.
+        // Schema persistence failed (e.g. toISOString unavailable on device).
+        // Keep persistedSessionState as-is so the in-memory session stays valid.
+        if (this.persistedSessionState === null) {
+          this.persistedSessionState = cloneMatchState(
+            persistedMatchStateSnapshot
+          )
+        }
       }
     }
 
@@ -1256,10 +1280,9 @@ Page({
 
       const snapshot = this.persistedSessionState
 
-      if (
-        isPersistedMatchState(snapshot) &&
-        isPersistedMatchStateActive(snapshot)
-      ) {
+      // Use the runtime-safe active check only — avoid calling isPersistedMatchState
+      // (schema validator) which crashes on Zepp OS due to Date.toISOString() usage.
+      if (isPersistedMatchStateActive(snapshot)) {
         app.globalData.pendingHomeMatchState = cloneMatchState(snapshot)
       }
     } catch {

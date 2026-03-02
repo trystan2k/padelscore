@@ -1,5 +1,6 @@
 import {
   CURRENT_SCHEMA_VERSION,
+  deserializeMatchSession,
   isMatchState,
   STORAGE_KEY as LEGACY_ACTIVE_SESSION_STORAGE_KEY,
   MATCH_STATUS,
@@ -101,13 +102,26 @@ export function saveActiveSession(session, options = {}) {
     return false
   }
 
+  const updatedAt =
+    options.preserveUpdatedAt === true
+      ? toNonNegativeInteger(session.updatedAt, Date.now())
+      : Date.now()
+
   const nextSession = {
     ...session,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    updatedAt:
-      options.preserveUpdatedAt === true
-        ? toNonNegativeInteger(session.updatedAt, Date.now())
-        : Date.now()
+    updatedAt
+  }
+
+  // Keep timing.updatedAt in sync with updatedAt so canonical validation passes
+  if (isRecord(nextSession.timing)) {
+    nextSession.timing = {
+      ...nextSession.timing,
+      updatedAt:
+        typeof nextSession.timing.updatedAt === 'string'
+          ? nextSession.timing.updatedAt // preserve existing ISO/fallback string
+          : updatedAt
+    }
   }
 
   const payload = serializeMatchState(nextSession)
@@ -408,18 +422,10 @@ function deserializeSession(serialized, source, allowLegacyRuntimeFallback) {
   try {
     const parsed = JSON.parse(serialized)
 
-    if (isMatchState(parsed)) {
-      return withHistoryCompatibilityMetadata(parsed, parsed)
-    }
+    const canonicalSession = deserializeMatchSession(serialized)
 
-    if (looksLikeCanonicalV0State(parsed)) {
-      const migratedState = migrateMatchState(parsed)
-
-      if (isMatchState(migratedState)) {
-        return withHistoryCompatibilityMetadata(migratedState, parsed)
-      }
-
-      return null
+    if (canonicalSession) {
+      return withHistoryCompatibilityMetadata(canonicalSession, parsed)
     }
 
     if (allowLegacyRuntimeFallback) {
@@ -485,11 +491,13 @@ function normalizeLegacyRuntimeState(runtimeState) {
     schemaVersion: CURRENT_SCHEMA_VERSION
   }
 
-  if (!isMatchState(normalizedSession)) {
+  const migratedSession = migrateMatchState(normalizedSession)
+
+  if (!isMatchState(migratedSession)) {
     return null
   }
 
-  return withHistoryCompatibilityMetadata(normalizedSession, runtimeState)
+  return withHistoryCompatibilityMetadata(migratedSession, runtimeState)
 }
 
 /**
@@ -704,18 +712,32 @@ function isRecord(value) {
  * @param {unknown} value
  * @returns {boolean}
  */
-function looksLikeCanonicalV0State(value) {
+function looksLikeLegacyRuntimeState(value) {
   return (
     isRecord(value) &&
-    (value.schemaVersion === 0 || !Object.hasOwn(value, 'schemaVersion')) &&
-    Object.hasOwn(value, 'status') &&
-    Object.hasOwn(value, 'setsToPlay') &&
-    Object.hasOwn(value, 'setsNeededToWin') &&
-    Object.hasOwn(value, 'setsWon') &&
-    Object.hasOwn(value, 'currentSet') &&
-    Object.hasOwn(value, 'currentGame') &&
-    Object.hasOwn(value, 'setHistory') &&
-    Object.hasOwn(value, 'updatedAt')
+    isRecord(value.teamA) &&
+    isRecord(value.teamB) &&
+    isRecord(value.currentSetStatus) &&
+    hasLegacyRuntimeScoreShape(value) &&
+    (value.status === MATCH_STATUS.ACTIVE ||
+      value.status === MATCH_STATUS.FINISHED)
+  )
+}
+
+/**
+ * @param {Record<string, any>} value
+ * @returns {boolean}
+ */
+function hasLegacyRuntimeScoreShape(value) {
+  return (
+    isRecord(value.setsWon) &&
+    isNonNegativeInteger(value.setsWon.teamA) &&
+    isNonNegativeInteger(value.setsWon.teamB) &&
+    isPositiveInteger(value.currentSetStatus.number) &&
+    isNonNegativeInteger(value.currentSetStatus.teamAGames) &&
+    isNonNegativeInteger(value.currentSetStatus.teamBGames) &&
+    isLegacyPointValue(value.teamA.points) &&
+    isLegacyPointValue(value.teamB.points)
   )
 }
 
@@ -723,15 +745,8 @@ function looksLikeCanonicalV0State(value) {
  * @param {unknown} value
  * @returns {boolean}
  */
-function looksLikeLegacyRuntimeState(value) {
-  return (
-    isRecord(value) &&
-    isRecord(value.teamA) &&
-    isRecord(value.teamB) &&
-    isRecord(value.currentSetStatus) &&
-    (value.status === MATCH_STATUS.ACTIVE ||
-      value.status === MATCH_STATUS.FINISHED)
-  )
+function isLegacyPointValue(value) {
+  return value === 'Ad' || value === 'Game' || isNonNegativeInteger(value)
 }
 
 /**
@@ -749,6 +764,22 @@ function isValidWinnerTeam(value) {
  */
 function toNonNegativeInteger(value, fallback) {
   return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isNonNegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0
 }
 
 /**

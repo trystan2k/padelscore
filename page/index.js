@@ -566,10 +566,8 @@ Page({
   },
 
   storeResumeSessionHandoff(persistedMatchState) {
-    // Mirror of setup.js storeSessionHandoff: writes the persisted schema state
-    // into globalData.pendingPersistedMatchState so game.js validateSessionAccess
-    // can find a valid session via consumeSessionHandoff() when SysProGetChars
-    // hasn't yet reflected the stored value across the page transition.
+    // Write the persisted state into globalData so game.js can consume it on
+    // transition even if SysProGetChars hasn't reflected the write yet.
     try {
       if (typeof getApp !== 'function') {
         return

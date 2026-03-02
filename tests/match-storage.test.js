@@ -172,6 +172,38 @@ test('MatchStorage saveMatchState refreshes updatedAt and persists serialized st
   assert.equal(calls[0].value, serializeMatchState(state))
 })
 
+test('MatchStorage saveMatchState normalizes timing fields via canonical serializer', () => {
+  const calls = []
+  const adapter = {
+    save(key, value) {
+      calls.push({ key, value })
+    },
+    load() {
+      return null
+    },
+    clear() {}
+  }
+  const storage = new MatchStorage(adapter)
+  const state = createDefaultMatchState()
+  const fixedTimestamp = 1700000000500
+  const originalDateNow = Date.now
+
+  state.timing.startedAt = null
+
+  Date.now = () => fixedTimestamp
+
+  try {
+    storage.saveMatchState(state)
+  } finally {
+    Date.now = originalDateNow
+  }
+
+  assert.equal(calls.length, 1)
+  assert.equal(state.timing.startedAt, state.timing.createdAt)
+  assert.equal(Date.parse(state.timing.updatedAt), state.updatedAt)
+  assert.equal(state.updatedAt, fixedTimestamp)
+})
+
 test('MatchStorage ignores invalid state payloads on save', async () => {
   const calls = []
   const adapter = {

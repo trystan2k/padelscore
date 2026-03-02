@@ -582,7 +582,7 @@ test('home screen shows Resume when storage contains a 0-point active state', as
 
 // ─── Tests 4–6: Scenario 2 – Partial / corrupt state ─────────────────────────
 
-test('home screen hides Resume for partial state missing schemaVersion', async () => {
+test('home screen shows Resume for legacy payload missing schemaVersion', async () => {
   const partialState = JSON.stringify({
     status: 'active',
     setsToPlay: 3,
@@ -601,7 +601,8 @@ test('home screen hides Resume for partial state missing schemaVersion', async (
     },
     async ({ createdWidgets }) => {
       assert.deepEqual(getVisibleButtonLabels(createdWidgets), [
-        'home.startNewGame'
+        'home.startNewGame',
+        'home.resumeGame'
       ])
     }
   )

@@ -7,9 +7,11 @@ import {
   SUPPORTED_SETS_TO_PLAY
 } from '../utils/match-session-init.js'
 import {
+  CURRENT_SCHEMA_VERSION,
   MATCH_STATUS,
   SETS_NEEDED_TO_WIN,
-  SETS_TO_PLAY
+  SETS_TO_PLAY,
+  validateMatchSession
 } from '../utils/match-state-schema.js'
 
 test('SUPPORTED_SETS_TO_PLAY contains canonical 1, 3, 5 set options', () => {
@@ -56,7 +58,7 @@ test('initializeMatchState creates active match state for 1-set match', () => {
     assert.deepEqual(state.currentGame, { points: { teamA: 0, teamB: 0 } })
     assert.deepEqual(state.setHistory, [])
     assert.equal(state.updatedAt, fixedTimestamp)
-    assert.equal(state.schemaVersion, 1)
+    assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION)
   } finally {
     Date.now = originalDateNow
   }
@@ -82,7 +84,7 @@ test('initializeMatchState creates active match state for 3-set match', () => {
     assert.deepEqual(state.currentGame, { points: { teamA: 0, teamB: 0 } })
     assert.deepEqual(state.setHistory, [])
     assert.equal(state.updatedAt, fixedTimestamp)
-    assert.equal(state.schemaVersion, 1)
+    assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION)
   } finally {
     Date.now = originalDateNow
   }
@@ -108,7 +110,7 @@ test('initializeMatchState creates active match state for 5-set match', () => {
     assert.deepEqual(state.currentGame, { points: { teamA: 0, teamB: 0 } })
     assert.deepEqual(state.setHistory, [])
     assert.equal(state.updatedAt, fixedTimestamp)
-    assert.equal(state.schemaVersion, 1)
+    assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION)
   } finally {
     Date.now = originalDateNow
   }
@@ -141,6 +143,17 @@ test('initializeMatchState returns independent state objects for each call', () 
   assert.notEqual(firstState.currentSet, secondState.currentSet)
   assert.notEqual(firstState.currentGame, secondState.currentGame)
   assert.notEqual(firstState.setHistory, secondState.setHistory)
+})
+
+test('initializeMatchState returns detached canonical and mirror score objects', () => {
+  const state = initializeMatchState(SETS_TO_PLAY.THREE)
+
+  assert.notEqual(state.scores, null)
+  assert.notEqual(state.scores.setsWon, state.setsWon)
+  assert.notEqual(state.scores.currentSet, state.currentSet)
+  assert.notEqual(state.scores.currentSet.games, state.currentSet.games)
+  assert.notEqual(state.scores.currentGame, state.currentGame)
+  assert.notEqual(state.scores.currentGame.points, state.currentGame.points)
 })
 
 test('initializeMatchState throws TypeError for invalid setsToPlay values', () => {
@@ -202,14 +215,12 @@ test('initializeMatchState throws TypeError for undefined input', () => {
   })
 })
 
-test('initializeMatchState produces schema-valid match state for all supported set counts', async (_t) => {
-  const { isMatchState } = await import('../utils/match-state-schema.js')
-
+test('initializeMatchState produces schema-valid match state for all supported set counts', () => {
   for (const setsToPlay of SUPPORTED_SETS_TO_PLAY) {
     const state = initializeMatchState(setsToPlay)
 
     assert.equal(
-      isMatchState(state),
+      validateMatchSession(state),
       true,
       `initializeMatchState(${setsToPlay}) should produce schema-valid state`
     )

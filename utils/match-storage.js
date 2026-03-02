@@ -7,7 +7,8 @@ import {
   deserializeMatchState,
   isMatchState,
   STORAGE_KEY as SCHEMA_STORAGE_KEY,
-  serializeMatchState
+  serializeMatchState,
+  toIsoTimestampSafe
 } from './match-state-schema.js'
 
 export const ACTIVE_MATCH_SESSION_STORAGE_KEY = SCHEMA_STORAGE_KEY
@@ -85,11 +86,15 @@ export class MatchStorage {
       return
     }
 
-    state.updatedAt = Date.now()
+    const updatedAt = Date.now()
+    state.updatedAt = updatedAt
+    if (state.timing && typeof state.timing === 'object') {
+      state.timing.updatedAt = toIsoTimestampSafe(updatedAt)
+    }
+    const serialized = serializeMatchState(state)
+    syncStateWithSerializedSnapshot(state, serialized)
 
     if (this.adapter && typeof this.adapter.save === 'function') {
-      const serialized = serializeMatchState(state)
-
       try {
         this.adapter.save(ACTIVE_MATCH_SESSION_STORAGE_KEY, serialized)
       } catch {
@@ -162,4 +167,18 @@ export function loadMatchState() {
 
 export function clearMatchState() {
   matchStorage.clearMatchState()
+}
+
+/**
+ * @param {import('./match-state-schema.js').MatchState} state
+ * @param {string} serialized
+ */
+function syncStateWithSerializedSnapshot(state, serialized) {
+  const normalizedState = deserializeMatchState(serialized)
+
+  if (!normalizedState) {
+    return
+  }
+
+  Object.assign(state, normalizedState)
 }

@@ -186,7 +186,7 @@ Follow these steps in order.
     - Present the user with:
       - **ALL** files changed or created (not just implementation files)
       - brief description of changes
-      - proposed commit message
+      - proposed commit message (Do not include any task number information in the commit message, unless it is explicitly requested)
     - Ask for explicit approval.
     - Do not proceed to commit without explicit approval.
     - If user requests changes, apply them via specialists and request approval again.
