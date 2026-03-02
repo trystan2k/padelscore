@@ -14,9 +14,11 @@ let gamePageImportCounter = 0
 
 function createHmUiRecorder() {
   const createdWidgets = []
+  const shownToasts = []
 
   return {
     createdWidgets,
+    shownToasts,
     hmUI: {
       widget: {
         FILL_RECT: 'FILL_RECT',
@@ -41,6 +43,9 @@ function createHmUiRecorder() {
         if (widget && typeof widget === 'object') {
           widget.deleted = true
         }
+      },
+      showToast(payload) {
+        shownToasts.push(payload)
       }
     }
   }
@@ -226,13 +231,20 @@ async function renderGameScreenForDimensions(width, height) {
   }))
 }
 
-async function runWithRenderedGamePage(width, height, runScenario) {
+async function runWithRenderedGamePage(
+  width,
+  height,
+  runScenario,
+  options = {}
+) {
   const originalHmUI = globalThis.hmUI
   const originalHmSetting = globalThis.hmSetting
   const originalGetApp = globalThis.getApp
   const originalHmFS = globalThis.hmFS
+  const originalSetTimeout = globalThis.setTimeout
+  const originalClearTimeout = globalThis.clearTimeout
 
-  const { hmUI, createdWidgets } = createHmUiRecorder()
+  const { hmUI, createdWidgets, shownToasts } = createHmUiRecorder()
   const app = {
     globalData: {
       matchState: createInitialMatchState(1700000000),
@@ -249,6 +261,14 @@ async function runWithRenderedGamePage(width, height, runScenario) {
   globalThis.getApp = () => app
   globalThis.hmFS = createHmFsMock().mock
 
+  if (typeof options.setTimeout === 'function') {
+    globalThis.setTimeout = options.setTimeout
+  }
+
+  if (typeof options.clearTimeout === 'function') {
+    globalThis.clearTimeout = options.clearTimeout
+  }
+
   try {
     const definition = await loadGamePageDefinition()
     const page = createPageInstance(definition)
@@ -261,6 +281,7 @@ async function runWithRenderedGamePage(width, height, runScenario) {
     const scenarioResult = await runScenario({
       app,
       createdWidgets,
+      shownToasts,
       page,
       width,
       height
@@ -294,6 +315,18 @@ async function runWithRenderedGamePage(width, height, runScenario) {
       delete globalThis.hmFS
     } else {
       globalThis.hmFS = originalHmFS
+    }
+
+    if (typeof originalSetTimeout === 'undefined') {
+      delete globalThis.setTimeout
+    } else {
+      globalThis.setTimeout = originalSetTimeout
+    }
+
+    if (typeof originalClearTimeout === 'undefined') {
+      delete globalThis.clearTimeout
+    } else {
+      globalThis.clearTimeout = originalClearTimeout
     }
   }
 }
@@ -346,6 +379,47 @@ function createAcceptedInteractionTimeSource(
     const uiUpdatedAt = interactionStartMs + uiUpdatedOffsetMs
     interactionStartMs += interactionGapMs
     return uiUpdatedAt
+  }
+}
+
+function createManualFinishTimerHarness() {
+  const pendingTimers = new Map()
+  const clearedTimerIds = []
+  let timerIdCounter = 1
+
+  return {
+    pendingTimers,
+    clearedTimerIds,
+    setTimeout(callback, delay) {
+      const timerId = timerIdCounter
+      timerIdCounter += 1
+
+      pendingTimers.set(timerId, {
+        callback,
+        delay
+      })
+
+      return timerId
+    },
+    clearTimeout(timerId) {
+      pendingTimers.delete(timerId)
+      clearedTimerIds.push(timerId)
+    },
+    runTimer(timerId) {
+      const timer = pendingTimers.get(timerId)
+
+      if (!timer) {
+        return false
+      }
+
+      pendingTimers.delete(timerId)
+      timer.callback()
+      return true
+    },
+    runLatestTimer() {
+      const latestTimerId = Math.max(...pendingTimers.keys())
+      return this.runTimer(latestTimerId)
+    }
   }
 }
 
@@ -420,7 +494,7 @@ test('game screen keeps set, points, and controls in top-to-bottom layout order'
   const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
   const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT')
 
-  assert.equal(buttons.length, 5)
+  assert.equal(buttons.length, 6)
 
   const buttonYs = buttons.map((button) => button.properties.y)
   const textYs = textWidgets.map((text) => text.properties.y)
@@ -467,9 +541,9 @@ test('game controls keep key visible widgets in bounds for square and round scre
       ...visibleForegroundFillRects
     ]
 
-    assert.equal(buttons.length, 5)
+    assert.equal(buttons.length, 6)
     assert.equal(textButtons.length, 4) // Score and minus buttons
-    assert.equal(imageButtons.length, 1) // Home icon button
+    assert.equal(imageButtons.length, 2) // Home + manual finish icon buttons
     assert.equal(visibleTextWidgets.length > 0, true)
     assert.equal(visibleForegroundFillRects.length > 0, true)
 
@@ -504,10 +578,11 @@ test('game screen renders expected bottom control button labels', async () => {
   const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
   const labels = buttons.map((button) => button.properties.text)
 
-  // First 4 buttons are text buttons, 5th is home icon image button
+  // First 4 buttons are text buttons, then home and manual-finish icon buttons
   assert.deepEqual(labels.slice(0, 4), ['0', '0', '−', '−'])
-  // Home icon button uses normal_src instead of text
+  // Icon buttons use normal_src instead of text
   assert.equal(buttons[4]?.properties.normal_src, 'home-icon.png')
+  assert.equal(buttons[5]?.properties.normal_src, 'coach-icon.png')
 })
 
 test('game screen renders sets-won counters with default 0-0 values', async () => {
@@ -890,6 +965,220 @@ test('game match finish navigates directly to summary without rendering finished
   )
 })
 
+test('game manual finish button shows coach icon and first tap enters whistle confirm mode', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ createdWidgets, shownToasts }) => {
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      const manualFinishButton = buttons[5]
+
+      assert.equal(manualFinishButton?.properties.normal_src, 'coach-icon.png')
+
+      manualFinishButton.properties.click_func()
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+
+      assert.equal(buttons[5]?.properties.normal_src, 'whistle-icon.png')
+      assert.deepEqual(shownToasts, [{ text: 'settings.clearDataConfirm' }])
+      assert.equal(timerHarness.pendingTimers.size, 1)
+      assert.equal([...timerHarness.pendingTimers.values()][0]?.delay, 3000)
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+})
+
+test('game manual finish second tap confirms finish, appends partial set once, and clears timer', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ app, createdWidgets, page }) => {
+      const summaryNavigations = []
+
+      page.navigateToSummaryPage = () => {
+        summaryNavigations.push('page/summary')
+        return true
+      }
+
+      app.globalData.matchState.setsWon = {
+        teamA: 1,
+        teamB: 0
+      }
+      app.globalData.matchState.setHistory = [
+        {
+          setNumber: 1,
+          teamAGames: 6,
+          teamBGames: 4
+        }
+      ]
+      app.globalData.matchState.currentSetStatus.number = 2
+      app.globalData.matchState.currentSet = 2
+      app.globalData.matchState.currentSetStatus.teamAGames = 4
+      app.globalData.matchState.currentSetStatus.teamBGames = 3
+      app.globalData.matchState.teamA.games = 4
+      app.globalData.matchState.teamB.games = 3
+      app.globalData.matchState.teamA.points = SCORE_POINTS.THIRTY
+      app.globalData.matchState.teamB.points = SCORE_POINTS.FIFTEEN
+
+      page.renderGameScreen()
+
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+      assert.equal(app.globalData.matchState.winnerTeam, 'teamA')
+      assert.deepEqual(summaryNavigations, ['page/summary'])
+      assert.equal(timerHarness.pendingTimers.size, 0)
+      assert.equal(timerHarness.clearedTimerIds.length >= 1, true)
+
+      const setTwoEntries = app.globalData.matchState.setHistory.filter(
+        (setEntry) => setEntry.setNumber === 2
+      )
+
+      assert.equal(setTwoEntries.length, 1)
+      assert.deepEqual(setTwoEntries[0], {
+        setNumber: 2,
+        teamAGames: 4,
+        teamBGames: 3
+      })
+
+      // Idempotency: triggering manual finish again keeps single partial snapshot
+      page.handleManualFinishConfirm()
+      assert.equal(
+        app.globalData.matchState.setHistory.filter(
+          (setEntry) => setEntry.setNumber === 2
+        ).length,
+        1
+      )
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+})
+
+test('game manual finish confirmation times out after 3 seconds and resets icon/state', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ app, createdWidgets, page }) => {
+      const summaryNavigations = []
+      page.navigateToSummaryPage = () => {
+        summaryNavigations.push('page/summary')
+        return true
+      }
+
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      const [timerId] = [...timerHarness.pendingTimers.keys()]
+
+      assert.equal(Number.isInteger(timerId), true)
+      assert.equal(timerHarness.runTimer(timerId), true)
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      assert.equal(buttons[5]?.properties.normal_src, 'coach-icon.png')
+      assert.equal(page.manualFinishConfirmMode, false)
+      assert.equal(app.globalData.matchState.status, 'active')
+      assert.deepEqual(summaryNavigations, [])
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+})
+
+test('game manual finish treats equal sets-won as tie and clears winner metadata', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ app, createdWidgets }) => {
+      app.globalData.matchState.setsWon = {
+        teamA: 1,
+        teamB: 1
+      }
+      app.globalData.matchState.winnerTeam = 'teamA'
+      app.globalData.matchState.winner = { team: 'teamA' }
+
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+      assert.equal(
+        Object.hasOwn(app.globalData.matchState, 'winnerTeam'),
+        false
+      )
+      assert.equal(Object.hasOwn(app.globalData.matchState, 'winner'), false)
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+})
+
+test('game manual finish confirmation timer is cleared on home navigation and destroy', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ createdWidgets, page }) => {
+      const homeNavigations = []
+
+      page.navigateToHomePage = () => {
+        homeNavigations.push('page/index')
+        return true
+      }
+
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      const [homeTimerId] = [...timerHarness.pendingTimers.keys()]
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[4].properties.click_func()
+
+      assert.equal(timerHarness.pendingTimers.size, 0)
+      assert.equal(timerHarness.clearedTimerIds.includes(homeTimerId), true)
+      assert.deepEqual(homeNavigations, ['page/index'])
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      const [destroyTimerId] = [...timerHarness.pendingTimers.keys()]
+
+      page.onDestroy()
+
+      assert.equal(timerHarness.pendingTimers.size, 0)
+      assert.equal(timerHarness.clearedTimerIds.includes(destroyTimerId), true)
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+})
+
 test('game controls keep minimum 48x48 touch targets in active state', async () => {
   const screenScenarios = [
     { width: 390, height: 450 },
@@ -904,13 +1193,16 @@ test('game controls keep minimum 48x48 touch targets in active state', async () 
       ({ createdWidgets }) => {
         const activeButtons = getVisibleWidgets(createdWidgets, 'BUTTON')
 
-        assert.equal(activeButtons.length, 5)
+        assert.equal(activeButtons.length, 6)
         activeButtons.forEach((button) => {
           // Image buttons use w: -1, h: -1 (native image dimensions)
-          // The home-icon.png is 48x48, providing adequate touch target
           if (button.properties.normal_src) {
-            // Image button - check that it exists (native size is 48x48)
-            assert.equal(button.properties.normal_src, 'home-icon.png')
+            // Icon buttons - check that expected footer assets are used
+            assert.equal(
+              button.properties.normal_src === 'home-icon.png' ||
+                button.properties.normal_src === 'coach-icon.png',
+              true
+            )
           } else {
             // Text button - check dimensions
             assert.equal(button.properties.w >= 48, true)
@@ -928,8 +1220,9 @@ test('game control buttons apply primary and secondary style variants', async ()
     const addTeamAButton = buttons[0]
     const removeTeamAButton = buttons[2]
     const homeIconButton = buttons[4]
+    const manualFinishButton = buttons[5]
 
-    assert.equal(buttons.length, 5)
+    assert.equal(buttons.length, 6)
     assert.equal(addTeamAButton?.properties.normal_color, 0x000000)
     assert.equal(addTeamAButton?.properties.press_color, 0x000000)
     assert.equal(addTeamAButton?.properties.color, 0xffffff)
@@ -941,6 +1234,9 @@ test('game control buttons apply primary and secondary style variants', async ()
     // Home icon button uses image instead of color styling
     assert.equal(homeIconButton?.properties.normal_src, 'home-icon.png')
     assert.equal(homeIconButton?.properties.press_src, 'home-icon.png')
+
+    assert.equal(manualFinishButton?.properties.normal_src, 'coach-icon.png')
+    assert.equal(manualFinishButton?.properties.press_src, 'coach-icon.png')
   })
 })
 
@@ -948,14 +1244,16 @@ test('game screen controls call team-specific handlers for add and remove', asyn
   await runWithRenderedGamePage(390, 450, ({ createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
     const backHomeButton = buttons[4]
+    const manualFinishButton = buttons[5]
     const calls = []
 
-    assert.equal(buttons.length, 5)
+    assert.equal(buttons.length, 6)
     assert.equal(typeof buttons[0]?.properties.click_func, 'function')
     assert.equal(typeof buttons[1]?.properties.click_func, 'function')
     assert.equal(typeof buttons[2]?.properties.click_func, 'function')
     assert.equal(typeof buttons[3]?.properties.click_func, 'function')
     assert.equal(typeof backHomeButton?.properties.click_func, 'function')
+    assert.equal(typeof manualFinishButton?.properties.click_func, 'function')
 
     page.handleAddPointForTeam = (team) => {
       calls.push(`add:${team}`)
@@ -969,18 +1267,24 @@ test('game screen controls call team-specific handlers for add and remove', asyn
       calls.push('home:back')
     }
 
+    page.handleManualFinishTap = () => {
+      calls.push('finish:tap')
+    }
+
     buttons[0].properties.click_func()
     buttons[1].properties.click_func()
     buttons[2].properties.click_func()
     buttons[3].properties.click_func()
     backHomeButton.properties.click_func()
+    manualFinishButton.properties.click_func()
 
     assert.deepEqual(calls, [
       'add:teamA',
       'add:teamB',
       'remove:teamA',
       'remove:teamB',
-      'home:back'
+      'home:back',
+      'finish:tap'
     ])
   })
 })
@@ -1072,7 +1376,7 @@ test('game persistence uses synchronous storage', async () => {
 test('team-specific remove buttons remove latest point scored by selected team', async () => {
   await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
-    // Buttons order: [0] teamA score, [1] teamB score, [2] teamA remove, [3] teamB remove, [4] back-home
+    // Buttons order: [0] teamA score, [1] teamB score, [2] teamA remove, [3] teamB remove, [4] back-home, [5] manual finish
     const addTeamAButton = buttons[0]
     const addTeamBButton = buttons[1]
     const removeTeamAButton = buttons[2]
@@ -1454,13 +1758,14 @@ test('game access guard allows render when persisted session is valid and active
       page.build()
 
       const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
-      assert.equal(buttons.length, 5)
+      assert.equal(buttons.length, 6)
 
-      // First 4 buttons are text buttons, 5th is home icon image button
+      // First 4 buttons are text buttons, then home + manual finish icons
       const labels = buttons.map((button) => button.properties.text)
       assert.deepEqual(labels.slice(0, 4), ['0', '0', '−', '−'])
-      // Home icon button uses normal_src instead of text
+      // Icon buttons use normal_src instead of text
       assert.equal(buttons[4]?.properties.normal_src, 'home-icon.png')
+      assert.equal(buttons[5]?.properties.normal_src, 'coach-icon.png')
     }
   )
 })

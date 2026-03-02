@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Project Initialization & Configuration",
         "description": "Set up the Zepp OS project structure, configuration files, and base directories.",
         "status": "done",
@@ -81,7 +81,7 @@
         "updatedAt": "2026-02-20T07:17:14.797Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Data Model & State Management Design",
         "description": "Define the data structures for the game state, scoring history, and team configurations.",
         "status": "done",
@@ -132,7 +132,7 @@
         "updatedAt": "2026-02-20T13:23:14.673Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Local Storage & Persistence Layer",
         "description": "Implement the mechanism to save and load the game state using the device's local storage.",
         "status": "done",
@@ -172,7 +172,7 @@
         "updatedAt": "2026-02-20T14:42:51.982Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Padel Scoring Logic Engine",
         "description": "Develop the core state machine logic for handling points, games, sets, and tie-breaks.",
         "status": "done",
@@ -256,7 +256,7 @@
         "updatedAt": "2026-02-20T15:35:54.087Z"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Undo & Remove Point Logic",
         "description": "Implement the logic to reverse the last score action using the history stack.",
         "status": "done",
@@ -334,7 +334,7 @@
         "updatedAt": "2026-02-20T16:26:03.053Z"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Home Screen UI Implementation",
         "description": "Build the Home Screen with Start and Resume functionality based on the design reference.",
         "status": "done",
@@ -390,7 +390,7 @@
         "updatedAt": "2026-02-20T17:12:16.550Z"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Game Screen Layout Construction",
         "description": "Create the layout for the Game Screen displaying scores and control buttons.",
         "status": "done",
@@ -446,7 +446,7 @@
         "updatedAt": "2026-02-20T18:09:24.012Z"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Game Screen Interaction & Binding",
         "description": "Connect the UI buttons to the Scoring Logic and update the view dynamically.",
         "status": "done",
@@ -490,7 +490,7 @@
         "updatedAt": "2026-02-20T18:47:05.999Z"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Navigation & Lifecycle Handling",
         "description": "Manage navigation between screens and handle app backgrounding/foregrounding events.",
         "status": "done",
@@ -531,7 +531,7 @@
         "updatedAt": "2026-02-20T21:30:28.703Z"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Styling Refinement, Input Debouncing & Polish",
         "description": "Apply final design styles, implement input debouncing, and optimize performance.",
         "status": "done",
@@ -571,7 +571,7 @@
         "updatedAt": "2026-02-21T07:37:54.865Z"
       },
       {
-        "id": 11,
+        "id": "11",
         "title": "Define Match State Data Model and Storage Schema",
         "description": "Create the data structure interface for the match session that satisfies the persistence and scoring requirements defined in the PRD.",
         "status": "done",
@@ -673,7 +673,7 @@
         "updatedAt": "2026-02-21T09:19:11.291Z"
       },
       {
-        "id": 12,
+        "id": "12",
         "title": "Implement Core Persistence Service (Save/Load)",
         "description": "Develop the utility functions to save the match state to local storage and load it back, including error handling for corrupted data.",
         "status": "done",
@@ -767,7 +767,7 @@
         "updatedAt": "2026-02-21T09:58:15.911Z"
       },
       {
-        "id": 13,
+        "id": "13",
         "title": "Implement Pre-Match Setup UI and Logic",
         "description": "Create the Match Setup screen allowing users to select 1, 3, or 5 sets and initialize the match session.",
         "status": "done",
@@ -865,7 +865,7 @@
         "updatedAt": "2026-02-21T11:36:22.871Z"
       },
       {
-        "id": 14,
+        "id": "14",
         "title": "Integrate Lifecycle Persistence Triggers",
         "description": "Ensure state is saved automatically on app lifecycle events (sleep, exit, background) to meet reliability requirements.",
         "status": "done",
@@ -957,7 +957,7 @@
         "updatedAt": "2026-02-21T13:44:50.831Z"
       },
       {
-        "id": 15,
+        "id": "15",
         "title": "Update Game Screen for Set Point Display",
         "description": "Modify the Game Screen UI to visualize the match-level set points (Sets Won) alongside current game scores.",
         "status": "done",
@@ -1049,7 +1049,7 @@
         "updatedAt": "2026-02-21T16:28:42.326Z"
       },
       {
-        "id": 16,
+        "id": "16",
         "title": "Implement Set Completion and Match Completion Logic",
         "description": "Develop the logic to handle set wins, update set history, reset games, and determine the match winner based on the configured format.",
         "status": "done",
@@ -1127,7 +1127,7 @@
         "updatedAt": "2026-02-21T19:22:38.432Z"
       },
       {
-        "id": 17,
+        "id": "17",
         "title": "Implement Home Screen Resume Logic",
         "description": "Update the Home Screen to conditionally show 'Resume Game' and handle restoring the active match state.",
         "status": "done",
@@ -1218,7 +1218,7 @@
         "updatedAt": "2026-02-21T19:48:19.358Z"
       },
       {
-        "id": 18,
+        "id": "18",
         "title": "Implement Match Summary Screen",
         "description": "Create the Summary Screen to display the match winner, final set points, and per-set breakdown.",
         "status": "done",
@@ -1297,7 +1297,7 @@
         "updatedAt": "2026-02-21T21:10:33.861Z"
       },
       {
-        "id": 19,
+        "id": "19",
         "title": "Implement New Match Reset and Cleanup",
         "description": "Ensure starting a new match clears the existing active session and history properly.",
         "status": "done",
@@ -1375,7 +1375,7 @@
         "updatedAt": "2026-02-22T09:27:41.728Z"
       },
       {
-        "id": 20,
+        "id": "20",
         "title": "Edge Case Handling and Data Validation",
         "description": "Robustness check to handle app interruptions before first point, corrupted data, and null reference safety.",
         "status": "done",
@@ -1390,7 +1390,7 @@
         "updatedAt": "2026-02-22T09:55:22.386Z"
       },
       {
-        "id": 21,
+        "id": "21",
         "title": "Increase Add Point Button Size for Game Screen (Accessibility)",
         "description": "Refactor the Game Screen UI to ensure Add Point buttons meet the 44x44 px touch target requirement, optimizing layout for round and square Zepp OS screens without breaking existing functionality.",
         "details": "Modify the `page/game` layout to increase the dimensions of Team A and Team B Add/Remove point controls to a minimum of 44x44 px. Adjust the Points Display and Set Points display areas (referencing Task 15) to be more compact or repositioned to accommodate larger controls. Reduce non-essential UI elements (padding, chrome) if necessary to maximize space. Ensure layout logic handles dynamic sizing for Round (designWidth 454) and Square (designWidth 390) screens. Maintain event bindings established in Task 8 and ensure visual separation between interactive elements to prevent accidental adjacent taps.",
@@ -1408,7 +1408,7 @@
         "updatedAt": "2026-02-22T16:47:53.181Z"
       },
       {
-        "id": 22,
+        "id": "22",
         "title": "Redesign Game Screen UI for Enhanced Readability and Touch Interaction",
         "description": "Overhaul the Game Screen interface to improve readability by replacing the segmented card layout with a streamlined header for Sets and Games. Modify the scoring interaction to allow adding points by tapping the score display directly, with dedicated minus buttons positioned below.",
         "details": "Refactor the `page/game` layout to eliminate the segmented card style. Implement a new, cleaner header section that distinctly displays 'SETS' and 'GAMES' labels alongside the corresponding values for Team A and Team B. Apply design tokens to increase font sizes significantly across all text elements for better legibility. Redesign the central score area so that the Point Score (0, 15, 30, etc.) acts as a large, touch-sensitive button; tapping this area should trigger the `addPoint` logic. Place explicit, styled 'Minus' (-) buttons directly below the score displays to handle `removePoint` actions. Ensure the layout remains responsive for both Round (454px) and Square (390px) screens, adjusting padding and flex distribution to prevent overlap.",
@@ -1424,7 +1424,7 @@
         "updatedAt": "2026-02-22T17:04:07.334Z"
       },
       {
-        "id": 23,
+        "id": "23",
         "title": "Implement Scrollable Match History on Summary Screen",
         "description": "Replace static history text with a scrollable SCROLL_LIST widget to accommodate longer match histories, adjust font sizing, and remove the Start New Game button from the Summary Screen.",
         "details": "This task modifies the existing Match Summary Screen (Task 18) to enhance the match history display. Implementation steps:\n\n1. **Replace Static History with SCROLL_LIST**: Remove the current static text display for set history. Implement a SCROLL_LIST widget that dynamically populates with items from the `setHistory` array in the MatchState. Each list item should display a single set result (e.g., 'Set 1: 6-4'). Configure the scrollable list to handle histories longer than the screen viewport.\n\n2. **Increase Font Scale**: Update the body font scale property from 0.04 to 0.08 to improve text readability. This may require adjusting the scrollable list item height to prevent text clipping.\n\n3. **Remove Start New Game Button**: Delete the 'Start New Game' button from the Summary Screen UI. Ensure the 'Home' button remains and continues to navigate properly to the Home screen.\n\n4. **UI Adjustments**: Re-layout the Summary Screen components to accommodate the new scrollable list. The layout should flow: Winner announcement, final score, scrollable set history list, and Home button at the bottom.\n\nNote: The Start New Game functionality was already handled in Task 19, so removing this button is purely a UI change. The data source (setHistory from MatchState) remains unchanged from Task 16.",
@@ -1439,7 +1439,7 @@
         "updatedAt": "2026-02-22T17:35:23.415Z"
       },
       {
-        "id": 24,
+        "id": "24",
         "title": "Simplify New Game Start Flow on Home Screen",
         "description": "Remove the confirmation mechanism when starting a new game from the home screen to reduce friction and allow immediate game start without any intermediate confirmation step or timer logic.",
         "details": "Modify the Home Screen 'Start New Game' button behavior to eliminate the confirmation dialog flow. Remove any UI components related to the confirmation modal (dialog text, confirm/cancel buttons, backdrop). Delete state variables tracking confirmation visibility (e.g., `showConfirmDialog`, `isConfirming`). Remove any timer logic associated with auto-dismissing confirmation dialogs or countdown timers. Update the 'Start New Game' click event handler to directly execute the start sequence: 1) Call the match reset/cleanup function from Task 19 to clear existing session data, 2) Navigate immediately to the Match Setup screen. Ensure this simplification only affects the Home Screen start flow and does not impact other areas of the app that may use confirmation patterns. Clean up any unused CSS/styling and event listeners previously associated with the confirmation dialog.",
@@ -1454,7 +1454,7 @@
         "updatedAt": "2026-02-22T17:35:28.916Z"
       },
       {
-        "id": 25,
+        "id": "25",
         "title": "Implement Screen Keep-Awake During Active Game",
         "description": "Implement screen keep-awake functionality to prevent the watch from returning to the watchface when the screen turns off during an active game, with maximum brightness setting and simulator compatibility handling.",
         "details": "Implement screen keep-awake functionality for the Game Screen to ensure continuous gameplay visibility during active matches. On `page/game` initialization or `onShow` lifecycle event, call the Zepp OS screen wake API (e.g., `wearable.keepScreenOn()` or `wakelock.acquire()`) to prevent the screen from turning off. Set the bright screen time to maximum using the appropriate brightness settings API (e.g., `setBrightScreenDuration(MAX)`). Store the reference to the wake lock or screen keep setting in a module-level variable for cleanup. On page exit (`onHide`, `onDestroy`, or navigation away), release the wake lock or cancel the keep-awake request to restore normal power behavior. Wrap all API calls in try-catch blocks with feature detection (check if APIs exist before calling) to handle the simulator environment where these APIs may be unavailable. Add a fallback mechanism or graceful degradation if the APIs are not present (e.g., log a warning to console but allow the app to continue functioning). Ensure the implementation does not cause memory leaks by properly cleaning up references and avoiding multiple wake lock acquisitions.",
@@ -1468,7 +1468,7 @@
         "updatedAt": "2026-02-22T17:35:34.245Z"
       },
       {
-        "id": 26,
+        "id": "26",
         "title": "Update App Icons for GTR-3 and GTS-3 Devices",
         "description": "Replace the existing icon.png assets specifically for GTR-3 and GTS-3 device targets with updated versions. Additionally, update the project documentation to include a visual reference of the new sample icon.",
         "details": "Locate the asset directories specific to the GTR-3 and GTS-3 devices within the project structure (typically found under directories named or tagged with device identifiers). Replace the current `icon.png` files in these directories with the updated icon assets. Ensure that the new assets adhere to the specific resolution requirements for GTR-3 (usually 454x454 pixels) and GTS-3 (usually 390x390 pixels) and are in the supported format (e.g., PNG). Navigate to the project documentation file (e.g., README.md or docs folder) and insert the new sample icon image. Add a caption or label indicating it is the updated reference icon for the application.",
@@ -1480,7 +1480,7 @@
         "updatedAt": "2026-02-22T17:35:46.760Z"
       },
       {
-        "id": 27,
+        "id": "27",
         "title": "Refactor Tests to Use Synchronous Storage APIs",
         "description": "Update all test files to replace asynchronous storage calls with synchronous adapter methods, aligning test patterns with the production Zepp OS `hmFS` file system APIs.",
         "details": "Locate all test files that utilize the storage layer (specifically those testing `saveState`, `loadState`, or persistence logic). Remove `async`/`await` keywords from test function definitions and within the test bodies where storage operations occur. Replace the asynchronous calls with the synchronous `hmFS.SysProSetChars` and `hmFS.SysProGetChars` methods (or their synchronous adapter wrappers) to match the production implementation. Delete any `setTimeout`, `waitFor`, or promise-based delay logic that was previously required to wait for asynchronous storage operations to complete. Simplify test assertions by removing `await` prefixes and validating the state immediately following the synchronous function call. Ensure mock implementations in the test environment are updated to return values directly instead of resolving Promises.",
@@ -1494,7 +1494,7 @@
         "updatedAt": "2026-02-22T17:35:46.764Z"
       },
       {
-        "id": 28,
+        "id": "28",
         "title": "Fix Game Screen Navigation to Home Screen",
         "description": "Correct the navigation logic for the Game Screen so that both the 'Return to Home' button and the swipe-back gesture route directly to the Home Screen instead of the Game Setup Screen.",
         "details": "Locate the 'Return to Home' button event handler within the `page/game` implementation. Update the routing logic to navigate directly to `page/index` (Home Screen) instead of the Setup Screen. Implement or modify the `onBack` lifecycle event handler for the Game Screen to intercept system swipe-back gestures. Inside the `onBack` handler, explicitly set the navigation path to `page/index` and prevent the default behavior which currently routes to the Setup Screen. Ensure that match state is handled appropriately (e.g., saving) before navigation if the game is active.",
@@ -1574,7 +1574,7 @@
         "updatedAt": "2026-02-22T18:38:01.379Z"
       },
       {
-        "id": 29,
+        "id": "29",
         "title": "Implement Match History Storage and Viewing",
         "description": "Implement persistent match history storage using Zepp OS hmFS and add a Previous Matches feature to the home screen for reviewing completed matches.",
         "details": "Implement a new history storage service using `hmFS` API to persist completed match results. Create a data structure for match history entries including: matchId (unique identifier), timestamp, date, time, finalScore, setsWon for both teams, setHistory array, matchDuration (in minutes), and setsToPlay format. Implement `saveMatchToHistory(matchState)` that generates a unique ID using timestamp, extracts relevant data, calculates match duration, and saves to hmFS with filename pattern `match_<timestamp>.json` or maintains a history index file. Implement `loadMatchHistory()` to read all stored matches and `loadMatchById(matchId)` for specific matches. Update Home Screen (Task 17) to add 'Previous Matches' button alongside Start and Resume. Create a new Match History screen with SCROLL_LIST displaying previous matches with date/time as primary label (e.g., '2024-01-15 14:30') and optional brief summary like 'Team A won 2-1'. Implement navigation so tapping a history item loads the match data and navigates to Summary Screen (Task 18) for display. Ensure Summary Screen can handle both active completed matches and historical matches. Handle edge cases: empty history, corrupted files, storage limits. Consider implementing a limit (e.g., last 50 matches) with cleanup logic.",
@@ -1686,7 +1686,7 @@
         "updatedAt": "2026-02-23T13:46:46.158Z"
       },
       {
-        "id": 30,
+        "id": "30",
         "title": "Add QA Controls with Husky, Biome, and Commitlint",
         "description": "Set up code quality tooling for the project, including git hooks for pre-commit and commit-msg validation, automated linting with Biome, and test execution on pre-push.",
         "details": "1. **Install Dependencies**: Run package manager commands to install `husky`, `@commitlint/cli`, `@commitlint/config-conventional`, `@biomejs/biome`, and `lint-staged` as dev dependencies.\n2. **Initialize Husky**: Run `npx husky install` to set up the git hooks infrastructure and configure the `prepare` script in `package.json` to ensure hooks are installed after `npm install`.\n3. **Configure Commitlint**: Create a `commitlint.config.js` file extending `@commitlint/config-conventional` to enforce commit message standards.\n4. **Configure Biome**: Create a `biome.json` configuration file to define linting and formatting rules for JavaScript and JSON files.\n5. **Configure lint-staged**: Create a `.lintstagedrc.json` file to map file extensions (`.js`, `.json`, `.ts`) to the Biome lint command.\n6. **Create Git Hooks**:\n   - **Pre-commit**: Create `.husky/pre-commit` containing `npx lint-staged` to run linters only on staged files.\n   - **Commit-msg**: Create `.husky/commit-msg` containing `npx commitlint --edit $1` to validate messages.\n   - **Pre-push**: Create `.husky/pre-push` containing `npm test` to ensure the test suite passes before pushing.\n7. **Update package.json Scripts**: Add scripts for `\"lint\"`, `\"format\"`, and `\"lint:fix\"` using Biome CLI commands (`biome check .`, `biome format --write .`, `biome check --write .`).",
@@ -1768,7 +1768,7 @@
         "updatedAt": "2026-02-23T17:55:23.366Z"
       },
       {
-        "id": 31,
+        "id": "31",
         "title": "Set up GitHub Actions CI/CD Workflow",
         "description": "Create a GitHub Actions workflow to validate Pull Requests and pushes to the main branch, implementing quality gates, Node.js matrix testing, build verification, and security checks.",
         "details": "1. Create the workflow file at `.github/workflows/ci.yml`.\n2. Configure triggers for `push` on `main` branch and `pull_request` events.\n3. Define a strategy matrix to test against Node.js versions `18.x` and `20.x` to ensure compatibility.\n4. Implement caching for `node_modules` using `actions/cache` keyed on `package-lock.json` to optimize build times.\n5. Add sequential job steps to:\n   - Checkout code using `actions/checkout`.\n   - Setup Node.js using `actions/setup-node`.\n   - Restore cache and install dependencies (`npm ci`).\n   - Run code quality checks: `npm run lint` (Biome) and `npm run format -- --check`.\n   - Check for dependency vulnerabilities: `npm audit`.\n   - Verify the build process: `zeus build` (if applicable to the Zepp OS project structure).\n   - Execute the test suite: `npm run test`.\n6. Ensure the workflow is configured to fail the status check if any of the quality gates or tests fail.",
@@ -1846,7 +1846,7 @@
         "updatedAt": "2026-02-23T18:50:16.540Z"
       },
       {
-        "id": 32,
+        "id": "32",
         "title": "Audit & Fix Zepp OS v1.0 Lifecycle API Usage",
         "description": "Find and fix usages of Zepp OS lifecycle methods (onShow, onHide, onResume, onPause) that are invalid for API v1.0 in the codebase, replacing them with v1.0-compatible alternatives.",
         "details": "Perform a comprehensive audit of lifecycle API usage across the codebase to ensure compatibility with Zepp OS v1.0. Steps: 1) Search the repository for all occurrences of onShow, onHide, onResume, and onPause methods. 2) Verify and document usage in reporter-listed files: page/index.js, page/summary.js, page/setup.js, page/game.js, page/history-detail.js, page/history.js, identifying any additional occurrences. 3) For each occurrence, create a detailed documentation entry including: file path, exact code snippet, explanation of why it's invalid in v1.0, recommended v1.0 alternative approach, and proposed fix strategy. 4) Implement straightforward fixes by replacing onShow/onHide with v1.0 entry points (e.g., page initialization, event-based approaches) or creating feature-detection wrapper functions. 5) For complex or risky changes, document the recommended approach and create follow-up subtasks instead of implementing immediately. 6) Replace deprecated lifecycle methods with appropriate v1.0 equivalents such as using page initialization callbacks, app event listeners, or manual state management. 7) Update documentation in .taskmaster/notes with audit findings and modifications made. Deliverables include: complete audit findings list, summary of modified files, list of follow-up subtasks for risky fixes, and updated documentation.",
@@ -1942,7 +1942,7 @@
         "updatedAt": "2026-02-23T16:00:37.823Z"
       },
       {
-        "id": 33,
+        "id": "33",
         "title": "Create Settings Page with Scroll List",
         "description": "Implement a new Settings page featuring a SCROLL_LIST widget with navigation to match history and functionality to clear all app data, while removing these actions from the Home Screen.",
         "details": "Implementation Steps:\n\n1. **Create Settings Page Structure**: Create a new page at `page/settings` using Zepp UI components. Implement the page layout with a SCROLL_LIST (try to reproduce the same as the list example in here: https://docs.zepp.com/docs/1.0/designs/template/list/, with the text and the chevron, using the chevron-icon.png) widget as the primary container, following the Zepp SCROLL_LIST API documentation (https://docs.zepp.com/docs/1.0/reference/device-app-api/hmUI/widget/SCROLL_LIST/).\n\n2. **Implement SCROLL_LIST Items**: Configure the scrollable list with the following menu items:\n   - 'Previous Matches' item: Displayed text label with navigation indicator\n   - 'Clear App Data' item: Displayed text label with appropriate icon (delete-icon.png)\n\n3. **Implement 'Previous Matches' Navigation**: Add click event handler for the 'Previous Matches' list item that navigates to the match history view. This should use `hmUI.gotoPage()` or appropriate navigation method to navigate to the page that displays match history (likely the Match Summary screen or a dedicated history view).\n\n4. **Implement 'Clear App Data' Functionality**: Create a comprehensive `clearAllAppData()` function that:\n   - Reviews all storage keys used by the application (including 'ACTIVE_MATCH_SESSION', any history storage, settings preferences)\n   - Clears in-memory data structures and state variables\n   - Removes all files from the filesystem if any are persisted\n   - Uses `hmFS.remove()` or similar APIs to delete files\n   - Uses storage clearing methods (e.g., `localStorage.removeItem()` or device-specific APIs)\n   - Logs confirmation of cleared data for debugging\n   - Returns to Home Screen after clearing\n   Add this function as the click handler for the 'Clear App Data' list item.",
@@ -2047,7 +2047,7 @@
         "updatedAt": "2026-02-24T00:57:21.299Z"
       },
       {
-        "id": 34,
+        "id": "34",
         "title": "Home Screen UI Enhancements",
         "description": "Refine the Home Screen UI by removing unnecessary buttons, standardizing the size of action buttons, and adding a settings access button.",
         "details": "Update the Home Screen layout in `page/index` to remove the 'Previous Matches' and 'Clear App Data' buttons. Resize the 'Start New Game' and 'Resume Game' buttons to make them larger (increase height and padding) and ensure they have identical dimensions for visual consistency. Add a gear icon button positioned after the two main buttons. Implement click handler for the gear icon to navigate to the Settings page (`page/settings`). Apply design tokens for consistent spacing, colors, and icon sizing. Ensure the layout remains responsive and properly aligned on both Round and Square screen types. Maintain all existing functionality for the Start and Resume buttons.",
@@ -2061,7 +2061,7 @@
         "updatedAt": "2026-02-24T00:31:18.393Z"
       },
       {
-        "id": 35,
+        "id": "35",
         "title": "General UI Enhancements - Navigation Icons and Background Refinements",
         "description": "Remove gray backgrounds from all page containers and update navigation buttons with appropriate icons across multiple screens. Implement swipe-right-to-close behavior on the home screen.",
         "details": "This task involves multiple UI refinements across different screens:\n\n1. **Remove Gray Backgrounds from All Pages**:\n   - Update `page/index` (Home Screen), `page/game` (Game Play Screen), Match Summary Screen, and Match History pages\n   - Locate container boxes/cards with gray background properties and remove or set to transparent\n   - Ensure text contrast and readability remains acceptable after background removal\n   - Apply consistent background styling across all screens\n\n2. **Replace Back to Home Buttons with House Icon Buttons (home-icon.png)**:\n   - In Game Play screen (`page/game`): Locate the 'Back to Home' button element and replace its text content with a house icon asset (home-icon.png)\n   - In Match Summary screen: Replace any 'Back to Home' text button with a house icon button\n   - Ensure both buttons maintain existing click handlers that navigate to home screen\n   - Style icon buttons with appropriate touch target sizes for usability\n\n3. **Implement Swipe Right to Close on Home Screen**:\n   - Add gesture event listener to `page/index` for swipe right detection\n   - On swipe right event, call Zepp OS app exit API (e.g., `app.exit()` or `wx.exitApp()`)\n   - Ensure this gesture only triggers on home screen and doesn't interfere with other screen interactions\n   - Test that app properly closes and returns to watchface\n\n4. **Testing and Verification**:\n   - Perform visual inspection on all affected screens\n   - Verify all navigation flows remain intact after button changes\n   - Test touch responsiveness of new icon buttons",
@@ -2143,7 +2143,7 @@
         "updatedAt": "2026-02-24T11:18:49.274Z"
       },
       {
-        "id": 36,
+        "id": "36",
         "title": "Delete Match from History",
         "description": "Implement functionality to delete individual matches from the match history by adding a bin icon alongside each history match entry in the match list.",
         "details": "Implement a delete mechanism for match history entries that allows users to remove specific completed matches. The implementation should:\n\n1. **UI Update - Add Delete Icon (delete-icon.png) to Match List**: Modify the existing match history list view (from Task 29) to include a trash/bin icon (delete-icon.png) button next to each match entry. The icon should be positioned on the right side of each history item and be easily tappable. (similar to this lists example: https://docs.zepp.com/docs/1.0/designs/template/list/ where the trash icon would be in the right side, in the place of the chevron)\n\n2. **Implement Delete Function**: Create a `deleteMatchFromHistory(matchId)` function that:\n   - Accepts the unique matchId of the match to delete\n   - Constructs the correct filename using the established pattern: `match_<matchId>.json`\n   - Uses the Zepp OS `hmFS` API to delete the file (e.g., `hmFS.removeAsset(path)`)\n   - Returns a boolean indicating success/failure\n   - Handles cases where the file doesn't exist gracefully\n\n3. **Handle Delete Action**: Add an event handler for the bin icon that:\n   - Calls `deleteMatchFromHistory()` with the appropriate matchId\n   - Shows a confirmation dialog (optional but recommended) before deletion to prevent accidental deletion\n   - Removes the item from the UI and refreshes the match history list\n   - Provides user feedback (e.g., toast message) confirming the deletion\n\n4. **Error Handling**: Implement proper error handling for:\n   - File system deletion failures\n   - Corrupted or missing history files\n   - Race conditions (if multiple deletions are triggered quickly)\n\n5. **UI Considerations**: Ensure the bin icon:\n   - Has adequate touch target size (at least 44x44 pixels)\n   - Uses appropriate styling (red color for delete action)\n   - Doesn't interfere with navigation to match details (if clicking on the match itself views details)",
@@ -2250,7 +2250,7 @@
         "updatedAt": "2026-02-24T15:00:47.044Z"
       },
       {
-        "id": 37,
+        "id": "37",
         "title": "Cancel Ongoing Game",
         "description": "Implement a cancel game feature on the game play screen with a bin icon button that deletes the current active match state and navigates back to the home screen.",
         "details": "1. **UI Update - Add Cancel Button to Game Screen**: Modify the Game Screen to include a bin/trash icon button positioned alongside the existing home icon button. The icon should be clearly visible and tappable, using a standard trash icon asset.\n\n2. **Implement Cancel Handler**: Create an `cancelCurrentMatch()` function that handles the cancellation flow:\n   - Optionally display a confirmation dialog (e.g., 'Are you sure you want to cancel this match?') to prevent accidental cancellations\n   - Delete the persisted match state from storage by removing the 'ACTIVE_MATCH_SESSION' key using the persistence service (Task 12)\n   - Clear any in-memory state manager references to the active match\n   - Navigate to the Home Screen\n\n3. **Reuse Cleanup Logic**: Leverage or reference the cleanup pattern established in Task 19 (New Match Reset and Cleanup) to ensure consistency in how active sessions are terminated.\n\n4. **Error Handling**: Implement graceful handling for edge cases such as:\n   - Storage deletion failures\n   - Missing or corrupted match state\n   - Navigation errors\n\n5. **State Verification**: Ensure that after cancellation, the Home Screen properly recognizes that no active match exists and does not display the 'Resume Game' button.",
@@ -2265,7 +2265,7 @@
         "updatedAt": "2026-02-24T21:59:58.589Z"
       },
       {
-        "id": 38,
+        "id": "38",
         "title": "Implement Multi-Language Support for Portuguese and Spanish",
         "description": "Add comprehensive multi-language support for Portuguese and Spanish with automatic device language detection and English fallback, including translation of all UI text strings across the application.",
         "details": "Implement a localization system for the Padel scoring app with the following components:\n\n1. **Translation Infrastructure**: Create a `LocalizationService` module that manages language resources. Define a translation dictionary structure containing key-value pairs for all UI text in the app (English, Portuguese, Spanish). Store translations in JSON files or objects organized by language code (en, pt, es).\n\n2. **Language Detection**: Implement automatic language detection using Zepp OS device settings API (e.g., `hmSystem.getDeviceInfo().language` or similar). Parse the device language code and map it to supported languages:\n   - 'pt' or 'pt-PT' or 'pt-BR' → Portuguese\n   - 'es' or 'es-ES' → Spanish\n   - Any other → English (default/fallback)\n\n3. **Translation Keys**: Identify all text strings in the application that need translation:\n   - Home Screen: 'Resume Game', 'New Game', 'Previous Matches'\n   - Setup Screen: 'Match Setup', '1 Set', '3 Sets', '5 Sets', instructions\n   - Game Screen: Score labels, team names, 'Undo' button\n   - Summary Screen: 'Team A Wins', 'Set 1:', 'Home', 'Start New Game'\n   - History Screen: 'Previous Matches', date/time formats, delete confirmation\n   - General: 'Confirm', 'Cancel', 'Back', any toast messages or alerts\n\n4. **Translation Function**: Create a `t(key, params)` function that:\n   - Takes a translation key and optional parameters for dynamic values\n   - Returns the translated string based on current language\n   - Falls back to English if key is missing in target language\n   - Handles parameter interpolation (e.g., 'Team {name} Wins')\n\n5. **Language Persistence**: Store the selected/detected language in settings storage using the persistence service from Task 12. This allows manual language override (if needed) and consistent behavior across app restarts.\n\n6. **UI Integration**: Update all UI components to use the translation function instead of hardcoded strings. This includes:\n   - Screen titles and labels\n   - Button text\n   - Status messages and toasts\n   - Date/time formatting (may need locale-specific formatting)\n\n7. **Implementation Structure**:\n   ```javascript\n   // translations/en.json, translations/pt.json, translations/es.json\n   {\n     \"home.resumeGame\": \"Resume Game\",\n     \"home.newGame\": \"New Game\",\n     \"setup.title\": \"Match Setup\",\n     \"setup.sets\": \"Sets\",\n     \"summary.teamWins\": \"Team {team} Wins\",\n     ...\n   }\n   \n   // LocalizationService.js\n   class LocalizationService {\n     constructor() {\n       this.currentLang = this.detectLanguage();\n       this.translations = this.loadTranslations(this.currentLang);\n     }\n     \n     detectLanguage() {\n       const deviceLang = hmSystem.getDeviceInfo().language || 'en';\n       if (deviceLang.startsWith('pt')) return 'pt';\n       if (deviceLang.startsWith('es')) return 'es';\n       return 'en';\n     }\n     \n     t(key, params = {}) {\n       let text = this.translations[key] || this.english[key] || key;\n       Object.keys(params).forEach(param => {\n         text = text.replace(`{${param}}`, params[param]);\n       });\n       return text;\n     }\n   }\n   ```",
@@ -2358,7 +2358,7 @@
         "updatedAt": "2026-02-24T22:50:16.032Z"
       },
       {
-        "id": 39,
+        "id": "39",
         "title": "Implement Release and Changelog Generation with GitHub Actions",
         "description": "Research and implement an automated release and changelog generation system using GitHub Actions with semantic-release and conventional commits. This task enables automated versioning, changelog creation, and GitHub releases triggered by the npm run release command.",
         "details": "Implement a comprehensive release automation system using the conventional-commits and semantic-release approach, similar to the reference implementation at https://github.com/trystan2k/publish-blog-post/. The implementation includes:\n\n1. **Install and Configure Dependencies**:\n   - Install `semantic-release` and related plugins (`@semantic-release/git`, `@semantic-release/changelog`, `@semantic-release/npm`, `@semantic-release/github`)\n   - Configure `.releaserc` or `release.config.js` with appropriate settings for the Zepp OS/JavaScript project\n\n2. **Configure package.json Scripts**:\n   - Add `\"release\": \"semantic-release\"` script to package.json\n   - Ensure `version` field is managed by semantic-release (set to a placeholder like `0.0.0-semantically-released`)\n\n3. **Create GitHub Actions Workflow**:\n   - Create `.github/workflows/release.yml` workflow file\n   - Configure trigger: `on:\n  push:\n    tags:\n      - 'v*'`\n   - Set up job steps:\n     - Checkout code\n     - Setup Node.js environment\n     - Install dependencies\n     - Run semantic-release (which will create the GitHub release)\n\n4. **Configure Conventional Commits**:\n   - Add `commitlint` configuration to enforce conventional commit format\n   - Configure supported commit types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `revert`\n   - Set up pre-commit hooks or CI checks to validate commit messages\n\n5. **Release Process Flow**:\n   - Developer runs `npm run release` locally or pushes commits with conventional commit messages\n   - Semantic-release analyzes commit history since last release\n   - Determines next version number based on commit types (major for breaking changes, minor for features, patch for fixes)\n   - Generates changelog from commit messages\n   - Creates git tag with version number\n   - Pushes changes to repository\n   - GitHub Actions workflow detects new tag and creates GitHub release with changelog\n\n6. **Changelog Configuration**:\n   - Configure changelog format and sections\n   - Include link to commit comparison in generated changelog\n   - Store changelog in `CHANGELOG.md` file\n\n7. **Branch Protection (Recommended)**:\n   - Configure main branch to require pull request reviews\n   - Enable status checks for conventional commit validation. It is also important that it updates not only the version in package.json, but also in the app.json and in utils/version.js",
@@ -2435,7 +2435,7 @@
         "updatedAt": "2026-02-25T01:28:50.098Z"
       },
       {
-        "id": 40,
+        "id": "40",
         "title": "Create Centralized Design Tokens Utility",
         "description": "Implement utils/design-tokens.js with centralized design tokens for colors, typography, spacing, and sizing, along with helper functions to access tokens dynamically.",
         "details": "Create a new file at `utils/design-tokens.js` that exports a TOKENS object and helper functions. The TOKENS object must contain the following categories:\n\n**colors:** background, text, mutedText, accent, danger, primaryButton, secondaryButton, disabled, divider\n\n**typography:** pageTitle (0.0825), sectionTitle (0.068), body (0.055), bodyLarge (0.08), score (0.11), scoreDisplay (0.28), caption (0.036), button (0.05), buttonLarge (0.055)\n\n**spacing:** pageTop (0.05), pageBottom (0.06), pageSide (0.07), pageSideRound (0.12), sectionGap (0.02), headerTop (0.04), headerToContent (0.06), footerBottom (0.07)\n\n**sizing:** iconSmall (24), iconMedium (32), iconLarge (48), buttonHeight (0.105), buttonHeightLarge (0.15), buttonRadiusRatio (0.5), minTouchTarget (48)\n\nAll values should be standardized across the application—do not preserve page-specific differences. Use a flat object structure to prepare for future theming capabilities (document that theming is planned but not implemented yet).\n\n**Helper Functions to Implement:**\n1. `getColor(path)` - Accepts a dot-notation path string (e.g., 'colors.accent') and returns the corresponding token value. Include error handling for invalid paths.\n\n2. `getFontSize(typographyKey, screenWidth)` - Accepts a typography key (e.g., 'pageTitle') and screenWidth value, returns the calculated pixel value by multiplying the typography ratio by screenWidth.",
@@ -2515,7 +2515,7 @@
         "updatedAt": "2026-02-25T14:37:52.890Z"
       },
       {
-        "id": 41,
+        "id": "41",
         "title": "Create Screen Utilities with Round Screen Handling",
         "description": "Implement utils/screen-utils.js providing essential screen measurement utilities and round screen geometry calculations to support adaptive layouts across different device shapes.",
         "details": "Create a new file at `utils/screen-utils.js` with the following utility functions:\n\n1. **getScreenMetrics()**: Returns an object with screen properties:\n   - `width`: Screen width from hmUI.getScreenMetrics()\n   - `height`: Screen height from hmUI.getScreenMetrics()\n   - `isRound`: Boolean calculated as `Math.abs(width - height) <= Math.round(width * 0.04)`\n\n2. **clamp(value, min, max)**: Constrains a value within a specified range.\n   - Return `Math.max(min, Math.min(max, value))`\n   - Useful for keeping positions within screen bounds\n\n3. **ensureNumber(value, fallback)**: Validates that a value is a valid number.\n   - Return `value` if typeof is 'number' and not NaN\n   - Otherwise return `fallback` (default to 0 if not provided)\n\n4. **pct(screenDimension, percentage)**: Converts percentage to pixels.\n   - Calculate `screenDimension * percentage`\n   - `percentage` can be 0-1 or 0-100 (handle both)\n\n5. **getRoundSafeInset(width, height, y, padding)**: Calculates safe inset for round screens at specific Y position.\n   - Use circle geometry to find chord at Y position\n   - Algorithm: \n     - `centerX = width / 2`\n     - `radius = width / 2`\n     - `yFromCenter = y - (height / 2)`\n     - `halfChord = Math.sqrt(radius * radius - yFromCenter * yFromCenter)`\n     - Return `Math.max(0, centerX - halfChord + padding)`\n\n6. **getRoundSafeSectionInset(width, height, sectionTop, sectionHeight, padding)**: Calculates safe inset for an entire section.\n   - Call getRoundSafeInset for both top and bottom of section\n   - Return the maximum inset value to ensure full section fits\n\nAll functions should be exported for use in pages and other utility files.",
@@ -2588,7 +2588,7 @@
         "updatedAt": "2026-02-25T15:35:04.560Z"
       },
       {
-        "id": 42,
+        "id": "42",
         "title": "Create Layout Engine with Declarative Resolution",
         "description": "Implement utils/layout-engine.js with a declarative layout system that resolves schemas to pixel coordinates, supporting sections and elements with percentage, pixel, and reference-based positioning.",
         "details": "Create a new file at `utils/layout-engine.js` that exports the following functionality:\n\n**Main Function**:\n- `resolveLayout(schema, metrics)` - Takes a schema object and screen metrics, returns resolved coordinates\n\n**Input Schema Structure**:\n```javascript\n{\n  sections: {\n    [sectionName]: {\n      top: string | number,      // '10%', 'header.bottom', 'header.bottom + 2%', 50\n      bottom: string | number,   // percentage from bottom (optional)\n      after: string,             // section name to position after (optional)\n      gap: number,               // gap after previous section in pixels (optional)\n      height: string | number,   // '10%', 'fill', or pixels (optional)\n      sideInset: string | number, // percentage or pixels (optional)\n      roundSafeInset: boolean    // default true (optional)\n    }\n  },\n  elements: {\n    [elementName]: {\n      section: string,           // parent section name\n      x: string | number,        // percentage or pixels (optional)\n      y: string | number,        // percentage or pixels (optional)\n      width: string | number,    // percentage or pixels (optional)\n      height: string | number,   // percentage or pixels (optional)\n      align: 'center' | 'left' | 'right' (optional)\n    }\n  }\n}\n```\n\n**Return Structure**:\n```javascript\n{\n  sections: {\n    [sectionName]: { x, y, w, h }\n  },\n  elements: {\n    [elementName]: { x, y, w, h }\n  }\n}\n```\n\n**Position Resolution Logic**:\n- Parse string values ending with '%' and convert using: `Math.round(dimension * percentage / 100)`\n- Parse section references (e.g., 'header.bottom'): `sections.header.y + sections.header.h`\n- Parse expressions with references and offsets (e.g., 'header.bottom + 2%')\n- Handle 'fill' height by calculating remaining space to next section or bottom\n- Literal numbers are treated as pixel values\n\n**Element Alignment**:\n- 'center': center horizontally within section bounds\n- 'left': position at section x (default)\n- 'right': position at `section.x + section.w - element.w`\n\n**Error Handling (Graceful Fallbacks)**:\n- Invalid section references: fallback to 0\n- Missing sections in element properties: use full screen bounds\n- Invalid percentage values: clamp to 0-100% range\n- Any parsing errors: default to sensible defaults, never throw\n\n**Implementation Steps**:\n1. Import screen utilities from `utils/screen-utils.js` (getScreenMetrics, clamp)\n2. Create helper function `parseValue(value, dimension, sections)` to parse positioning values\n3. Create helper function `parsePercentage(value)` to extract numeric percentage\n4. Create helper function `resolveSectionRef(ref, sections)` to get referenced section bounds\n5. Implement section resolution pass: calculate all section positions first\n6. Implement element resolution pass: calculate element positions within their sections\n7. Apply roundSafeInset: round coordinates if true and screen is round\n8. Export the `resolveLayout` function\n\n**Code Example**:\n```javascript\nimport { getScreenMetrics, clamp } from './screen-utils.js';\n\nexport function resolveLayout(schema, metrics = getScreenMetrics()) {\n  const { width, height } = metrics;\n  const resolved = { sections: {}, elements: {} };\n  \n  // Resolve sections first\n  for (const [name, section] of Object.entries(schema.sections || {})) {\n    // ... section resolution logic\n  }\n  \n  // Then resolve elements\n  for (const [name, element] of Object.entries(schema.elements || {})) {\n    // ... element resolution logic\n  }\n  \n  return resolved;\n}\n```",
@@ -2666,7 +2666,7 @@
         "updatedAt": "2026-02-25T16:41:34.136Z"
       },
       {
-        "id": 43,
+        "id": "43",
         "title": "Create Layout Presets Utility with Common Page Structure Schemas",
         "description": "Implement utils/layout-presets.js containing factory functions that return layout schemas for common page patterns following a strict 3-section structure (header, body, footer) with consistent spacing and round-safe inset handling.",
         "details": "Create a new file at `utils/layout-presets.js` that exports the following factory functions:\n\n**1. createStandardPageLayout(options)**\n- Returns a layout schema with header, body, and footer sections\n- Options parameter:\n  - hasHeader (default: true)\n  - hasFooter (default: true)\n  - headerHeight (default: TOKENS.typography.pageTitle * 2)\n  - footerHeight (default: TOKENS.typography.button * 2)\n- Header section: top='pageTop', height=headerHeight or 'auto', roundSafeInset=true\n- Body section: after='header', gap=TOKENS.spacing.headerToContent, height='fill', roundSafeInset=true\n- Footer section: bottom='footerBottom', height=footerHeight, roundSafeInset=false\n\n**2. createPageWithFooterButton(options)**\n- Returns standard layout with an icon button in the footer\n- Options parameter:\n  - icon (default: 'home-icon.png')\n  - onClick (function callback)\n- Extends createStandardPageLayout with additional footer element for the button\n- Button should be centered in footer area\n\n**3. createTwoColumnLayout(parentSection)**\n- Returns a schema with leftColumn and rightColumn sections nested under parentSection\n- Each column: width='50%', height='100%'\n- Used for game page score area display\n- Sets roundSafeInset: true for both columns\n\n**All presets must:**\n- Import and use TOKENS.spacing values (pageTop, pageBottom, headerToContent) from design-tokens.js\n- Set roundSafeInset: true for body sections to ensure content doesn't overlap bezel on round screens\n- Set roundSafeInset: false for footer sections (icon centering handles positioning)\n- Return schemas compatible with the layout-engine.js resolveLayout function",
@@ -2747,7 +2747,7 @@
         "updatedAt": "2026-02-25T23:44:40.102Z"
       },
       {
-        "id": 44,
+        "id": "44",
         "title": "Create UI Components Utility with Reusable Widget Factories",
         "description": "Implement utils/ui-components.js containing reusable widget factory functions for common UI elements including backgrounds, cards, buttons, dividers, and text components, all using design tokens for consistent styling.",
         "details": "Create a new file at `utils/ui-components.js` that exports the following widget factory functions. All components must use TOKENS from utils/design-tokens.js for styling, accept standardized parameters (widget, bounds, options), and return the created widget.\n\n**1. createBackground(widget, metrics, color?)**\n- Creates a full-screen FILL_RECT widget\n- Default color: TOKENS.colors.background\n- Uses metrics.width and metrics.height for bounds\n\n**2. createCard(widget, bounds, options?)**\n- Creates a rounded FILL_RECT container\n- Default color: TOKENS.colors.cardBackground or TOKENS.colors.background\n- Options: color (default cardBackground), radiusRatio (default 0.07)\n- Radius calculation: bounds.h * radiusRatio\n\n**3. createDivider(widget, bounds, color?)**\n- Creates a FILL_RECT for horizontal or vertical dividers\n- Default color: TOKENS.colors.divider\n- Bounds determine orientation (width > height = horizontal, else vertical)\n\n**4. createButton(widget, bounds, options)**\n- Unified button factory supporting multiple variants\n- Required options: text, onClick\n- Optional options: variant ('primary', 'secondary', 'icon', 'danger'), visible (default true), disabled (default false), icon\n- Variant styling:\n  - Primary: color=TOKENS.colors.primaryButton, press_color=TOKENS.colors.primaryButtonPressed\n  - Secondary: color=TOKENS.colors.secondaryButton, press_color=TOKENS.colors.secondaryButtonPressed\n  - Icon: uses normal_src/press_src with icon option, no text\n  - Danger: color=TOKENS.colors.dangerButton, press_color=TOKENS.colors.dangerButtonPressed\n- Text size: getFontSize('buttonLarge', bounds.w)\n- Radius: bounds.h * TOKENS.sizing.buttonRadiusRatio (or default 0.2 if not in tokens)\n- Handle disabled state with grayed-out appearance\n\n**5. createText(widget, bounds, options)**\n- Generic text element factory\n- Required options: text\n- Optional options: style (typography key), color, align (default CENTER_H)\n- Uses getFontSize(style, bounds.w) for text_size\n- Default color: TOKENS.colors.text\n\n**6. createPageTitle(widget, bounds, text, options?)**\n- Helper for page-level titles\n- Style: 'pageTitle'\n- Default color: TOKENS.colors.text\n- Wraps createText with predefined style\n\n**7. createSectionTitle(widget, bounds, text, options?)**\n- Helper for section headers\n- Style: 'sectionTitle'\n- Default color: TOKENS.colors.mutedText\n- Wraps createText with predefined style\n\n**8. createBodyText(widget, bounds, text, options?)**\n- Helper for body paragraph text\n- Style: 'body'\n- Default color: TOKENS.colors.text\n- Wraps createText with predefined style\n\nAll functions must:\n- Import TOKENS from '../utils/design-tokens.js'\n- Use hmUI widget creation API\n- Return the created widget for chaining or reference\n- Validate required parameters",
@@ -2825,7 +2825,7 @@
         "updatedAt": "2026-02-26T00:04:46.987Z"
       },
       {
-        "id": 45,
+        "id": "45",
         "title": "Migrate Home Screen to New Layout System",
         "description": "Refactor page/index.js to use the new declarative layout system, replacing HOME_TOKENS and inline position calculations with design tokens, layout engine resolution, and reusable UI components.",
         "details": "Migrate the Home Screen (page/index.js) from the legacy token-based positioning system to the new layout architecture defined in the PRD. This task is part of Phase 4 of the migration plan.\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies:**\n   - Delete the HOME_TOKENS constant from page/index.js\n   - Remove all inline position calculations from renderHomeScreen()\n\n2. **Add New Imports:**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics } from '../utils/screen-utils.js';\n   import { resolveLayout } from '../utils/layout-engine.js';\n   import { createBackground, createButton, createText } from '../utils/ui-components.js';\n   ```\n\n3. **Define INDEX_LAYOUT Schema:**\n   - Create a layout schema with three sections: header, body, footer\n   - Header section: Contains logo and pageTitle elements\n   - Body section: Contains primaryButton and secondaryButton (conditional)\n   - Footer section: Contains settingsButton icon\n\n4. **Implement Layout Elements:**\n   - **logo**: TEXT element with style 'pageTitle', color TOKENS.colors.accent\n   - **pageTitle**: TEXT element with style 'pageTitle'\n   - **primaryButton**: BUTTON variant 'primary' for 'Start New Game'\n   - **secondaryButton**: BUTTON variant 'secondary' for 'Resume Game', visible only when hasSavedGame is true\n   - **settingsButton**: BUTTON variant 'icon' with icon='setting-icon.png'\n\n5. **Refactor renderHomeScreen():**\n   - Call getScreenMetrics() to obtain screen dimensions\n   - Use resolveLayout(INDEX_LAYOUT, metrics) to calculate positions\n   - Replace inline math with layout engine results\n   - Use createBackground(), createButton(), and createText() factory functions\n\n6. **Preserve Existing Functionality:**\n   - Maintain click handlers for Start New Game and Resume Game\n   - Keep the conditional display logic for Resume Game (based on hasSavedGame)\n   - Preserve settings icon navigation to Settings page\n   - Ensure all navigation logic remains intact\n\n7. **Reference Implementations:**\n   - Follow the pattern established in Task 34 for button sizing and placement\n   - Use design tokens from Task 40 for consistent styling\n   - Apply round-safe positioning from Task 41\n\n**Technical Considerations:**\n- The settings icon button was added in Task 34; ensure it's properly positioned in the footer section\n- The Resume Game button conditionality from Task 17 must be preserved\n- Visual appearance should match the current implementation exactly\n- All spacing and sizing should derive from TOKENS constants",
@@ -2906,7 +2906,7 @@
         "updatedAt": "2026-02-26T11:57:51.466Z"
       },
       {
-        "id": 46,
+        "id": "46",
         "title": "Migrate Setup Screen to New Layout System",
         "description": "Refactor page/setup.js to use the new declarative layout system, replacing SETUP_TOKENS and inline position calculations with design tokens, layout engine resolution, and reusable UI components.",
         "details": "Migrate the Setup Screen (page/setup.js) from the legacy token-based positioning system to the new layout architecture defined in the PRD (Section 9: Migration Plan, Phase 5).\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies:**\n   - Delete the SETUP_TOKENS constant from page/setup.js\n   - Remove all inline position calculations from renderSetupScreen()\n\n2. **Add New Imports:**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics } from '../utils/screen-utils.js';\n   import { resolveLayout } from '../utils/layout-engine.js';\n   import {\n     createCard,\n     createSectionTitle,\n     createBodyText,\n     createButton\n   } from '../utils/ui-components.js';\n   ```\n\n3. **Define Layout Schema:**\n   ```javascript\n   const SETUP_LAYOUT = {\n     sections: {\n       header: { top: '5%', height: '10%' },\n       body: { top: 'header.bottom', bottom: '0%' }\n     }\n   };\n   ```\n\n4. **Refactor renderSetupScreen():**\n   - Get screen metrics using getScreenMetrics()\n   - Call resolveLayout(SETUP_LAYOUT, metrics) to get resolved bounds\n   - Create card container inside body section using createCard()\n   - Add title to card using createSectionTitle()\n   - Add helper text using createBodyText() with TOKENS.colors.mutedText\n   - Create 3 option buttons (1, 3, 5 sets) using createButton()\n     - Use variant 'secondary' for unselected, 'primary' for selected\n   - Create start button using createButton() variant 'primary'\n     - Apply disabled styling when no selection is made\n   - Add error message using createBodyText() with TOKENS.colors.danger (conditional)\n\n5. **Update State Management:**\n   - Maintain selectedOption state (1, 3, or 5)\n   - Pass selected state to button variant logic\n   - Pass disabled state to start button\n\n6. **Constants:**\n   - Define MATCH_SET_OPTIONS = [1, 3, 5] for option button generation\n\n**Layout Structure:**\n- Header section: Empty spacer (title moves inside card)\n- Body section: Contains the card element\n  - Card contains: title, helperText, 3 option buttons, start button, errorMessage\n- Footer: None (no footer buttons on this page)",
@@ -2988,7 +2988,7 @@
         "updatedAt": "2026-02-26T13:49:39.388Z"
       },
       {
-        "id": 47,
+        "id": "47",
         "title": "Migrate Game Screen to New Layout System",
         "description": "Refactor page/game.js to use the new declarative layout system, replacing GAME_TOKENS and complex inline position calculations with design tokens, layout engine resolution, and reusable UI components. This is the most complex page migration involving two-column layouts and dynamic match state handling.",
         "details": "Migrate the Game Screen (page/game.js) from the legacy token-based positioning system to the new layout architecture defined in the PRD (Section 9: Migration Plan, Phase 6). The Game Screen is the most complex page requiring special handling for round screens, two-column team layouts, and dynamic finished state UI.\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies:**\n   - Delete the GAME_TOKENS constant from page/game.js\n   - Remove calculateRoundSafeSideInset() and calculateRoundSafeSectionSideInset() functions (now in screen-utils.js)\n   - Remove all inline position calculations from renderGameScreen()\n\n2. **Add New Imports:**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics, calculateRoundSafeSideInset, calculateRoundSafeSectionSideInset } from '../utils/screen-utils.js';\n   import { resolveLayout, createTwoColumnLayout } from '../utils/layout-engine.js';\n   import { createBackground, createText, createButton, createDivider, createIcon } from '../utils/ui-components.js';\n   ```\n\n3. **Define GAME_LAYOUT Schema:**\n   ```javascript\n   const GAME_LAYOUT = {\n     sections: {\n       header: {\n         top: 'headerTop',\n         height: '11%',\n         roundSafeInset: true\n       },\n       scoreArea: {\n         after: 'header',\n         gap: 'headerToContent',\n         height: 'fill',\n         roundSafeInset: false\n       },\n       footer: {\n         bottom: 'footerBottom',\n         height: '15%'\n       }\n     },\n     elements: {\n       // Header elements: setsLabel, setsValue, gamesLabel, gamesValue\n       // Score area elements with two-column: teamALabel, teamAScore, teamAMinusButton, teamBLabel, teamBScore, teamBMinusButton, divider\n       // Footer element: homeButton\n     }\n   };\n   ```\n\n4. **Refactor renderGameScreen():**\n   - Get screen metrics using getScreenMetrics()\n   - Resolve layout using resolveLayout(GAME_LAYOUT, metrics)\n   - Use createTwoColumnLayout for the score area section\n   - Create UI elements using ui-components factories\n   - Apply scoreDisplay typography to score buttons using getFontSize('scoreDisplay')\n   - Handle isMatchFinished state to show finishedLabel + winner message instead of active game UI\n\n5. **Round Screen Handling:**\n   - Header section uses roundSafeInset: true (automatically applies calculateRoundSafeSectionSideInset)\n   - Score area uses roundSafeInset: false for full-width content\n   - Ensure divider positioning respects round screen geometry\n\n6. **Two-Column Score Area Pattern:**\n   ```javascript\n   const columns = createTwoColumnLayout({\n     left: { width: '45%', elements: [teamALabel, teamAScore, teamAMinusButton] },\n     right: { width: '45%', elements: [teamBLabel, teamBScore, teamBMinusButton] },\n     divider: { width: '10%' }\n   }, scoreAreaBounds);\n   ```\n\n7. **Button Handling:**\n   - teamAScore and teamBScore remain buttons for incrementing scores\n   - teamAMinusButton and teamBMinusButton for decrementing\n   - homeButton in footer uses icon factory\n   - Preserve all existing click handlers and event bindings\n\n8. **Dynamic UI State:**\n   - If isMatchFinished is true: render finishedLabel with winner message\n   - If isMatchFinished is false: render standard score UI with buttons\n   - Ensure UI state updates immediately when match state changes",
@@ -3069,7 +3069,7 @@
         "updatedAt": "2026-02-26T19:40:27.861Z"
       },
       {
-        "id": 48,
+        "id": "48",
         "title": "Migrate Summary Screen to New Layout System",
         "description": "Refactor page/summary.js to use the new declarative layout system, replacing SUMMARY_TOKENS and inline position calculations with design tokens, layout engine resolution, and reusable UI components while maintaining scrollable set history functionality.",
         "details": "Migrate the Summary Screen (page/summary.js) from the legacy token-based positioning system to the new layout architecture defined in the PRD (Section 9: Migration Plan, Phase 7). This migration involves removing the SUMMARY_TOKENS constant, eliminating inline round screen calculation functions (calculateRoundSafeSideInset, calculateRoundSafeSectionSideInset), and implementing a declarative layout schema with header, body, and footer sections.\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies:**\n   - Delete the SUMMARY_TOKENS constant from page/summary.js\n   - Remove calculateRoundSafeSideInset() function\n   - Remove calculateRoundSafeSectionSideInset() function\n   - Remove all inline position calculations from renderSummaryScreen()\n\n2. **Add New Imports:**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics } from '../utils/screen-utils.js';\n   import { resolveLayout } from '../utils/layout-engine.js';\n   import { createBackground, createCard, createText, createButton } from '../utils/ui-components.js';\n   ```\n\n3. **Define SUMMARY_LAYOUT Schema:**\n   ```javascript\n   const SUMMARY_LAYOUT = {\n     sections: {\n       header: {\n         top: 'pageTop',\n         height: 'auto',\n         sideInset: 'roundSafe'\n       },\n       body: {\n         after: 'header',\n         height: 'fill'\n       },\n       footer: {\n         bottom: 'footerBottom',\n         height: '15%'\n       }\n     },\n     elements: {\n       headerCard: { section: 'header', type: 'card' },\n       title: { parent: 'headerCard', position: 'top' },\n       winnerText: { parent: 'headerCard', position: 'middleTop' },\n       finalScoreLabel: { parent: 'headerCard', position: 'middleBottom' },\n       finalScoreValue: { parent: 'headerCard', position: 'bottom' },\n       historyCard: { section: 'body', type: 'card' },\n       setHistoryTitle: { parent: 'historyCard', position: 'top' },\n       homeButton: { section: 'footer', type: 'button' }\n     }\n   };\n   ```\n\n4. **Refactor SCROLL_LIST Logic:**\n   - Keep SCROLL_LIST implementation in the page (not moved to utilities)\n   - Update scroll list styling to use design tokens:\n     - itemHeight: calculate based on typography.bodyLarge\n     - text_size: getFontSize('bodyLarge', width)\n     - color: TOKENS.colors.text\n   - Ensure scroll list is positioned within the historyCard bounds\n\n5. **Update renderSummaryScreen() Function:**\n   - Get screen metrics using getScreenMetrics()\n   - Resolve layout using resolveLayout(SUMMARY_LAYOUT, metrics)\n   - Create background using createBackground()\n   - Create header card with winner info and final score using createCard() and createText()\n   - Create history card container using createCard()\n   - Render setHistoryTitle using createText()\n   - Render SCROLL_LIST with token-based styling within historyCard bounds\n   - Create footer home button using createButton() with icon\n   - Apply round-safe side insets through layout engine\n\n6. **Handle Navigation:**\n   - Update homeButton click handler to navigate to page/index using the page router",
@@ -3087,7 +3087,7 @@
         "updatedAt": "2026-02-26T22:03:56.251Z"
       },
       {
-        "id": 49,
+        "id": "49",
         "title": "Migrate Summary Screen to New Layout System",
         "description": "Refactor page/summary.js to use the new declarative layout system, replacing SUMMARY_TOKENS and inline position calculations with design tokens, layout engine resolution, and reusable UI components while maintaining scrollable set history functionality.",
         "details": "Migrate the Summary Screen (page/summary.js) from the legacy token-based positioning system to the new layout architecture defined in the PRD (Section 9: Migration Plan, Phase 7). This migration involves removing the SUMMARY_TOKENS constant, eliminating inline round screen calculation functions (calculateRoundSafeSideInset, calculateRoundSafeSectionSideInset), and implementing a declarative layout schema with header, body, and footer sections.\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies:**\n   - Delete the SUMMARY_TOKENS constant from page/summary.js\n   - Remove all round screen calculation functions: calculateRoundSafeSideInset() and calculateRoundSafeSectionSideInset()\n   - Remove inline position calculations from renderSummaryScreen()\n\n2. **Add New Imports:**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics, getRoundSafeInsets, applyRoundSafeInset } from '../utils/screen-utils.js';\n   import { resolveLayout } from '../utils/layout-engine.js';\n   import { createCard, createButton, createText } from '../utils/ui-components.js';\n   import { createStandardPageLayout } from '../utils/layout-presets.js';\n   ```\n\n3. **Define SUMMARY_LAYOUT Schema:**\n   ```javascript\n   const SUMMARY_LAYOUT = {\n     sections: {\n       header: {\n         top: 'pageTop',\n         height: 'auto',\n         roundSafeInset: true\n       },\n       body: {\n         top: 'header.bottom',\n         bottom: 'footer.top',\n         roundSafeInset: true\n       },\n       footer: {\n         bottom: 'pageBottom',\n         height: TOKENS.typography.button * 2.5,\n         roundSafeInset: true\n       }\n     },\n     elements: {\n       headerCard: {\n         section: 'header',\n         top: 0,\n         height: '100%',\n         padding: TOKENS.spacing.md\n       },\n       titleText: {\n         section: 'header',\n         top: TOKENS.spacing.xs,\n         height: getFontSize('pageTitle')\n       },\n       winnerText: {\n         section: 'header',\n         top: 'titleText.bottom',\n         height: getFontSize('bodyLarge')\n       },\n       scoreText: {\n         section: 'header',\n         top: 'winnerText.bottom',\n         height: getFontSize('scoreDisplay')\n       },\n       historyCard: {\n         section: 'body',\n         top: 0,\n         height: '100%',\n         roundSafeInset: true\n       },\n       scrollList: {\n         section: 'body',\n         top: 0,\n         height: '100%'\n       },\n       homeButton: {\n         section: 'footer',\n         bottom: TOKENS.spacing.md,\n         height: TOKENS.typography.button,\n         width: 100\n       }\n     }\n   };\n   ```\n\n4. **Refactor renderSummaryScreen():**\n   - Get screen metrics: `const metrics = getScreenMetrics();`\n   - Resolve layout: `const layout = resolveLayout(SUMMARY_LAYOUT, metrics);`\n   - Create header section using createCard() with title, winnerText, and score elements\n   - Create body section with historyCard containing SCROLL_LIST for set history\n   - Keep existing SCROLL_LIST logic (params, callback for set items) but use layout bounds\n   - Create footer section with homeButton using createButton()\n   - Use TOKENS for all styling (colors, typography, spacing)\n   - Apply roundSafeInsets from layout engine for element positioning\n\n5. **Token Integration:**\n   - Replace all hardcoded colors with TOKENS.colors (text, accent, background, etc.)\n   - Replace font sizes with getFontSize() helper\n   - Replace spacing values with TOKENS.spacing values (xs, sm, md, lg)\n\n6. **Preserve Functionality:**\n   - Ensure winner text displays correctly from matchState\n   - Ensure final score displays correctly\n   - Ensure set history populates scroll list with all sets\n   - Ensure home button navigates to index page",
@@ -3170,7 +3170,7 @@
         "updatedAt": "2026-02-26T23:18:19.235Z"
       },
       {
-        "id": 50,
+        "id": "50",
         "title": "Migrate Settings, History, and History Detail Pages to New Layout System",
         "description": "Refactor page/settings.js, page/history.js, and page/history-detail.js to use the new declarative layout system, replacing page-specific TOKENS constants with design tokens, layout engine resolution, and reusable UI components while preserving scroll list functionality and navigation patterns.",
         "details": "Migrate three utility pages (settings, history, history-detail) from the legacy token-based positioning system to the new layout architecture defined in the PRD (Section 9: Migration Plan, Phase 8). These pages share similar patterns including scroll lists with icons, settings icon navigation, and go back icon navigation.\n\n**Implementation Steps:**\n\n1. **Remove Legacy Dependencies from each file:**\n   - Delete the SETTINGS_TOKENS constant from page/settings.js\n   - Delete the HISTORY_TOKENS constant from page/history.js\n   - Delete the HISTORY_DETAIL_TOKENS constant from page/history-detail.js\n   - Remove all inline position calculations from render functions\n\n2. **Add New Imports (for all three files):**\n   ```javascript\n   import { TOKENS, getFontSize } from '../utils/design-tokens.js';\n   import { getScreenMetrics } from '../utils/screen-utils.js';\n   import { resolveLayout } from '../utils/layout-engine.js';\n   import { createStandardPageLayout } from '../utils/layout-presets.js';\n   import { createBackground, createCard, createText, createButton } from '../utils/ui-components.js';\n   ```\n\n3. **Define Page Layout Schemas:**\n   - For settings.js and history.js: Create standard page layout with header (title), body (scroll list), footer (optional buttons)\n   - For history-detail.js: Create layout similar to summary page with header (title), body (detail content), footer (goBack button)\n   - Use createStandardPageLayout() with appropriate options for each page\n\n4. **Migrate Settings Page (page/settings.js):**\n   - Keep SCROLL_LIST logic but use TOKENS for styling (colors, typography, spacing)\n   - Migrate title to use createText() with TOKENS.typography.pageTitle\n   - Migrate goBack button to use createButton() with appropriate icon\n   - Preserve clear confirm mode for delete action behavior\n\n5. **Migrate History Page (page/history.js):**\n   - Keep SCROLL_LIST logic but use TOKENS for styling\n   - Migrate title to use createText() with TOKENS.typography.pageTitle\n   - Migrate goBack button to use createButton() with appropriate icon\n   - Preserve empty state message display logic\n\n6. **Migrate History Detail Page (page/history-detail.js):**\n   - Follow pattern similar to summary page migration\n   - Create layout with header/body/footer structure\n   - Use TOKENS for all text styling and positioning\n   - Preserve go back navigation functionality\n\n7. **Run Validation:**\n   - Execute `npm run complete-check` after each page migration to ensure no compilation errors\n   - Test on both round and square simulators",
@@ -3253,7 +3253,7 @@
         "updatedAt": "2026-02-27T09:52:00.063Z"
       },
       {
-        "id": 51,
+        "id": "51",
         "title": "Create UI System Documentation",
         "description": "Create comprehensive docs/UI-SYSTEM.md documenting the new layout system architecture, design tokens, layout schema syntax, component API reference, migration guide, and practical examples.",
         "details": "Create a new documentation file at docs/UI-SYSTEM.md that provides a complete guide to the new layout system. The documentation must be structured with the following sections:\n\n1. **Overview and Architecture**\n   - Layer diagram showing: Design Tokens → Layout Engine → UI Components → Pages\n   - Explanation of declarative vs imperative layout approach\n   - Round screen handling philosophy and why the new system was needed\n\n2. **Design Tokens Reference**\n   - Colors: background, text, mutedText, accent, danger, primaryButton, secondaryButton, disabled, divider (with actual hex values)\n   - Typography: pageTitle, sectionTitle, body, bodyLarge, score, scoreDisplay, caption, button, buttonLarge (with scale factors and semantic use cases)\n   - Spacing: pageTop, pageBottom, pageSide, sectionGap, cardPadding, elementGap (with scale factors)\n   - Sizing: cardHeight, buttonHeight, dividerHeight (with scale factors)\n   - Helper functions: getToken(), getSpacing(), getSizing()\n\n3. **Layout Schema Syntax**\n   - Section properties: top, bottom, height, after, roundSafeInset\n   - Element properties: x, y, width, height, alignX, alignY, reference\n   - Position resolution rules: percentage (relative to parent), pixel (absolute), reference-based (e.g., 'header.bottom + 10px')\n   - Code examples for common patterns (centered element, anchored to bottom, two-column layout)\n\n4. **Component API Reference**\n   Document all 8 factory functions from utils/ui-components.js:\n   - createBackground(widget, metrics, color?) - Creates full-screen background\n   - createCard(widget, bounds, options?) - Creates card with optional styling\n   - createDivider(widget, bounds, options?) - Creates horizontal divider line\n   - createButton(widget, bounds, text, options?) - Creates button with variants (primary, secondary, danger)\n   - createText(widget, bounds, text, style?) - Creates text with custom style\n   - createPageTitle(widget, bounds, text) - Creates page title with token styling\n   - createSectionTitle(widget, bounds, text) - Creates section title with token styling\n   - createBodyText(widget, bounds, text) - Creates body text with token styling\n   Include parameter types, default values, return values, and concise usage examples.\n\n5. **Migration Guide**\n   - Step-by-step process to migrate a legacy page:\n     1. Remove page-specific TOKENS constants (e.g., GAME_TOKENS, SETTINGS_TOKENS)\n     2. Import design-tokens, layout-engine, ui-components\n     3. Define layout schema using section/element structure\n     4. Call resolveLayout() to get coordinates\n     5. Replace inline position calculations with resolved coordinates\n     6. Replace widget creation calls with component factory functions\n   - Common patterns with before/after code snippets:\n     - Page title setup (legacy TOKENS vs createPageTitle)\n     - Button layout (inline math vs schema + createButton)\n     - Card creation (manual rect vs createCard)\n     - Scroll list implementation (legacy vs new approach)\n\n6. **Examples**\n   Provide complete code examples referencing actual migrated pages:\n   - Simple page (page/index) - Home screen with title and two buttons\n   - Card-based page (page/setup) - Setup screen with multiple input cards\n   - Two-column page (page/game) - Game screen with Team A/Team B columns\n   - Scroll list page (page/settings or page/history) - Settings or history with scroll list\n\nReference docs/PRD-Refactor-Layout.md (Section 11), PRD Appendix A (Example Migrated Page), and PRD Appendix B (Token Migration Mapping) for additional context and ensure alignment with PRD requirements.",
@@ -3267,12 +3267,12 @@
         "updatedAt": "2026-03-01T15:15:33.568Z"
       },
       {
-        "id": 52,
+        "id": "52",
         "title": "Add coach-to-whistle two-tap manual finish flow with 3-second confirmation and tie-aware summary output",
         "description": "Implement a safe manual match finish flow from the Game screen using a 2-tap confirmation pattern with a 3-second timeout, while preserving set-level score context and updating summary to handle tied matches.",
         "details": "Use the docs/PRD-Finish-Match.md as the PRD for this task. Implement manual finish functionality in page/game.js:\n\n1. **Footer UI Updates:**\n   - Add confirm-finish icon button beside home button in footer\n   - Use coach-icon.png (gtr-3, gts-3 assets) as default icon\n   - Switch to whistle-icon.png on first tap\n   - Position icons side-by-side with proper spacing\n\n2. **Confirmation UX:**\n   - First tap on coach icon changes to whistle icon and displays toast prompt\n   - Start 3-second confirmation timer\n   - Second tap within window confirms finish and triggers match completion\n   - Auto-revert to coach icon after 3-second timeout if unconfirmed\n   - Ensure timer cleanup on navigation/destroy to prevent memory leaks\n\n3. **Manual Finish Logic:**\n   - Capture current match state for finishing\n   - Append current in-progress set games into setHistory as partial set snapshot\n   - Guard against duplicate appending of current set snapshot\n   - Determine winner from setsWon values only\n   - Handle tie scenario when setsWon.teamA equals setsWon.teamB\n   - Maintain existing finish pipeline: navigate to summary, persist finished state, save to history, hide resume button\n\n4. **Summary Tie Handling:**\n   - Add summary.tiedGame localization key to page/i18n/en-US.po, page/i18n/pt-BR.po, page/i18n/es-ES.po\n   - Update page/summary.js to display tie message when sets are equal\n   - Ensure set history displays completed sets plus final partial set snapshot\n\n5. **Implementation Considerations:**\n   - Use existing confirm-button interaction pattern from page/history-detail.js as reference\n   - Ensure normal scoring-based match completion behavior remains unchanged\n   - Handle edge cases: empty state, mid-game finish, partial set display",
         "testStrategy": "Update and extend tests in tests/game-screen-layout.test.js:\n- Assert footer shows exactly 2 icons (home + coach) in correct order\n- Assert default coach icon is displayed initially\n- Assert first tap on coach changes icon to whistle and shows toast\n- Assert second tap within 3-second window triggers finish transition to summary\n- Assert timeout after 3 seconds reverts icon to coach without finishing match\n- Assert timer is properly cleaned up on page navigation\n\nUpdate and extend tests in tests/summary-screen.test.js:\n- Assert summary.tiedGame message is displayed for tied finished matches (equal sets)\n- Assert winner message is displayed correctly for non-tied matches based on setsWon\n- Assert final partial set snapshot appears in set history lines\n- Assert set history includes all completed sets plus the in-progress set snapshot\n\nIntegration tests:\n- Complete manual finish flow and verify finished state is persisted\n- Verify history entry is created correctly with tie status\n- Verify home screen no longer shows resumable active game after manual finish\n\nRun npm run complete-check to verify all tests pass",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "7",
           "8",
@@ -3280,19 +3280,82 @@
           "18"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Footer UI with Coach Icon Button",
+            "description": "Add the coach icon button to the game screen footer beside the home button with proper positioning and asset references.",
+            "dependencies": [],
+            "details": "Implement footer UI updates in page/game.js: Add confirm-finish icon button beside home button in footer. Use coach-icon.png (gtr-3, gts-3 assets) as default icon. Position icons side-by-side with proper spacing.",
+            "status": "done",
+            "testStrategy": "Assert footer shows exactly 2 icons (home + coach) in correct order. Assert default coach icon is displayed initially on both gtr-3 and gts-3 screen sizes.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-01T15:54:59.849Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Two-Tap Confirmation with 3-Second Timer",
+            "description": "Implement the two-tap confirmation UX pattern with icon switching, toast prompt, 3-second timeout, and proper timer cleanup.",
+            "dependencies": [
+              1
+            ],
+            "details": "Handle first tap on coach icon to switch to whistle-icon.png and display toast prompt. Start 3-second confirmation timer. Handle second tap within window to trigger match completion. Auto-revert to coach icon after 3-second timeout if unconfirmed. Ensure timer cleanup on navigation/destroy to prevent memory leaks.",
+            "status": "done",
+            "testStrategy": "Assert first tap on coach changes icon to whistle and shows toast. Assert second tap within 3-second window triggers finish. Assert icon reverts to coach after 3 seconds without second tap. Assert timer cleanup prevents memory leaks on page navigation.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-01T15:54:59.852Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Manual Match Finish State Capture",
+            "description": "Capture and prepare match state for manual finish, including partial set snapshot and winner determination logic.",
+            "dependencies": [
+              2
+            ],
+            "details": "Capture current match state for finishing. Append current in-progress set games into setHistory as partial set snapshot. Guard against duplicate appending of current set snapshot. Determine winner from setsWon values only. Maintain existing finish pipeline: navigate to summary, persist finished state, save to history, hide resume button.",
+            "status": "done",
+            "testStrategy": "Test mid-game finish scenario and verify partial set is appended to setHistory. Verify duplicate guard prevents multiple appends. Verify winner determination uses setsWon values only.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-01T15:54:59.860Z"
+          },
+          {
+            "id": 4,
+            "title": "Implement Tie Scenario Handling in Finish Logic",
+            "description": "Add logic to handle tied matches where both teams have equal sets won, ensuring proper state preservation and navigation.",
+            "dependencies": [
+              3
+            ],
+            "details": "Handle tie scenario when setsWon.teamA equals setsWon.teamB. Preserve set-level score context in tie scenarios. Ensure normal scoring-based match completion behavior remains unchanged. Handle edge cases: empty state, mid-game finish, partial set display.",
+            "status": "done",
+            "testStrategy": "Create test scenario with equal setsWon values. Verify tie state is properly handled. Verify normal completion flow works for non-tied matches. Test edge cases with empty and mid-game states.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-01T15:54:59.863Z"
+          },
+          {
+            "id": 5,
+            "title": "Add Summary Screen Tie Display and Localization",
+            "description": "Add localization keys for tie messages and update the summary screen to display tie-aware content with partial set history.",
+            "dependencies": [
+              4
+            ],
+            "details": "Add summary.tiedGame localization key to page/i18n/en-US.po, page/i18n/pt-BR.po, page/i18n/es-ES.po. Update page/summary.js to display tie message when sets are equal. Ensure set history displays completed sets plus final partial set snapshot.",
+            "status": "done",
+            "testStrategy": "Verify localization keys exist in all three language files. Test summary screen displays tie message when sets are equal. Verify set history shows completed sets plus final partial set snapshot for finished matches.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-01T15:54:59.865Z"
+          }
+        ],
+        "updatedAt": "2026-03-01T15:54:59.865Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-01T15:15:33.568Z",
+      "lastModified": "2026-03-01T15:54:59.865Z",
       "taskCount": 52,
-      "completedCount": 47,
+      "completedCount": 48,
       "tags": [
         "master"
-      ],
-      "created": "2026-03-01T15:15:51.054Z",
-      "description": "Tasks for master context"
+      ]
     }
   }
 }

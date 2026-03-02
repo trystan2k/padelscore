@@ -127,10 +127,6 @@ function toPositiveInteger(value, fallback = 1) {
   return Number.isInteger(value) && value > 0 ? value : fallback
 }
 
-function isTeamIdentifier(team) {
-  return team === 'teamA' || team === 'teamB'
-}
-
 function normalizeSetsWon(setsWon) {
   return {
     teamA: toNonNegativeInteger(setsWon?.teamA, 0),
@@ -159,37 +155,17 @@ function isFinishedMatchState(matchState) {
   )
 }
 
-function resolveWinnerTeam(matchState, setsWon) {
-  if (isTeamIdentifier(matchState?.winnerTeam)) {
-    return matchState.winnerTeam
-  }
-
-  if (isTeamIdentifier(matchState?.winner?.team)) {
-    return matchState.winner.team
-  }
-
-  if (setsWon.teamA > setsWon.teamB) {
-    return 'teamA'
-  }
-
-  if (setsWon.teamB > setsWon.teamA) {
-    return 'teamB'
-  }
-
-  return null
-}
-
 function createSummaryViewModel(matchState) {
   const setsWon = normalizeSetsWon(matchState?.setsWon)
-  const winnerTeam = resolveWinnerTeam(matchState, setsWon)
   const normalizedSetHistory = normalizeSetHistory(matchState?.setHistory)
   const hasFinishedMatch = isFinishedMatchState(matchState)
+  const isTiedMatch = setsWon.teamA === setsWon.teamB
   const winnerText = hasFinishedMatch
-    ? winnerTeam === 'teamA'
-      ? gettext('summary.teamAWins')
-      : winnerTeam === 'teamB'
-        ? gettext('summary.teamBWins')
-        : gettext('summary.matchFinished')
+    ? isTiedMatch
+      ? gettext('summary.tiedGame')
+      : setsWon.teamA > setsWon.teamB
+        ? gettext('summary.teamAWins')
+        : gettext('summary.teamBWins')
     : gettext('summary.matchUnavailable')
 
   const historyLines =

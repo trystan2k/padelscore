@@ -49,6 +49,9 @@ msgstr "Team B Wins"
 msgid "summary.matchFinished"
 msgstr "Match Finished"
 
+msgid "summary.tiedGame"
+msgstr "Match Tied"
+
 msgid "summary.matchUnavailable"
 msgstr "Summary unavailable"
 
@@ -90,5 +93,4 @@ msgstr "Clear failed"
 
 msgid "settings.version"
 msgstr "Version:"
-
 

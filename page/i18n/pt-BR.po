@@ -49,6 +49,9 @@ msgstr "Time B Vence"
 msgid "summary.matchFinished"
 msgstr "Partida Finalizada"
 
+msgid "summary.tiedGame"
+msgstr "Partida Empatada"
+
 msgid "summary.matchUnavailable"
 msgstr "Resumo indisponível"
 

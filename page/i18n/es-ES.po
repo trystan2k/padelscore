@@ -49,6 +49,9 @@ msgstr "Equipo B Gana"
 msgid "summary.matchFinished"
 msgstr "Partido Terminado"
 
+msgid "summary.tiedGame"
+msgstr "Partido Empatado"
+
 msgid "summary.matchUnavailable"
 msgstr "Resumen no disponible"
 

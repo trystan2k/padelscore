@@ -26,10 +26,12 @@ import { createScoreViewModel } from './score-view-model.js'
 const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
+const MANUAL_FINISH_CONFIRM_WINDOW_MS = 3000
 const PERSISTED_ADVANTAGE_POINT_VALUE = 50
 const PERSISTED_GAME_POINT_VALUE = 60
 const DEFAULT_SETS_TO_PLAY = 3
 const TIE_BREAK_ENTRY_GAMES = 6
+const FOOTER_ICON_BUTTON_OFFSET = 36
 const REGULAR_GAME_POINT_VALUES = new Set([
   SCORE_POINTS.LOVE,
   SCORE_POINTS.FIFTEEN,
@@ -171,6 +173,21 @@ const GAME_LAYOUT = {
         icon: 'home-icon.png',
         onClick: 'handleBackToHome'
       }
+    },
+    // ── Footer: Manual finish button ──────────────────────────────────────
+    confirmFinishButton: {
+      section: 'footer',
+      x: 'center',
+      y: 'center',
+      width: TOKENS.sizing.iconLarge,
+      height: TOKENS.sizing.iconLarge,
+      align: 'center',
+      _meta: {
+        type: 'iconButton',
+        icon: 'coach-icon.png',
+        confirmIcon: 'whistle-icon.png',
+        onClick: 'handleManualFinish'
+      }
     }
   }
 }
@@ -285,6 +302,71 @@ function cloneSetHistory(setHistory) {
     teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
     teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
   }))
+}
+
+function createCurrentSetSnapshot(matchState) {
+  const setNumber = toPositiveInteger(
+    matchState?.currentSetStatus?.number,
+    toPositiveInteger(matchState?.currentSet, 1)
+  )
+
+  return {
+    setNumber,
+    teamAGames: toNonNegativeInteger(
+      matchState?.currentSetStatus?.teamAGames,
+      toNonNegativeInteger(matchState?.teamA?.games, 0)
+    ),
+    teamBGames: toNonNegativeInteger(
+      matchState?.currentSetStatus?.teamBGames,
+      toNonNegativeInteger(matchState?.teamB?.games, 0)
+    )
+  }
+}
+
+function createManualFinishedMatchStateSnapshot(matchState) {
+  if (!isValidRuntimeMatchState(matchState)) {
+    return null
+  }
+
+  if (matchState.status === PERSISTED_MATCH_STATUS.FINISHED) {
+    return cloneMatchState(matchState)
+  }
+
+  const nextState = cloneMatchState(matchState)
+
+  if (!isValidRuntimeMatchState(nextState)) {
+    return null
+  }
+
+  const normalizedSetHistory = cloneSetHistory(nextState.setHistory)
+  const currentSetSnapshot = createCurrentSetSnapshot(nextState)
+  const hasCurrentSetSnapshot = normalizedSetHistory.some(
+    (setEntry) => setEntry.setNumber === currentSetSnapshot.setNumber
+  )
+
+  if (!hasCurrentSetSnapshot) {
+    normalizedSetHistory.push(currentSetSnapshot)
+  }
+
+  nextState.setHistory = normalizedSetHistory
+
+  const setsWon = {
+    teamA: toNonNegativeInteger(nextState?.setsWon?.teamA, 0),
+    teamB: toNonNegativeInteger(nextState?.setsWon?.teamB, 0)
+  }
+
+  nextState.setsWon = setsWon
+  nextState.status = PERSISTED_MATCH_STATUS.FINISHED
+
+  if (setsWon.teamA > setsWon.teamB) {
+    applyWinnerMetadata(nextState, 'teamA')
+  } else if (setsWon.teamB > setsWon.teamA) {
+    applyWinnerMetadata(nextState, 'teamB')
+  } else {
+    clearWinnerMetadata(nextState)
+  }
+
+  return nextState
 }
 
 function resolveWinnerTeam(matchState) {
@@ -605,6 +687,8 @@ Page({
     this.hasAttemptedSummaryNavigation = false
     this.isSessionAccessGranted = false
     this.persistedSessionState = null
+    this.manualFinishConfirmMode = false
+    this.manualFinishConfirmTimer = null
 
     this.persistenceDebounceWindowMs = PERSISTENCE_DEBOUNCE_WINDOW_MS
     this.runtimeStatePersistenceTimer = null
@@ -641,10 +725,88 @@ Page({
   },
 
   onDestroy() {
+    this.resetManualFinishConfirmState()
     this.releaseScreenOn()
     this.handleLifecycleAutoSave()
     this.clearWidgets()
     this.unregisterGestureHandler()
+  },
+
+  clearManualFinishConfirmTimer() {
+    if (this.manualFinishConfirmTimer === null) {
+      return
+    }
+
+    if (typeof clearTimeout === 'function') {
+      clearTimeout(this.manualFinishConfirmTimer)
+    }
+
+    this.manualFinishConfirmTimer = null
+  },
+
+  resetManualFinishConfirmState(options = {}) {
+    const wasInConfirmMode = this.manualFinishConfirmMode === true
+
+    this.clearManualFinishConfirmTimer()
+    this.manualFinishConfirmMode = false
+
+    const shouldRerender = isRecord(options) && options.rerender === true
+
+    if (shouldRerender && wasInConfirmMode) {
+      this.renderGameScreen()
+    }
+  },
+
+  startManualFinishConfirmWindow() {
+    this.clearManualFinishConfirmTimer()
+
+    if (typeof setTimeout !== 'function') {
+      return
+    }
+
+    this.manualFinishConfirmTimer = setTimeout(() => {
+      this.manualFinishConfirmTimer = null
+
+      if (!this.manualFinishConfirmMode) {
+        return
+      }
+
+      this.manualFinishConfirmMode = false
+      this.renderGameScreen()
+    }, MANUAL_FINISH_CONFIRM_WINDOW_MS)
+  },
+
+  handleManualFinishTap() {
+    if (this.manualFinishConfirmMode) {
+      this.resetManualFinishConfirmState()
+      this.handleManualFinishConfirm()
+      return
+    }
+
+    this.manualFinishConfirmMode = true
+
+    if (typeof hmUI !== 'undefined' && typeof hmUI.showToast === 'function') {
+      try {
+        hmUI.showToast({
+          text: gettext('settings.clearDataConfirm')
+        })
+      } catch {
+        // Non-fatal: toast failed.
+      }
+    }
+
+    this.startManualFinishConfirmWindow()
+    this.renderGameScreen()
+  },
+
+  handleManualFinishConfirm() {
+    this.executeScoringAction(() => {
+      const runtimeMatchState = this.getRuntimeMatchState()
+      const nextState =
+        createManualFinishedMatchStateSnapshot(runtimeMatchState)
+
+      return nextState ?? runtimeMatchState
+    })
   },
 
   registerGestureHandler() {
@@ -658,6 +820,7 @@ Page({
     try {
       hmApp.registerGestureEvent((event) => {
         if (event === hmApp.gesture.RIGHT) {
+          this.resetManualFinishConfirmState()
           // Save state before navigating
           this.saveCurrentRuntimeState({ force: true })
           this.storeHomeHandoff()
@@ -1053,6 +1216,8 @@ Page({
   },
 
   navigateToSummaryPage() {
+    this.resetManualFinishConfirmState()
+
     if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
       return false
     }
@@ -1103,6 +1268,8 @@ Page({
   },
 
   navigateToHomePage() {
+    this.resetManualFinishConfirmState()
+
     if (typeof hmApp === 'undefined' || typeof hmApp.gotoPage !== 'function') {
       return
     }
@@ -1117,6 +1284,7 @@ Page({
   },
 
   handleBackToHome() {
+    this.resetManualFinishConfirmState()
     this.saveCurrentRuntimeState({ force: true })
     this.storeHomeHandoff()
     this.navigateToHomePage()
@@ -1438,7 +1606,7 @@ Page({
     // Render active state (score buttons, minus buttons)
     this.renderActiveState(layout, viewModel)
 
-    // Render footer (home button)
+    // Render footer (home button + manual finish button)
     this.renderFooterElements(layout)
   },
 
@@ -1646,16 +1814,33 @@ Page({
   renderFooterElements(layout) {
     const homeButtonEl = layout.elements.homeButton
     const homeButtonMeta = GAME_LAYOUT.elements.homeButton._meta
+    const confirmFinishButtonEl = layout.elements.confirmFinishButton
+    const confirmFinishMeta = GAME_LAYOUT.elements.confirmFinishButton._meta
 
     if (homeButtonEl && homeButtonMeta) {
       const homeBtn = createButton({
-        x: homeButtonEl.x,
+        x: Math.max(0, homeButtonEl.x - FOOTER_ICON_BUTTON_OFFSET),
         y: homeButtonEl.y,
         variant: 'icon',
         normal_src: homeButtonMeta.icon,
         onClick: () => this.handleBackToHome()
       })
       this.createWidget(homeBtn.widgetType, homeBtn.config)
+    }
+
+    if (confirmFinishButtonEl && confirmFinishMeta) {
+      const icon = this.manualFinishConfirmMode
+        ? confirmFinishMeta.confirmIcon
+        : confirmFinishMeta.icon
+      const confirmBtn = createButton({
+        x: confirmFinishButtonEl.x + FOOTER_ICON_BUTTON_OFFSET,
+        y: confirmFinishButtonEl.y,
+        variant: 'icon',
+        normal_src: icon,
+        press_src: icon,
+        onClick: () => this.handleManualFinishTap()
+      })
+      this.createWidget(confirmBtn.widgetType, confirmBtn.config)
     }
   }
 })

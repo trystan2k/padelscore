@@ -188,6 +188,24 @@ function getVisibleTextValues(createdWidgets) {
   )
 }
 
+function getVisibleScrollList(createdWidgets) {
+  return getVisibleWidgets(createdWidgets, 'SCROLL_LIST')[0] ?? null
+}
+
+function getScrollListLines(createdWidgets) {
+  const scrollList = getVisibleScrollList(createdWidgets)
+
+  if (!scrollList) {
+    return []
+  }
+
+  if (!Array.isArray(scrollList.properties?.data_array)) {
+    return []
+  }
+
+  return scrollList.properties.data_array.map((entry) => entry.line)
+}
+
 async function waitForAsyncPageUpdates() {
   await Promise.resolve()
   await Promise.resolve()
@@ -464,9 +482,18 @@ test('summary screen renders winner, final score, and ordered set history from p
       matchStorageLoadResponses: [finishedState]
     },
     async ({ createdWidgets, loadedMatchStorageKeys }) => {
-      const buttons = getVisibleButtonLabels(createdWidgets)
+      const textValues = getVisibleTextValues(createdWidgets)
+      const scrollListLines = getScrollListLines(createdWidgets)
+      const scrollList = getVisibleScrollList(createdWidgets)
 
-      assert.equal(buttons.length >= 1, true)
+      assert.equal(textValues.includes('summary.teamAWins'), true)
+      assert.equal(textValues.includes('2-1'), true)
+      assert.deepEqual(scrollListLines, [
+        'Set 1: 6-4',
+        'Set 2: 4-6',
+        'Set 3: 6-2'
+      ])
+      assert.equal(scrollList?.properties.data_count, 3)
       assert.deepEqual(loadedMatchStorageKeys, [
         ACTIVE_MATCH_SESSION_STORAGE_KEY
       ])
@@ -474,10 +501,10 @@ test('summary screen renders winner, final score, and ordered set history from p
   )
 })
 
-test('summary screen falls back to sets-won comparison when winner metadata is missing', async () => {
-  const finishedStateWithoutWinner = serializePersistedMatchState({
-    winnerTeam: undefined,
-    winner: undefined,
+test('summary screen resolves winner text from sets-won even when winner metadata disagrees', async () => {
+  const mismatchedWinnerMetadataState = serializePersistedMatchState({
+    winnerTeam: 'teamA',
+    winner: { team: 'teamA' },
     setsWon: {
       teamA: 0,
       teamB: 2
@@ -486,7 +513,7 @@ test('summary screen falls back to sets-won comparison when winner metadata is m
 
   await runSummaryPageScenario(
     {
-      matchStorageLoadResponses: [finishedStateWithoutWinner]
+      matchStorageLoadResponses: [mismatchedWinnerMetadataState]
     },
     async ({ createdWidgets }) => {
       const textValues = getVisibleTextValues(createdWidgets)
@@ -494,6 +521,86 @@ test('summary screen falls back to sets-won comparison when winner metadata is m
       assert.equal(textValues.includes('summary.teamBWins'), true)
       assert.equal(textValues.includes('summary.teamAWins'), false)
       assert.equal(textValues.includes('0-2'), true)
+    }
+  )
+})
+
+test('summary screen renders tied-game copy when sets are equal', async () => {
+  const tiedFinishedState = serializePersistedMatchState({
+    winnerTeam: 'teamA',
+    winner: { team: 'teamA' },
+    setsWon: {
+      teamA: 1,
+      teamB: 1
+    },
+    setHistory: [
+      {
+        setNumber: 1,
+        teamAGames: 6,
+        teamBGames: 4
+      },
+      {
+        setNumber: 2,
+        teamAGames: 4,
+        teamBGames: 6
+      }
+    ]
+  })
+
+  await runSummaryPageScenario(
+    {
+      matchStorageLoadResponses: [tiedFinishedState]
+    },
+    async ({ createdWidgets }) => {
+      const textValues = getVisibleTextValues(createdWidgets)
+
+      assert.equal(textValues.includes('summary.tiedGame'), true)
+      assert.equal(textValues.includes('summary.teamAWins'), false)
+      assert.equal(textValues.includes('summary.teamBWins'), false)
+      assert.equal(textValues.includes('1-1'), true)
+    }
+  )
+})
+
+test('summary set history includes completed sets plus final partial snapshot', async () => {
+  const manualFinishedState = serializePersistedMatchState({
+    setsWon: {
+      teamA: 1,
+      teamB: 1
+    },
+    setHistory: [
+      {
+        setNumber: 1,
+        teamAGames: 6,
+        teamBGames: 4
+      },
+      {
+        setNumber: 2,
+        teamAGames: 4,
+        teamBGames: 6
+      },
+      {
+        setNumber: 3,
+        teamAGames: 4,
+        teamBGames: 3
+      }
+    ]
+  })
+
+  await runSummaryPageScenario(
+    {
+      matchStorageLoadResponses: [manualFinishedState]
+    },
+    async ({ createdWidgets }) => {
+      const scrollListLines = getScrollListLines(createdWidgets)
+      const scrollList = getVisibleScrollList(createdWidgets)
+
+      assert.deepEqual(scrollListLines, [
+        'Set 1: 6-4',
+        'Set 2: 4-6',
+        'Set 3: 4-3'
+      ])
+      assert.equal(scrollList?.properties.data_count, 3)
     }
   )
 })
