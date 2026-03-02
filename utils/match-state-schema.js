@@ -1437,26 +1437,11 @@ function toIsoTimestamp(timestamp) {
       typeof month === 'number' &&
       typeof day === 'number'
     ) {
-      const p2 = (n) => (n < 10 ? '0' + n : '' + n)
-      const p3 = (n) => (n < 10 ? '00' + n : n < 100 ? '0' + n : '' + n)
+      const p2 = (n) => (n < 10 ? `0${n}` : `${n}`)
+      const p3 = (n) => (n < 10 ? `00${n}` : n < 100 ? `0${n}` : `${n}`)
       const p4 = (n) =>
-        n < 10 ? '000' + n : n < 100 ? '00' + n : n < 1000 ? '0' + n : '' + n
-      return (
-        p4(year) +
-        '-' +
-        p2(month) +
-        '-' +
-        p2(day) +
-        'T' +
-        p2(hours) +
-        ':' +
-        p2(minutes) +
-        ':' +
-        p2(seconds) +
-        '.' +
-        p3(ms) +
-        'Z'
-      )
+        n < 10 ? `000${n}` : n < 100 ? `00${n}` : n < 1000 ? `0${n}` : `${n}`
+      return `${p4(year)}-${p2(month)}-${p2(day)}T${p2(hours)}:${p2(minutes)}:${p2(seconds)}.${p3(ms)}Z`
     }
   } catch {
     // fall through
@@ -1464,7 +1449,7 @@ function toIsoTimestamp(timestamp) {
 
   // Final fallback: store as numeric string — accepted by readTimestampCandidate
   // and isIsoTimestampString (see below) so round-trip works on constrained runtimes
-  return '@' + safeTs
+  return `@${safeTs}`
 }
 
 /**
