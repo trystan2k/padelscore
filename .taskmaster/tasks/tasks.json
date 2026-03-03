@@ -4256,13 +4256,78 @@
         "description": "Update the release automation configuration to support publishing releases from both main and version branches (v*), ensuring appropriate channel/tag mapping for different branch types.",
         "details": "This task updates the semantic-release configuration and GitHub Actions release workflow to handle dual release streams:\n\n1. **Update .releaserc Configuration:**\n   - Configure semantic-release branch rules to detect both `main` and `v*` (e.g., v1.0.x) patterns\n   - Set up distinct tag formats for main branch (e.g., `1.0.0`) vs version branches (e.g., `1.0.1` for hotfixes on `v1.0.x`)\n   - Configure appropriate channel publishing (e.g., `@latest` for main, `@1.0.x` for maintenance branches)\n   - Ensure proper semantic version mapping and prerelease detection\n\n2. **Update GitHub Actions Release Workflow:**\n   - Modify the workflow triggers to include version branches matching `v*`\n   - Ensure appropriate secrets and permissions are available for both branch types\n   - Configure environment-specific publishing behavior\n   - Add conditional logic to handle different release scenarios\n\n3. **Branch Strategy Considerations:**\n   - Main branch: Produces stable releases, updates `@latest` channel\n   - Version branches (v*): Produce patch releases for maintenance, update version-specific channels\n   - Ensure proper merge behavior and release continuation across branches\n\nKey files to modify:\n- `.releaserc` or `release.config.js`\n- `.github/workflows/release.yml` (or equivalent)\n- `package.json` (if publishing to npm)",
         "testStrategy": "1. **Configuration Validation:**\n   - Verify .releaserc JSON syntax is valid\n   - Check that branch patterns correctly match `main` and `v*` patterns\n   - Validate semantic-release plugin configurations\n\n2. **Dry-Run Testing:**\n   - Run `semantic-release --dry-run` on main branch to verify release detection and tag format\n   - Run `semantic-release --dry-run` on a version branch (e.g., v1.0.x) to verify patch release behavior\n   - Verify no actual releases are published during dry-run\n\n3. **Draft Release Testing:**\n   - Create a test branch following version pattern (e.g., v-test.1.0.x)\n   - Push a conventional commit and verify workflow triggers\n   - Confirm draft release is created with correct tag and channel\n   - Verify changelog includes correct commit information\n\n4. **Branch-Specific Behavior Verification:**\n   - Test release from main: Confirm @latest channel update\n   - Test release from version branch: Confirm version-specific channel update\n   - Verify semantic version increments are correct per branch type (major/minor from main, patch from version branches)",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "39",
           "31"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update .releaserc branch configuration for dual streams",
+            "description": "Configure semantic-release branch rules to detect both main and v* patterns with appropriate release behavior for each branch type.",
+            "dependencies": [],
+            "details": "Locate and open .releaserc or release.config.js. Add branch configuration object with rules for 'main' and 'v*' patterns. Ensure main branch is configured as the primary release branch with '@latest' channel, and version branches (v*) are configured for maintenance releases with their respective channels. Include proper regex pattern matching for version branches like v1.0.x.",
+            "status": "done",
+            "testStrategy": "Validate JSON syntax of .releaserc file. Run semantic-release --branches flag verification to ensure branch patterns match correctly.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T20:37:51.862Z"
+          },
+          {
+            "id": 2,
+            "title": "Configure distinct tag formats per branch type",
+            "description": "Set up different tag format rules for main branch releases (1.0.0) versus version branch releases (1.0.1 for hotfixes).",
+            "dependencies": [
+              1
+            ],
+            "details": "In .releaserc, configure tagFormat property with conditional logic or separate branch-specific configurations. Main branch should produce standard semantic version tags (e.g., 1.0.0, 2.1.3). Version branches should produce patch-level tags that respect the version constraint (e.g., v1.0.x branch produces 1.0.1, 1.0.2). Ensure semantic-release can parse and increment versions correctly for each branch type.",
+            "status": "done",
+            "testStrategy": "Run semantic-release --dry-run on main branch and verify expected tag format. Test on version branch to confirm hotfix versioning behavior.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T20:37:51.866Z"
+          },
+          {
+            "id": 3,
+            "title": "Configure npm channel publishing rules",
+            "description": "Set up appropriate channel mapping for main branch (@latest) and version branches (@1.0.x, etc.) to ensure correct package distribution.",
+            "dependencies": [
+              2
+            ],
+            "details": "Configure semantic-release publish plugin with channel settings. For main branch, set channel to '@latest' for stable releases. For version branches, derive channel name from branch pattern (e.g., v1.0.x publishes to @1.0.x channel). Update package.json if needed to support npm publishing configuration. Ensure semantic-release correctly tags releases for different npm dist-tags.",
+            "status": "done",
+            "testStrategy": "Verify channel configuration in .releaserc. Check that publish plugin includes correct tag/dist-tag configuration for each branch type.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T20:37:51.869Z"
+          },
+          {
+            "id": 4,
+            "title": "Update GitHub Actions release workflow triggers",
+            "description": "Modify the release workflow YAML to trigger on both main and version branches with appropriate conditional logic.",
+            "dependencies": [
+              3
+            ],
+            "details": "Open .github/workflows/release.yml. Update the 'on' trigger section to include both push events on main branch and version branches matching pattern 'v*'. Ensure workflow has necessary permissions (contents, issues, pull-requests, packages) for both branch types. Add conditional steps if different behaviors are needed based on branch name. Verify all required secrets are available for both branch types.",
+            "status": "done",
+            "testStrategy": "Validate YAML syntax. Check that workflow file correctly includes both branch patterns in triggers. Verify permissions are properly scoped.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T20:37:51.872Z"
+          },
+          {
+            "id": 5,
+            "title": "Validate release configuration with dry-run testing",
+            "description": "Run comprehensive dry-run tests on both main and version branches to verify correct release behavior before merging changes.",
+            "dependencies": [
+              4
+            ],
+            "details": "Run `npx semantic-release --dry-run` on main branch and verify output shows correct next version, tag format, and channel. Create a test version branch (e.g., v1.0.x) and run dry-run to confirm hotfix versioning and channel publishing. Check that prerelease detection works correctly. Verify no errors in plugin configuration. Document any edge cases or issues found during testing.",
+            "status": "done",
+            "testStrategy": "Execute dry-run on both branch types. Capture and review output logs. Verify version increments are correct and tag formats match expectations. Confirm channel assignment is accurate.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T20:37:51.875Z"
+          }
+        ],
+        "updatedAt": "2026-03-03T20:37:51.875Z"
       },
       {
         "id": "66",
@@ -4340,9 +4405,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-03T19:14:32.487Z",
+      "lastModified": "2026-03-03T20:37:51.875Z",
       "taskCount": 70,
-      "completedCount": 60,
+      "completedCount": 61,
       "tags": [
         "master"
       ]

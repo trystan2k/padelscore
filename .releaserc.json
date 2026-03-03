@@ -1,5 +1,13 @@
 {
-  "branches": ["main", { "name": "v+([0-9])", "prerelease": false }],
+  "branches": [
+    "main",
+    {
+      "name": "v*",
+      "range": "${name.replace(/^v/, '')}",
+      "channel": "${name.replace(/^v/, '')}"
+    }
+  ],
+  "tagFormat": "v${version}",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",

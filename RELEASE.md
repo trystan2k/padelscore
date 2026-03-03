@@ -4,7 +4,7 @@ This document explains how releases work in the Padel Buddy repository.
 
 ## Overview
 
-Padel Buddy uses an **automated release system** powered by [semantic-release](https://semantic-release.gitbook.io/) and GitHub Actions. Releases are triggered automatically when code is merged to the `main` branch, eliminating manual version management and ensuring consistent, predictable releases.
+Padel Buddy uses an **automated release system** powered by [semantic-release](https://semantic-release.gitbook.io/) and GitHub Actions. Releases are triggered automatically when code is merged to the `main` branch or maintenance branches matching `v*` (for example, `v1.0.x`), eliminating manual version management and ensuring consistent, predictable releases.
 
 **Key Benefits:**
 - Fully automated versioning based on commit messages
@@ -20,7 +20,7 @@ Padel Buddy uses an **automated release system** powered by [semantic-release](h
 
 A release workflow is triggered when:
 
-1. Code is pushed or merged to the `main` branch
+1. Code is pushed or merged to the `main` branch or a maintenance branch matching `v*` (for example, `v1.0.x`)
 2. The commit message does **not** contain `[skip ci]`
 3. Changes are detected in releasable file paths
 
@@ -28,8 +28,8 @@ A release workflow is triggered when:
 
 | Branch Pattern | Description |
 |----------------|-------------|
-| `main` | Primary release branch |
-| `v1`, `v2`, `v3`... | Maintenance branches for major versions |
+| `main` | Primary release branch (`latest` channel) |
+| `v*` (for example, `v1.0.x`) | Maintenance release branches (channel/range derived from branch name without `v`) |
 
 ---
 
@@ -224,20 +224,20 @@ Closes #42
 
 ### Maintaining Version Branches
 
-For maintaining older major versions (e.g., security fixes for v1 while v2 is current):
+For maintaining older release lines (for example, security fixes on `v1.0.x` while `main` moves forward):
 
 ```bash
-# Create a version branch
-git checkout -b v1 main
-git push -u origin v1
+# Create a maintenance branch
+git checkout -b v1.0.x main
+git push -u origin v1.0.x
 
-# Make fixes on the version branch
-git checkout v1
+# Make fixes on the maintenance branch
+git checkout v1.0.x
 git cherry-pick <commit-hash>  # or make new commits
 git push
 ```
 
-Releases will be created automatically for version branches matching the pattern `v{number}` (e.g., `v1`, `v2`).
+Releases will be created automatically for branches matching `v*` (for example, `v1.0.x`).
 
 ### Skipping CI for Specific Commits
 
@@ -273,6 +273,22 @@ npm run release
 
 > Note: Manual releases should only be used in emergencies. The automated workflow is the preferred method.
 
+### Dry-Run Validation (No Extra Remote Branches)
+
+Validate release behavior locally before opening a PR. You do **not** need to create extra remote test branches.
+
+```bash
+# 1) Validate main stream behavior from main branch context
+git switch main
+npm run release:dry -- --no-ci --debug
+
+# 2) Validate maintenance stream behavior from a v* branch context
+git switch v1.0.x
+npm run release:dry -- --no-ci --debug
+```
+
+If `v1.0.x` does not exist locally, create/switch to a local branch that matches `v*` first (for example, `git switch -c v1.0.x --track origin/v1.0.x`). Keep this validation local unless you actually intend to ship a maintenance release.
+
 ---
 
 ## Workflow Details
@@ -280,7 +296,7 @@ npm run release
 When a release is triggered, the following steps execute automatically:
 
 ### 1. Workflow Initialization
-- GitHub Actions workflow starts on `push` to `main`
+- GitHub Actions release workflow runs after successful CI for `push` events on `main` and maintenance branches matching `v*`
 - Checks if commit message contains `[skip ci]` (skips if present)
 
 ### 2. Change Detection
