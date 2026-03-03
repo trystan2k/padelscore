@@ -4104,7 +4104,7 @@
         "description": "Consolidate screen metrics helper implementations (DPR, width/height, orientation helpers) into utils/screen-utils.js and update references to use the shared helper.",
         "details": "This task involves identifying and consolidating duplicate screen metrics helper implementations across the codebase into the centralized utils/screen-utils.js file created in Task 41. \n\n**Implementation Steps:**\n\n1. **Audit Existing Helpers:**\n   - Search the codebase for duplicate implementations of:\n     - Device Pixel Ratio (DPR) calculations\n     - Screen width/height retrieval helpers\n     - Orientation detection helpers (landscape/portrait)\n     - Any other screen metric utilities not in utils/screen-utils.js\n   - Document all locations where these local helpers are defined and used\n\n2. **Consolidate into utils/screen-utils.js:**\n   - Review existing utilities in utils/screen-utils.js (getScreenMetrics, clamp, etc.)\n   - Add any missing helper functions to utils/screen-utils.js:\n     - `getDPR()` - returns device pixel ratio\n     - `getOrientation()` - returns 'portrait' or 'landscape'\n     - Any other identified helpers\n   - Ensure function signatures are clean and well-documented\n   - Do not change existing algorithms beyond minor standardization\n\n3. **Update References:**\n   - Replace all local helper implementations with imports from utils/screen-utils.js\n   - Remove duplicate code from source files\n   - Verify all imports are correctly added\n\n4. **Standardization (minor only):**\n   - Ensure consistent naming conventions\n   - Standardize return value formats where appropriate\n   - Add JSDoc comments for any new functions\n\n**Files to Review:**\n- page/index, page/game, and other page files that may contain local helpers\n- Any component files with screen-related utilities\n- utils/screen-utils.js (destination file)",
         "testStrategy": "1. **Code Review Verification:**\n   - Run grep/ripgrep searches for patterns like `hmUI.getScreenMetrics()`, `window.devicePixelRatio`, or custom DPR/orientation functions to confirm no duplicate local implementations remain\n   - Verify all screen metric usage now imports from utils/screen-utils.js\n\n2. **Unit Tests:**\n   - Run existing unit tests for utils/screen-utils.js to ensure consolidated functions work correctly\n   - Add tests for any new helper functions added to utils/screen-utils.js\n\n3. **UI Layout Testing:**\n   - Deploy to Round screen simulator and verify all layouts render correctly\n   - Deploy to Square screen simulator and verify all layouts render correctly\n   - Compare screenshots before and after changes to confirm no visual regressions\n\n4. **Functional Testing:**\n   - Navigate to Home Screen and verify layout is unchanged\n   - Navigate to Game Screen and verify layout is unchanged\n   - Test orientation changes (if applicable) to ensure helpers respond correctly\n\n5. **Manual Device Verification:**\n   - Test on at least one physical Round device\n   - Test on at least one physical Square device\n   - Confirm no layout breaks or rendering issues",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "41"
         ],
@@ -4123,9 +4123,7 @@
             "id": 2,
             "title": "Add missing helper functions to utils/screen-utils.js",
             "description": "Consolidate identified helper functions into the centralized utils/screen-utils.js file.",
-            "dependencies": [
-              1
-            ],
+            "dependencies": [1],
             "details": "Review existing utilities in utils/screen-utils.js (getScreenMetrics, clamp, etc.). Add any missing helper functions identified in the audit: getDPR() - returns device pixel ratio, getOrientation() - returns 'portrait' or 'landscape', and any other identified helpers. Ensure function signatures are clean and consistent. Add JSDoc comments for any new functions. Do not change existing algorithms beyond minor standardization.",
             "status": "pending",
             "testStrategy": "Code review: Verify that all functions from the audit are now present in utils/screen-utils.js. Check that function signatures are properly defined and JSDoc comments are complete."
@@ -4134,9 +4132,7 @@
             "id": 3,
             "title": "Update page files to use centralized screen utilities",
             "description": "Replace local helper implementations in page files with imports from utils/screen-utils.js.",
-            "dependencies": [
-              2
-            ],
+            "dependencies": [2],
             "details": "For each page file (page/index, page/game, and other page files identified in the audit): Add import statements for the required functions from utils/screen-utils.js. Replace all calls to local helper functions with calls to the imported functions. Remove the duplicate local helper function code from these files. Ensure no functionality is broken during the replacement.",
             "status": "pending",
             "testStrategy": "Manual testing: Open each modified page file and verify that imports are correctly added at the top. Confirm that local helper definitions have been removed and all references point to the imported utilities."
@@ -4145,9 +4141,7 @@
             "id": 4,
             "title": "Update component files to use centralized screen utilities",
             "description": "Replace local helper implementations in component files with imports from utils/screen-utils.js.",
-            "dependencies": [
-              2
-            ],
+            "dependencies": [2],
             "details": "For each component file identified in the audit that contains screen-related utilities: Add import statements for the required functions from utils/screen-utils.js. Replace all calls to local helper functions with calls to the imported functions. Remove the duplicate local helper function code from these files. Ensure consistent naming conventions and return value formats.",
             "status": "pending",
             "testStrategy": "Code review: Verify that component files no longer contain local implementations of screen helpers. Confirm all imports are correctly structured and function calls match the centralized utility signatures."
@@ -4156,10 +4150,7 @@
             "id": 5,
             "title": "Verify consolidation and test screen utilities functionality",
             "description": "Perform final verification that all duplicates are removed and screen utilities work correctly.",
-            "dependencies": [
-              3,
-              4
-            ],
+            "dependencies": [3, 4],
             "details": "Run comprehensive grep/ripgrep searches for patterns like hmUI.getScreenMetrics(), window.devicePixelRatio, or custom DPR/orientation functions to confirm no duplicate local implementations remain. Verify all screen metric usage now imports from utils/screen-utils.js. Test that screen metrics are correctly retrieved in the application. Ensure consistent return value formats across all usages.",
             "status": "pending",
             "testStrategy": "Static analysis: Run grep/ripgrep searches to confirm all duplicates are removed. Functional testing: Run the application on simulator (round and square) and verify that screen metrics, orientation detection, and DPR calculations work correctly in all modified pages and components."
@@ -4270,9 +4261,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-03T11:27:54.280Z",
+      "lastModified": "2026-03-03T13:21:08.829Z",
       "taskCount": 70,
-      "completedCount": 58,
+      "completedCount": 59,
       "tags": [
         "master"
       ],

@@ -3,6 +3,7 @@ import { TOKENS } from '../utils/design-tokens.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
+import { getScreenMetrics } from '../utils/screen-utils.js'
 import {
   cloneMatchState,
   isRecord,
@@ -33,10 +34,6 @@ const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const MANUAL_FINISH_CONFIRM_WINDOW_MS = 3000
-
-function ensureNumber(value, fallback) {
-  return Number.isFinite(value) && value > 0 ? value : fallback
-}
 
 function getCurrentTimestampMs() {
   if (
@@ -111,11 +108,12 @@ Page({
 
     if (!this.isSessionAccessGranted) {
       if (typeof hmUI !== 'undefined') {
+        const { width: bgWidth, height: bgHeight } = getScreenMetrics()
         hmUI.createWidget(hmUI.widget.FILL_RECT, {
           x: 0,
           y: 0,
-          w: this.getScreenMetrics().width,
-          h: this.getScreenMetrics().height,
+          w: bgWidth,
+          h: bgHeight,
           color: TOKENS.colors.background
         })
       }
@@ -330,19 +328,6 @@ Page({
       return true
     } catch {
       return false
-    }
-  },
-
-  getScreenMetrics() {
-    if (typeof hmSetting === 'undefined') {
-      return { width: 390, height: 450 }
-    }
-
-    const { width, height } = hmSetting.getDeviceInfo()
-
-    return {
-      width: ensureNumber(width, 390),
-      height: ensureNumber(height, 450)
     }
   },
 

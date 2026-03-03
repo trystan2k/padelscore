@@ -8,6 +8,7 @@
  */
 
 import { getFontSize, TOKENS } from './design-tokens.js'
+import { getScreenMetrics } from './screen-utils.js'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -22,24 +23,6 @@ import { getFontSize, TOKENS } from './design-tokens.js'
 function requireParam(value, paramName) {
   if (value === null || value === undefined) {
     throw new Error(`Missing required parameter: ${paramName}`)
-  }
-}
-
-/**
- * Gets screen dimensions safely with fallback.
- * @returns {{width: number, height: number}}
- */
-function getScreenDimensions() {
-  if (
-    typeof hmSetting === 'undefined' ||
-    typeof hmSetting.getDeviceInfo !== 'function'
-  ) {
-    return { width: 390, height: 450 } // Default fallback
-  }
-  const deviceInfo = hmSetting.getDeviceInfo()
-  return {
-    width: deviceInfo?.width ?? 390,
-    height: deviceInfo?.height ?? 450
   }
 }
 
@@ -59,7 +42,7 @@ function getScreenDimensions() {
  * hmUI.createWidget(bgConfig.widgetType, bgConfig.config)
  */
 export function createBackground(options = {}) {
-  const { width, height } = getScreenDimensions()
+  const { width, height } = getScreenMetrics()
 
   return {
     widgetType: hmUI.widget.FILL_RECT,
@@ -102,7 +85,7 @@ export function createDivider(config) {
 
   const orientation = config.orientation ?? 'horizontal'
   const thickness = config.thickness ?? 1
-  const { width } = getScreenDimensions()
+  const { width } = getScreenMetrics()
 
   const dividerConfig = {
     x: config.x,
@@ -156,7 +139,7 @@ export function createText(config) {
   requireParam(config?.text, 'text')
   requireParam(config?.style, 'style')
 
-  const { width } = getScreenDimensions()
+  const { width } = getScreenMetrics()
   const textHeight = Math.round(getFontSize(config.style) * 1.4) // Line height factor
 
   return {
@@ -263,7 +246,7 @@ export function createButton(config) {
   requireParam(config?.onClick, 'onClick')
 
   const variant = config.variant ?? 'primary'
-  const { width, height } = getScreenDimensions()
+  const { width, height } = getScreenMetrics()
   const variantConfig = BUTTON_VARIANTS[variant]
 
   // Validate text requirement for non-icon variants

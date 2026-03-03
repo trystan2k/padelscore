@@ -11,15 +11,7 @@
  * The flat structure of TOKENS prepares for easy theming support.
  */
 
-/**
- * Validates that a value is a valid number, returning a fallback if not.
- * @param {*} value - The value to validate
- * @param {number} fallback - The fallback value if invalid
- * @returns {number} The validated number or fallback
- */
-function ensureNumber(value, fallback) {
-  return typeof value === 'number' && !Number.isNaN(value) ? value : fallback
-}
+import { getScreenMetrics } from './screen-utils.js'
 
 /**
  * Centralized design tokens for the Padel Buddy app.
@@ -116,7 +108,7 @@ export function getColor(path) {
 
 /**
  * Calculates the pixel font size for a typography token based on screen width.
- * Retrieves screen dimensions internally using hmSetting.getDeviceInfo().
+ * Uses centralized getScreenMetrics() from screen-utils.js.
  *
  * @param {string} typographyKey - The typography token key (e.g., 'pageTitle', 'body')
  * @returns {number} The calculated font size in pixels, rounded to nearest integer
@@ -133,17 +125,7 @@ export function getFontSize(typographyKey) {
     )
   }
 
-  // Get screen width from device
-  let screenWidth = 390 // Default fallback for square screens
-
-  if (
-    typeof hmSetting !== 'undefined' &&
-    typeof hmSetting.getDeviceInfo === 'function'
-  ) {
-    const deviceInfo = hmSetting.getDeviceInfo()
-    screenWidth = ensureNumber(deviceInfo?.width, 390)
-  }
-
+  const { width: screenWidth } = getScreenMetrics()
   const ratio = TOKENS.typography[typographyKey]
   return Math.round(screenWidth * ratio)
 }
