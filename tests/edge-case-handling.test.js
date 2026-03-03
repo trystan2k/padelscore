@@ -23,6 +23,8 @@ function createHmUiRecorder() {
         BUTTON: 'BUTTON'
       },
       align: {
+        LEFT: 'LEFT',
+        RIGHT: 'RIGHT',
         CENTER_H: 'CENTER_H',
         CENTER_V: 'CENTER_V'
       },
@@ -175,6 +177,9 @@ let gamePageImportCounter = 0
 
 async function loadGamePageDefinition() {
   const sourceUrl = toProjectFileUrl('page/game.js')
+  const gameLogicUrl = toProjectFileUrl('page/game/logic.js')
+  const gamePersistenceUrl = toProjectFileUrl('page/game/persistence.js')
+  const uiBindingUrl = toProjectFileUrl('page/game/ui-binding.js')
   const scoreViewModelUrl = toProjectFileUrl('page/score-view-model.js')
   const constantsUrl = toProjectFileUrl('utils/constants.js')
   const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
@@ -199,6 +204,12 @@ async function loadGamePageDefinition() {
       "import { gettext } from 'i18n'\n",
       'const gettext = (key) => key\n'
     )
+    .replace("from './game/logic.js'", `from '${gameLogicUrl.href}'`)
+    .replace(
+      "from './game/persistence.js'",
+      `from '${gamePersistenceUrl.href}'`
+    )
+    .replace("from './game/ui-binding.js'", `from '${uiBindingUrl.href}'`)
     .replace("from './score-view-model.js'", `from '${scoreViewModelUrl.href}'`)
     .replace(
       "from '../utils/history-stack.js'",

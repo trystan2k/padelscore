@@ -2,11 +2,16 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+import {
+  createManualFinishedMatchStateSnapshot,
+  removeLatestPointForTeamFromHistory
+} from '../page/game/logic.js'
 import { createScoreViewModel } from '../page/score-view-model.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
+import { addPoint } from '../utils/scoring-engine.js'
 import { createHmFsMock, storageKeyToFilename } from './helpers/hmfs-mock.js'
 import { toProjectFileUrl } from './helpers/project-paths.js'
 
@@ -26,6 +31,8 @@ function createHmUiRecorder() {
         BUTTON: 'BUTTON'
       },
       align: {
+        LEFT: 'LEFT',
+        RIGHT: 'RIGHT',
         CENTER_H: 'CENTER_H',
         CENTER_V: 'CENTER_V'
       },
@@ -59,6 +66,9 @@ function createPageInstance(definition) {
 
 async function loadGamePageDefinition() {
   const sourceUrl = toProjectFileUrl('page/game.js')
+  const gameLogicUrl = toProjectFileUrl('page/game/logic.js')
+  const gamePersistenceUrl = toProjectFileUrl('page/game/persistence.js')
+  const uiBindingUrl = toProjectFileUrl('page/game/ui-binding.js')
   const scoreViewModelUrl = toProjectFileUrl('page/score-view-model.js')
   const constantsUrl = toProjectFileUrl('utils/constants.js')
   const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
@@ -83,6 +93,12 @@ async function loadGamePageDefinition() {
       "import { gettext } from 'i18n'\n",
       'const gettext = (key) => key\n'
     )
+    .replace("from './game/logic.js'", `from '${gameLogicUrl.href}'`)
+    .replace(
+      "from './game/persistence.js'",
+      `from '${gamePersistenceUrl.href}'`
+    )
+    .replace("from './game/ui-binding.js'", `from '${uiBindingUrl.href}'`)
     .replace("from './score-view-model.js'", `from '${scoreViewModelUrl.href}'`)
     .replace(
       "from '../utils/history-stack.js'",
@@ -1080,6 +1096,50 @@ test('game manual finish second tap confirms finish, appends partial set once, a
   )
 })
 
+test('game manual finish confirm handles stale action return values and still navigates', async () => {
+  const timerHarness = createManualFinishTimerHarness()
+  const summaryNavigations = []
+
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ app, createdWidgets, page }) => {
+      page.navigateToSummaryPage = () => {
+        summaryNavigations.push('page/summary')
+        return true
+      }
+
+      page.handleManualFinishConfirm = function handleManualFinishConfirm() {
+        this.executeScoringAction(() => {
+          const staleRuntimeState = app.globalData.matchState
+          const finishedState =
+            createManualFinishedMatchStateSnapshot(staleRuntimeState)
+
+          if (finishedState !== null) {
+            this.updateRuntimeMatchState(finishedState)
+          }
+
+          return staleRuntimeState
+        })
+      }
+
+      let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+      buttons[5].properties.click_func()
+
+      assert.equal(app.globalData.matchState.status, 'finished')
+    },
+    {
+      setTimeout: timerHarness.setTimeout.bind(timerHarness),
+      clearTimeout: timerHarness.clearTimeout.bind(timerHarness)
+    }
+  )
+
+  assert.deepEqual(summaryNavigations, ['page/summary'])
+})
+
 test('game manual finish confirmation times out after 3 seconds and resets icon/state', async () => {
   const timerHarness = createManualFinishTimerHarness()
 
@@ -1445,6 +1505,68 @@ test('game scoring updates runtime state', async () => {
     addTeamAButton.properties.click_func()
 
     assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
+  })
+})
+
+test('game scoring rerenders immediately when app returns stale scoring snapshot', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    app.addPointForTeam = (team) => {
+      const staleRuntimeState = app.globalData.matchState
+
+      app.globalData.matchState = addPoint(
+        app.globalData.matchState,
+        team,
+        app.globalData.matchHistory
+      )
+
+      return staleRuntimeState
+    }
+
+    page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
+
+    let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(buttons[0]?.properties.text, String(SCORE_POINTS.LOVE))
+
+    buttons[0].properties.click_func()
+
+    buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.FIFTEEN)
+    assert.equal(buttons[0]?.properties.text, String(SCORE_POINTS.FIFTEEN))
+  })
+})
+
+test('game remove rerenders immediately when app returns stale removal snapshot', async () => {
+  await runWithRenderedGamePage(390, 450, ({ app, createdWidgets, page }) => {
+    page.getCurrentTimeMs = createAcceptedInteractionTimeSource()
+
+    let buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    buttons[0].properties.click_func()
+
+    app.removePointForTeam = (team) => {
+      const staleRuntimeState = app.globalData.matchState
+      const removalResult = removeLatestPointForTeamFromHistory(
+        app.globalData.matchState,
+        app.globalData.matchHistory,
+        team
+      )
+
+      if (removalResult?.didRemovePoint) {
+        app.globalData.matchHistory = removalResult.historyStack
+        app.globalData.matchState = removalResult.runtimeState
+      }
+
+      return staleRuntimeState
+    }
+
+    buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(buttons[0]?.properties.text, String(SCORE_POINTS.FIFTEEN))
+
+    buttons[2].properties.click_func()
+
+    buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
+    assert.equal(app.globalData.matchState.teamA.points, SCORE_POINTS.LOVE)
+    assert.equal(app.globalData.matchHistory.size(), 0)
+    assert.equal(buttons[0]?.properties.text, String(SCORE_POINTS.LOVE))
   })
 })
 

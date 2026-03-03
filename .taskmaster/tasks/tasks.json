@@ -4023,13 +4023,80 @@
         "description": "Refactor the monolithic page/game.js file into smaller, focused modules for game logic, UI binding, and persistence interaction to improve code maintainability and facilitate testing.",
         "details": "This task involves restructuring the `page/game.js` file, which currently handles multiple concerns, into a modular architecture. The implementation will proceed as follows:\n\n1. **Analyze Current Code**: Audit `page/game.js` to identify distinct boundaries between game state logic, UI rendering/event handling, and data persistence calls.\n\n2. **Create `game/logic.js`**:\n   - Extract pure functions and state management logic related to scoring, set tracking, and match progression.\n   - Ensure this module has no dependencies on UI or DOM elements.\n   - Export functions like `incrementPoint`, `changeServer`, and `checkWinCondition`.\n\n3. **Create `game/ui-binding.js`**:\n   - Move all Zepp OS widget creation, update logic, and touch event bindings to this module.\n   - Implement functions to render the game state provided by `game/logic.js`.\n   - Handle user interactions by calling logic functions and triggering persistence updates.\n\n4. **Create `game/persistence.js`**:\n   - Implement an adapter layer that bridges the game logic with the Unified Active-Session Storage Service (Task 54).\n   - Handle serialization and deserialization using the Canonical match session contract defined in Task 55.\n   - Export `saveState` and `loadState` methods for use by the coordinator.\n\n5. **Refactor `page/game.js`**:\n   - Reduce the file to a coordinator pattern: initialize modules, bind UI events to logic, and orchestrate the flow.\n   - Update import statements to reference the new local modules.\n   - Ensure the lifecycle (init, update, destroy) properly cleans up resources from sub-modules.",
         "testStrategy": "1. **Unit Test Execution**: Run the full test suite to verify that all existing tests pass without modification, ensuring logic extraction did not alter behavior.\n\n2. **Functional Testing**:\n   - Run the application in the simulator and manually play a full match to verify scoring, set changes, and game completion flow work correctly.\n   - Test persistence by playing a point, exiting the app, and relaunching to confirm the state is restored via the new adapter.\n\n3. **Visual Regression**: Compare the Game Screen UI before and after the refactor to ensure no visual discrepancies exist.\n\n4. **Bundle Analysis**: Inspect the final build output to confirm that code splitting or modularization has not introduced unexpected regressions in bundle size.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "54",
           "55"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit page/game.js code boundaries",
+            "description": "Analyze the monolithic page/game.js file to identify and document distinct boundaries between game state logic, UI rendering/event handling, and data persistence calls.",
+            "dependencies": [],
+            "details": "Review page/game.js line by line to categorize functions into three distinct concerns: game logic (pure functions, state management), UI binding (widget creation, event handlers), and persistence (storage operations). Document identified boundaries, noting interdependencies and shared state that will need refactoring during the modularization process.",
+            "status": "done",
+            "testStrategy": "Review documentation of identified boundaries to ensure all functions are properly categorized and no code paths are missed. Verify categorization with team members if needed.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T09:29:29.734Z"
+          },
+          {
+            "id": 2,
+            "title": "Create game/logic.js module",
+            "description": "Extract pure functions and state management logic for scoring, set tracking, and match progression into a new standalone module.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create game/logic.js and extract identified game state logic including scoring calculations, set tracking, match progression rules, and win condition checks. Ensure this module has zero dependencies on UI or DOM elements. Export pure functions like incrementPoint, changeServer, checkWinCondition, and any state management utilities. All functions should accept parameters and return results without external side effects.",
+            "status": "done",
+            "testStrategy": "Write unit tests for each exported function to verify logic integrity. Test all scoring scenarios including standard progression, deuce/advantage, set wins, and tie-breaks to ensure behavior matches the original implementation.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T09:35:55.520Z"
+          },
+          {
+            "id": 3,
+            "title": "Create game/ui-binding.js module",
+            "description": "Move all Zepp OS widget creation, update logic, and touch event bindings into a dedicated UI binding module.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create game/ui-binding.js to handle all Zepp OS-specific widget creation, screen updates, and user interaction events. Implement render functions that accept game state from game/logic.js and update the display. Wire touch events to call appropriate logic functions and trigger persistence updates. This module should import functions from game/logic.js and game/persistence.js, maintaining the separation of concerns.",
+            "status": "done",
+            "testStrategy": "Test in the Zepp OS simulator to verify all widgets render correctly and user interactions (touch events) properly trigger logic functions and update the display. Verify visual output matches original behavior for various game states.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T09:44:21.143Z"
+          },
+          {
+            "id": 4,
+            "title": "Create game/persistence.js module",
+            "description": "Implement an adapter layer bridging game logic with the Unified Active-Session Storage Service for state persistence.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create game/persistence.js as an adapter between the game logic and the Unified Active-Session Storage Service (from Task 54). Implement serialization and deserialization using the Canonical match session contract (from Task 55). Export saveState and loadState methods that handle conversion between the game state object and storage format. Ensure proper error handling for storage failures.",
+            "status": "done",
+            "testStrategy": "Verify saveState and loadState correctly serialize and deserialize game states without data loss. Test that persisted state matches the canonical contract format and can be retrieved accurately after app restart.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T09:51:22.214Z"
+          },
+          {
+            "id": 5,
+            "title": "Refactor page/game.js to coordinator pattern",
+            "description": "Reduce page/game.js to a coordinator that initializes modules, binds events, and orchestrates the application lifecycle.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Refactor page/game.js to implement a coordinator pattern: initialize all three new modules (logic, ui-binding, persistence), bind UI events to logic functions through ui-binding, and orchestrate the overall application flow. Update import statements to reference the new local modules. Implement proper lifecycle management including init, update, and destroy phases that ensure proper cleanup of resources from sub-modules. Remove any code that has been moved to the new modules.",
+            "status": "done",
+            "testStrategy": "Run the full test suite to verify all existing tests pass. Perform functional testing in the simulator to play a complete match, verifying scoring, set changes, server changes, and state persistence work correctly. Test app lifecycle including init and destroy.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T11:27:54.279Z"
+          }
+        ],
+        "updatedAt": "2026-03-03T11:27:54.279Z"
       },
       {
         "id": "63",
@@ -4148,9 +4215,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-03T08:48:30.629Z",
+      "lastModified": "2026-03-03T11:27:54.280Z",
       "taskCount": 70,
-      "completedCount": 57,
+      "completedCount": 58,
       "tags": [
         "master"
       ]

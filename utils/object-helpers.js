@@ -36,6 +36,12 @@ const COMPARISON_KEYS = {
   ]
 }
 
+const objectHasOwnProperty = Object.prototype.hasOwnProperty
+
+function hasOwn(target, key) {
+  return objectHasOwnProperty.call(target, key)
+}
+
 /**
  * Creates a shallow clone of an object.
  * @template T
@@ -97,7 +103,7 @@ export function shallowEqual(left, right) {
   for (let i = 0; i < leftKeys.length; i += 1) {
     const key = leftKeys[i]
 
-    if (!Object.hasOwn(right, key)) {
+    if (!hasOwn(right, key)) {
       return false
     }
 
@@ -143,7 +149,7 @@ function valuesEqual(left, right) {
   for (let i = 0; i < leftKeys.length; i += 1) {
     const key = leftKeys[i]
 
-    if (!Object.hasOwn(right, key)) {
+    if (!hasOwn(right, key)) {
       return false
     }
 

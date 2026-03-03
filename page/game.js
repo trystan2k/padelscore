@@ -1,509 +1,41 @@
 import { gettext } from 'i18n'
-import { DEFAULT_SETS_TO_PLAY } from '../utils/constants.js'
-import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
-import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
-import { resolveLayout } from '../utils/layout-engine.js'
-import { createScorePageLayout } from '../utils/layout-presets.js'
+import { TOKENS } from '../utils/design-tokens.js'
+import { createHistoryStack } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
-import {
-  MATCH_STATUS as PERSISTED_MATCH_STATUS,
-  toIsoTimestampSafe
-} from '../utils/match-state-schema.js'
-import { getActiveSession, saveActiveSession } from '../utils/match-storage.js'
-import { scoresEqual } from '../utils/object-helpers.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
-import { getScreenMetrics } from '../utils/screen-utils.js'
-import {
-  createBackground,
-  createButton,
-  createDivider,
-  createText
-} from '../utils/ui-components.js'
 import {
   cloneMatchState,
-  cloneSetHistoryWithFirstSetFallback as cloneSetHistory,
   isRecord,
-  isSupportedSetConfiguration,
-  isTeamIdentifier,
-  isTieBreakMode,
-  resolveSetsToPlayFromSetsNeededToWin,
-  resolveWinnerTeam,
-  toNonNegativeInteger,
-  toPersistedPointValue,
-  toPositiveInteger,
-  toRuntimePointValue,
-  toSupportedSetsToPlay
+  isTeamIdentifier
 } from '../utils/validation.js'
-import { createScoreViewModel } from './score-view-model.js'
+import {
+  createManualFinishedMatchStateSnapshot,
+  isHistoryStackLike,
+  isSameMatchState,
+  isValidRuntimeMatchState,
+  removeLatestPointForTeamFromHistory
+} from './game/logic.js'
+import {
+  createPersistedMatchStateSnapshot,
+  isPersistedMatchStateActive,
+  loadState,
+  mergeRuntimeStateWithPersistedSession,
+  saveState,
+  serializeMatchStateForComparison
+} from './game/persistence.js'
+import {
+  clearWidgets as clearGameUiWidgets,
+  createWidget as createGameUiWidget,
+  renderGameScreen as renderBoundGameScreen
+} from './game/ui-binding.js'
 
 const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const MANUAL_FINISH_CONFIRM_WINDOW_MS = 3000
-const FOOTER_ICON_BUTTON_OFFSET = 36
-
-/**
- * Layout schema for the game screen.
- * Uses declarative positioning resolved by layout-engine.
- * Two-column layout: Team A (left) | Team B (right)
- */
-const GAME_LAYOUT = {
-  sections: createScorePageLayout({
-    headerTop: toPercentage(TOKENS.spacing.headerTop),
-    headerHeight: '15%',
-    scoreAreaGap: toPercentage(TOKENS.spacing.headerToContent),
-    footerBottom: toPercentage(TOKENS.spacing.footerBottom),
-    footerHeight: '5%',
-    headerRoundSafeInset: false,
-    scoreAreaRoundSafeInset: false,
-    footerRoundSafeInset: false
-  }).sections,
-  elements: {
-    // ── Header elements: SETS row ─────────────────────────────────────────
-    setsLabel: {
-      section: 'header',
-      x: '5%',
-      y: '0%',
-      width: '42%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'mutedText' }
-    },
-    setsValue: {
-      section: 'header',
-      x: '48%',
-      y: '0%',
-      width: '52%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'accent' }
-    },
-    // ── Header elements: GAMES row ────────────────────────────────────────
-    gamesLabel: {
-      section: 'header',
-      x: '5%',
-      y: '50%',
-      width: '42%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'mutedText' }
-    },
-    gamesValue: {
-      section: 'header',
-      x: '48%',
-      y: '50%',
-      width: '52%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'accent' }
-    },
-    // ── Score area: Team labels ───────────────────────────────────────────
-    teamALabel: {
-      section: 'scoreArea',
-      x: '0%',
-      y: '0%',
-      width: '50%',
-      height: '10%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'mutedText', text: 'A' }
-    },
-    teamBLabel: {
-      section: 'scoreArea',
-      x: '50%',
-      y: '0%',
-      width: '50%',
-      height: '10%',
-      align: 'left',
-      _meta: { type: 'text', style: 'body', colorKey: 'mutedText', text: 'B' }
-    },
-    // ── Score area: Score buttons (large tappable area) ───────────────────
-    teamAScore: {
-      section: 'scoreArea',
-      x: '0%',
-      y: '10%',
-      width: '50%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'scoreButton', team: 'teamA' }
-    },
-    teamBScore: {
-      section: 'scoreArea',
-      x: '50%',
-      y: '10%',
-      width: '50%',
-      height: '50%',
-      align: 'left',
-      _meta: { type: 'scoreButton', team: 'teamB' }
-    },
-    // ── Score area: Vertical divider ──────────────────────────────────────
-    divider: {
-      section: 'scoreArea',
-      x: 'center',
-      y: '5%',
-      width: 1,
-      height: '55%',
-      _meta: { type: 'divider', orientation: 'vertical' }
-    },
-    // ── Score area: Minus buttons ─────────────────────────────────────────
-    teamAMinus: {
-      section: 'scoreArea',
-      x: '5%',
-      y: '65%',
-      width: '20%',
-      height: '13%',
-      align: 'center',
-      _meta: { type: 'minusButton', team: 'teamA' }
-    },
-    teamBMinus: {
-      section: 'scoreArea',
-      x: '75%',
-      y: '65%',
-      width: '20%',
-      height: '13%',
-      align: 'center',
-      _meta: { type: 'minusButton', team: 'teamB' }
-    },
-    // ── Footer: Home button ───────────────────────────────────────────────
-    homeButton: {
-      section: 'footer',
-      x: 'center',
-      y: 'center',
-      width: TOKENS.sizing.iconLarge,
-      height: TOKENS.sizing.iconLarge,
-      align: 'center',
-      _meta: {
-        type: 'iconButton',
-        icon: 'home-icon.png',
-        onClick: 'handleBackToHome'
-      }
-    },
-    // ── Footer: Manual finish button ──────────────────────────────────────
-    confirmFinishButton: {
-      section: 'footer',
-      x: 'center',
-      y: 'center',
-      width: TOKENS.sizing.iconLarge,
-      height: TOKENS.sizing.iconLarge,
-      align: 'center',
-      _meta: {
-        type: 'iconButton',
-        icon: 'coach-icon.png',
-        confirmIcon: 'whistle-icon.png',
-        onClick: 'handleManualFinish'
-      }
-    }
-  }
-}
 
 function ensureNumber(value, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback
-}
-
-function isPersistedMatchStateActive(matchState) {
-  return (
-    isRecord(matchState) && matchState.status === PERSISTED_MATCH_STATUS.ACTIVE
-  )
-}
-function createCurrentSetSnapshot(matchState) {
-  const setNumber = toPositiveInteger(
-    matchState?.currentSetStatus?.number,
-    toPositiveInteger(matchState?.currentSet, 1)
-  )
-
-  return {
-    setNumber,
-    teamAGames: toNonNegativeInteger(
-      matchState?.currentSetStatus?.teamAGames,
-      toNonNegativeInteger(matchState?.teamA?.games, 0)
-    ),
-    teamBGames: toNonNegativeInteger(
-      matchState?.currentSetStatus?.teamBGames,
-      toNonNegativeInteger(matchState?.teamB?.games, 0)
-    )
-  }
-}
-
-function createManualFinishedMatchStateSnapshot(matchState) {
-  if (!isValidRuntimeMatchState(matchState)) {
-    return null
-  }
-
-  if (matchState.status === PERSISTED_MATCH_STATUS.FINISHED) {
-    return cloneMatchState(matchState)
-  }
-
-  const nextState = cloneMatchState(matchState)
-
-  if (!isValidRuntimeMatchState(nextState)) {
-    return null
-  }
-
-  const normalizedSetHistory = cloneSetHistory(nextState.setHistory)
-  const currentSetSnapshot = createCurrentSetSnapshot(nextState)
-  const hasCurrentSetSnapshot = normalizedSetHistory.some(
-    (setEntry) => setEntry.setNumber === currentSetSnapshot.setNumber
-  )
-
-  if (!hasCurrentSetSnapshot) {
-    normalizedSetHistory.push(currentSetSnapshot)
-  }
-
-  nextState.setHistory = normalizedSetHistory
-
-  const setsWon = {
-    teamA: toNonNegativeInteger(nextState?.setsWon?.teamA, 0),
-    teamB: toNonNegativeInteger(nextState?.setsWon?.teamB, 0)
-  }
-
-  nextState.setsWon = setsWon
-  nextState.status = PERSISTED_MATCH_STATUS.FINISHED
-
-  if (setsWon.teamA > setsWon.teamB) {
-    applyWinnerMetadata(nextState, 'teamA')
-  } else if (setsWon.teamB > setsWon.teamA) {
-    applyWinnerMetadata(nextState, 'teamB')
-  } else {
-    clearWinnerMetadata(nextState)
-  }
-
-  return nextState
-}
-
-function clearWinnerMetadata(matchState) {
-  if (!isRecord(matchState)) {
-    return
-  }
-
-  delete matchState.winnerTeam
-  delete matchState.winner
-}
-
-function applyWinnerMetadata(matchState, winnerTeam) {
-  if (!isRecord(matchState)) {
-    return
-  }
-
-  if (!isTeamIdentifier(winnerTeam)) {
-    clearWinnerMetadata(matchState)
-    return
-  }
-
-  matchState.winnerTeam = winnerTeam
-
-  if (!isRecord(matchState.winner)) {
-    matchState.winner = {
-      team: winnerTeam
-    }
-    return
-  }
-
-  matchState.winner.team = winnerTeam
-}
-
-function mergeRuntimeStateWithPersistedSession(
-  runtimeMatchState,
-  persistedMatchState
-) {
-  if (!isValidRuntimeMatchState(runtimeMatchState)) {
-    return createInitialMatchState()
-  }
-
-  const mergedState = cloneMatchState(runtimeMatchState)
-
-  // Use runtime-safe active check — avoid calling the schema validator which
-  // triggers toISOString() and crashes on Zepp OS v1.0.
-  if (!isPersistedMatchStateActive(persistedMatchState)) {
-    return mergedState
-  }
-
-  const currentSetNumber = toPositiveInteger(
-    persistedMatchState?.currentSet?.number,
-    toPositiveInteger(mergedState.currentSetStatus.number, 1)
-  )
-
-  const teamAGames = toNonNegativeInteger(
-    persistedMatchState?.currentSet?.games?.teamA,
-    toNonNegativeInteger(mergedState.currentSetStatus.teamAGames, 0)
-  )
-
-  const teamBGames = toNonNegativeInteger(
-    persistedMatchState?.currentSet?.games?.teamB,
-    toNonNegativeInteger(mergedState.currentSetStatus.teamBGames, 0)
-  )
-
-  mergedState.currentSetStatus.number = currentSetNumber
-  mergedState.currentSet = currentSetNumber
-  mergedState.currentSetStatus.teamAGames = teamAGames
-  mergedState.currentSetStatus.teamBGames = teamBGames
-  mergedState.teamA.games = teamAGames
-  mergedState.teamB.games = teamBGames
-
-  const tieBreakMode = isTieBreakMode(teamAGames, teamBGames)
-
-  mergedState.teamA.points = toRuntimePointValue(
-    persistedMatchState?.currentGame?.points?.teamA,
-    tieBreakMode,
-    mergedState.teamA.points
-  )
-
-  mergedState.teamB.points = toRuntimePointValue(
-    persistedMatchState?.currentGame?.points?.teamB,
-    tieBreakMode,
-    mergedState.teamB.points
-  )
-
-  mergedState.setsNeededToWin = toPositiveInteger(
-    persistedMatchState.setsNeededToWin,
-    toPositiveInteger(mergedState.setsNeededToWin, 2)
-  )
-
-  mergedState.setsWon = {
-    teamA: toNonNegativeInteger(
-      persistedMatchState?.setsWon?.teamA,
-      toNonNegativeInteger(mergedState?.setsWon?.teamA, 0)
-    ),
-    teamB: toNonNegativeInteger(
-      persistedMatchState?.setsWon?.teamB,
-      toNonNegativeInteger(mergedState?.setsWon?.teamB, 0)
-    )
-  }
-
-  mergedState.setHistory = cloneSetHistory(persistedMatchState.setHistory)
-  mergedState.status =
-    persistedMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
-      ? PERSISTED_MATCH_STATUS.FINISHED
-      : PERSISTED_MATCH_STATUS.ACTIVE
-
-  applyWinnerMetadata(mergedState, resolveWinnerTeam(persistedMatchState))
-
-  if (mergedState.status !== PERSISTED_MATCH_STATUS.FINISHED) {
-    clearWinnerMetadata(mergedState)
-  }
-
-  return mergedState
-}
-
-function createPersistedMatchStateSnapshot(
-  runtimeMatchState,
-  basePersistedMatchState
-) {
-  if (!isValidRuntimeMatchState(runtimeMatchState)) {
-    return null
-  }
-
-  // Use runtime-safe active check — avoid calling isPersistedMatchState (schema
-  // validator) which triggers toISOString() and crashes on Zepp OS v1.0.
-  // Build a minimal safe base state inline instead of calling createDefaultPersistedMatchState()
-  // which also invokes the schema and may trigger toISOString() on the device.
-  const fallbackTimestamp = Date.now()
-  const fallbackTimestampIso = toIsoTimestampSafe(fallbackTimestamp)
-  const baseState = isPersistedMatchStateActive(basePersistedMatchState)
-    ? cloneMatchState(basePersistedMatchState)
-    : {
-        status: PERSISTED_MATCH_STATUS.ACTIVE,
-        setsToPlay: DEFAULT_SETS_TO_PLAY,
-        setsNeededToWin: Math.ceil(DEFAULT_SETS_TO_PLAY / 2),
-        setsWon: { teamA: 0, teamB: 0 },
-        currentSet: { number: 1, games: { teamA: 0, teamB: 0 } },
-        currentGame: { points: { teamA: 0, teamB: 0 } },
-        setHistory: [],
-        schemaVersion: 1,
-        updatedAt: fallbackTimestamp,
-        timing: {
-          createdAt: fallbackTimestampIso,
-          updatedAt: fallbackTimestampIso,
-          startedAt: fallbackTimestampIso,
-          finishedAt: null
-        }
-      }
-
-  const setsNeededToWin = toPositiveInteger(
-    runtimeMatchState.setsNeededToWin,
-    toPositiveInteger(baseState?.setsNeededToWin, 2)
-  )
-  const baseSetsToPlay = toSupportedSetsToPlay(baseState?.setsToPlay)
-  const setsToPlay = isSupportedSetConfiguration(
-    baseSetsToPlay,
-    setsNeededToWin
-  )
-    ? baseSetsToPlay
-    : resolveSetsToPlayFromSetsNeededToWin(setsNeededToWin)
-  const winnerTeam = resolveWinnerTeam(runtimeMatchState)
-
-  const persistedSnapshot = {
-    ...baseState,
-    status:
-      runtimeMatchState.status === PERSISTED_MATCH_STATUS.FINISHED
-        ? PERSISTED_MATCH_STATUS.FINISHED
-        : PERSISTED_MATCH_STATUS.ACTIVE,
-    setsToPlay,
-    setsNeededToWin,
-    setsWon: {
-      teamA: toNonNegativeInteger(
-        runtimeMatchState?.setsWon?.teamA,
-        toNonNegativeInteger(baseState?.setsWon?.teamA, 0)
-      ),
-      teamB: toNonNegativeInteger(
-        runtimeMatchState?.setsWon?.teamB,
-        toNonNegativeInteger(baseState?.setsWon?.teamB, 0)
-      )
-    },
-    currentSet: {
-      number: toPositiveInteger(runtimeMatchState.currentSetStatus.number, 1),
-      games: {
-        teamA: toNonNegativeInteger(
-          runtimeMatchState.currentSetStatus.teamAGames,
-          0
-        ),
-        teamB: toNonNegativeInteger(
-          runtimeMatchState.currentSetStatus.teamBGames,
-          0
-        )
-      }
-    },
-    currentGame: {
-      points: {
-        teamA: toPersistedPointValue(runtimeMatchState.teamA.points),
-        teamB: toPersistedPointValue(runtimeMatchState.teamB.points)
-      }
-    },
-    setHistory: cloneSetHistory(runtimeMatchState.setHistory),
-    schemaVersion: toPositiveInteger(baseState.schemaVersion, 1)
-  }
-
-  if (isTeamIdentifier(winnerTeam)) {
-    persistedSnapshot.winnerTeam = winnerTeam
-  } else {
-    delete persistedSnapshot.winnerTeam
-  }
-
-  return persistedSnapshot
-}
-
-function didMatchTransitionToFinished(previousState, nextState) {
-  return (
-    isRecord(previousState) &&
-    isRecord(nextState) &&
-    previousState.status !== PERSISTED_MATCH_STATUS.FINISHED &&
-    nextState.status === PERSISTED_MATCH_STATUS.FINISHED
-  )
-}
-
-function didMatchTransitionFromFinished(previousState, nextState) {
-  return (
-    isRecord(previousState) &&
-    isRecord(nextState) &&
-    previousState.status === PERSISTED_MATCH_STATUS.FINISHED &&
-    nextState.status !== PERSISTED_MATCH_STATUS.FINISHED
-  )
-}
-
-function serializeMatchStateForComparison(matchState) {
-  try {
-    return JSON.stringify(matchState)
-  } catch {
-    return ''
-  }
 }
 
 function getCurrentTimestampMs() {
@@ -522,69 +54,33 @@ function getCurrentTimestampMs() {
   return 0
 }
 
-function isValidRuntimeMatchState(matchState) {
-  return (
-    isRecord(matchState) &&
-    isRecord(matchState.teams) &&
-    isRecord(matchState.teams.teamA) &&
-    isRecord(matchState.teams.teamB) &&
-    isRecord(matchState.teamA) &&
-    isRecord(matchState.teamB) &&
-    isRecord(matchState.currentSetStatus)
-  )
-}
-
-function isHistoryStackLike(historyStack) {
-  return (
-    isRecord(historyStack) &&
-    typeof historyStack.push === 'function' &&
-    typeof historyStack.pop === 'function' &&
-    typeof historyStack.clear === 'function' &&
-    typeof historyStack.isEmpty === 'function'
-  )
-}
-
-function isSameMatchState(leftState, rightState) {
-  // Use key-specific comparison for hot-path performance
-  // This avoids JSON.stringify overhead while comparing all relevant state keys
-  return scoresEqual(leftState, rightState)
-}
-
-function getScoringTeamForTransition(previousState, nextState) {
-  const nextStateAfterTeamA = addPoint(previousState, 'teamA')
-  if (isSameMatchState(nextStateAfterTeamA, nextState)) {
-    return 'teamA'
+function createRuntimeStateFingerprint(matchState) {
+  if (!isValidRuntimeMatchState(matchState)) {
+    return 'invalid'
   }
 
-  const nextStateAfterTeamB = addPoint(previousState, 'teamB')
-  if (isSameMatchState(nextStateAfterTeamB, nextState)) {
-    return 'teamB'
-  }
+  const setHistoryLength = Array.isArray(matchState.setHistory)
+    ? matchState.setHistory.length
+    : -1
+  const winnerTeam =
+    (isRecord(matchState.winner) && matchState.winner.team) ||
+    matchState.winnerTeam ||
+    ''
 
-  return null
-}
-
-function popHistorySnapshotsInOrder(historyStack) {
-  const reverseChronologicalSnapshots = []
-
-  while (!historyStack.isEmpty()) {
-    const snapshot = historyStack.pop()
-    if (snapshot === null) {
-      break
-    }
-
-    reverseChronologicalSnapshots.push(snapshot)
-  }
-
-  return reverseChronologicalSnapshots.reverse()
-}
-
-function restoreHistorySnapshots(historyStack, snapshots) {
-  historyStack.clear()
-
-  snapshots.forEach((snapshot) => {
-    historyStack.push(snapshot)
-  })
+  return [
+    matchState.status,
+    matchState.teamA.points,
+    matchState.teamA.games,
+    matchState.teamB.points,
+    matchState.teamB.games,
+    matchState.currentSetStatus.number,
+    matchState.currentSetStatus.teamAGames,
+    matchState.currentSetStatus.teamBGames,
+    isRecord(matchState.setsWon) ? matchState.setsWon.teamA : '',
+    isRecord(matchState.setsWon) ? matchState.setsWon.teamB : '',
+    winnerTeam,
+    setHistoryLength
+  ].join('|')
 }
 
 Page({
@@ -800,7 +296,7 @@ Page({
     }
 
     try {
-      const persistedMatchState = getActiveSession()
+      const persistedMatchState = loadState()
       const hasValidActiveSession =
         isPersistedMatchStateActive(persistedMatchState)
 
@@ -851,23 +347,11 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
-      this.widgets = []
-      return
-    }
-
-    this.widgets.forEach((widget) => hmUI.deleteWidget(widget))
-    this.widgets = []
+    this.widgets = clearGameUiWidgets(this.widgets)
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
-      return null
-    }
-
-    const widget = hmUI.createWidget(widgetType, properties)
-    this.widgets.push(widget)
-    return widget
+    return createGameUiWidget(this.widgets, widgetType, properties)
   },
 
   getAppInstance() {
@@ -908,7 +392,7 @@ Page({
     if (isValidRuntimeMatchState(app.globalData.matchState)) {
       runtimeMatchState = cloneMatchState(app.globalData.matchState)
     } else {
-      const persistedSessionState = getActiveSession()
+      const persistedSessionState = loadState()
 
       runtimeMatchState =
         persistedSessionState !== null
@@ -1067,7 +551,7 @@ Page({
     if (persistedMatchStateSnapshot !== null) {
       try {
         // Wrap persistence in try/catch so a write-time crash never breaks gameplay.
-        saveActiveSession(persistedMatchStateSnapshot)
+        saveState(persistedMatchStateSnapshot)
         this.persistedSessionState = cloneMatchState(
           persistedMatchStateSnapshot
         )
@@ -1120,7 +604,11 @@ Page({
     this.hasAttemptedSummaryNavigation = true
 
     // Persistence is now synchronous, so navigate immediately.
-    this.navigateToSummaryPage()
+    // If navigation fails for any reason, unlock the guard to allow retry.
+    const didNavigateToSummary = this.navigateToSummaryPage()
+    if (!didNavigateToSummary) {
+      this.hasAttemptedSummaryNavigation = false
+    }
   },
 
   navigateToHomePage() {
@@ -1256,64 +744,26 @@ Page({
       return app.removePointForTeam(team)
     }
 
+    const removalResult = removeLatestPointForTeamFromHistory(
+      app.globalData.matchState,
+      app.globalData.matchHistory,
+      team
+    )
+
     if (
-      !isValidRuntimeMatchState(app.globalData.matchState) ||
-      !isHistoryStackLike(app.globalData.matchHistory)
+      !isRecord(removalResult) ||
+      !isValidRuntimeMatchState(removalResult.runtimeState) ||
+      !isHistoryStackLike(removalResult.historyStack)
     ) {
       return null
     }
 
-    const historySnapshots = popHistorySnapshotsInOrder(
-      app.globalData.matchHistory
-    )
-    const stateTimeline = [
-      ...historySnapshots,
-      deepCopyState(app.globalData.matchState)
-    ]
-    const scoringTeams = []
-
-    for (let index = 1; index < stateTimeline.length; index += 1) {
-      const scoringTeam = getScoringTeamForTransition(
-        stateTimeline[index - 1],
-        stateTimeline[index]
-      )
-
-      if (!scoringTeam) {
-        restoreHistorySnapshots(app.globalData.matchHistory, historySnapshots)
-        return deepCopyState(app.globalData.matchState)
-      }
-
-      scoringTeams.push(scoringTeam)
+    if (removalResult.didRemovePoint) {
+      app.globalData.matchHistory = removalResult.historyStack
+      app.globalData.matchState = removalResult.runtimeState
     }
 
-    let removedEventIndex = -1
-    for (let index = scoringTeams.length - 1; index >= 0; index -= 1) {
-      if (scoringTeams[index] === team) {
-        removedEventIndex = index
-        break
-      }
-    }
-
-    if (removedEventIndex === -1) {
-      restoreHistorySnapshots(app.globalData.matchHistory, historySnapshots)
-      return deepCopyState(app.globalData.matchState)
-    }
-
-    const rebuiltHistory = createHistoryStack()
-    let rebuiltState = deepCopyState(stateTimeline[0])
-
-    for (let index = 0; index < scoringTeams.length; index += 1) {
-      if (index === removedEventIndex) {
-        continue
-      }
-
-      rebuiltState = addPoint(rebuiltState, scoringTeams[index], rebuiltHistory)
-    }
-
-    app.globalData.matchHistory = rebuiltHistory
-    app.globalData.matchState = rebuiltState
-
-    return rebuiltState
+    return removalResult.runtimeState
   },
 
   persistAndRender(nextState, interactionStartedAt, options = {}) {
@@ -1368,13 +818,37 @@ Page({
       return
     }
 
-    const previousState = cloneMatchState(this.getRuntimeMatchState())
-    const nextState = action()
+    const previousState = this.getRuntimeMatchState()
+    const previousFingerprint = createRuntimeStateFingerprint(previousState)
+    const previousStatus = previousState?.status
+    const actionResult = action()
+    const runtimeStateAfterAction = this.getRuntimeMatchState()
 
-    if (
-      !isValidRuntimeMatchState(nextState) ||
-      isSameMatchState(previousState, nextState)
-    ) {
+    const candidateStates = []
+    if (isValidRuntimeMatchState(actionResult)) {
+      candidateStates.push(actionResult)
+    }
+    if (isValidRuntimeMatchState(runtimeStateAfterAction)) {
+      candidateStates.push(runtimeStateAfterAction)
+    }
+
+    let nextState = null
+    for (let index = 0; index < candidateStates.length; index += 1) {
+      const candidateState = candidateStates[index]
+      const candidateFingerprint = createRuntimeStateFingerprint(candidateState)
+
+      if (candidateFingerprint !== previousFingerprint) {
+        nextState = candidateState
+        break
+      }
+
+      if (!isSameMatchState(previousState, candidateState)) {
+        nextState = candidateState
+        break
+      }
+    }
+
+    if (!isValidRuntimeMatchState(nextState)) {
       return
     }
 
@@ -1382,14 +856,12 @@ Page({
       this.lastAcceptedScoringInteractionAt = interactionStartedAt
     }
 
-    if (didMatchTransitionFromFinished(previousState, nextState)) {
+    if (previousStatus === 'finished' && nextState.status !== 'finished') {
       this.hasAttemptedSummaryNavigation = false
     }
 
-    const didFinishMatch = didMatchTransitionToFinished(
-      previousState,
-      nextState
-    )
+    const didFinishMatch =
+      previousStatus !== 'finished' && nextState.status === 'finished'
 
     // When match finishes, skip rendering and navigate directly to summary
     // This avoids the brief flash of the finished state screen
@@ -1432,270 +904,20 @@ Page({
       return
     }
 
-    const matchState = this.getRuntimeMatchState()
-    const viewModel = createScoreViewModel(matchState, {
-      persistedMatchState: this.persistedSessionState
+    renderBoundGameScreen({
+      isSessionAccessGranted: this.isSessionAccessGranted,
+      runtimeMatchState: this.getRuntimeMatchState(),
+      persistedMatchState: this.persistedSessionState,
+      manualFinishConfirmMode: this.manualFinishConfirmMode,
+      gettext,
+      clearWidgets: () => this.clearWidgets(),
+      createWidget: (widgetType, properties) =>
+        this.createWidget(widgetType, properties),
+      onMatchFinished: () => this.handleMatchFinishedTransition(),
+      onAddPointForTeam: (team) => this.handleAddPointForTeam(team),
+      onRemovePointForTeam: (team) => this.handleRemovePointForTeam(team),
+      onBackToHome: () => this.handleBackToHome(),
+      onManualFinishTap: () => this.handleManualFinishTap()
     })
-    const isMatchFinished = viewModel.status === 'finished'
-
-    // Get screen metrics and resolve layout
-    const metrics = getScreenMetrics()
-    const layout = resolveLayout(GAME_LAYOUT, metrics)
-
-    this.clearWidgets()
-
-    // Background
-    const bg = createBackground()
-    this.createWidget(bg.widgetType, bg.config)
-
-    // Render header elements (SETS and GAMES rows)
-    this.renderHeaderElements(layout, viewModel)
-
-    // If match is already finished, navigate directly to summary page
-    // This handles edge cases where the game page is opened with a finished match
-    if (isMatchFinished) {
-      this.handleMatchFinishedTransition()
-      return
-    }
-
-    // Render active state (score buttons, minus buttons)
-    this.renderActiveState(layout, viewModel)
-
-    // Render footer (home button + manual finish button)
-    this.renderFooterElements(layout)
-  },
-
-  renderHeaderElements(layout, viewModel) {
-    const headerSection = layout.sections.header
-    if (!headerSection) return
-
-    // Calculate header text sizing
-    const labelWidth = Math.round(headerSection.w * 0.42)
-    const valueWidth = Math.round(headerSection.w * 0.52)
-    const rowHeight = Math.round(headerSection.h / 2)
-    const pairX =
-      headerSection.x +
-      Math.round((headerSection.w - (labelWidth + valueWidth)) / 2)
-    const valueX = pairX + labelWidth
-
-    // SETS row - Label
-    const setsLabelConfig = createText({
-      text: gettext('game.setsLabel'),
-      style: 'body',
-      x: pairX,
-      y: headerSection.y,
-      w: labelWidth,
-      h: rowHeight,
-      color: TOKENS.colors.mutedText,
-      align_h: hmUI.align.RIGHT,
-      align_v: hmUI.align.CENTER_V
-    })
-    this.createWidget(setsLabelConfig.widgetType, setsLabelConfig.config)
-
-    // SETS row - Value
-    const setsValueConfig = createText({
-      text: `  ${viewModel.setsWon.teamA} – ${viewModel.setsWon.teamB}`,
-      style: 'bodyLarge',
-      x: valueX,
-      y: headerSection.y,
-      w: valueWidth,
-      h: rowHeight,
-      color: TOKENS.colors.accent,
-      align_h: hmUI.align.LEFT,
-      align_v: hmUI.align.CENTER_V
-    })
-    this.createWidget(setsValueConfig.widgetType, setsValueConfig.config)
-
-    // GAMES row - Label
-    const gamesLabelConfig = createText({
-      text: gettext('game.gamesLabel'),
-      style: 'body',
-      x: pairX,
-      y: headerSection.y + rowHeight,
-      w: labelWidth,
-      h: rowHeight,
-      color: TOKENS.colors.mutedText,
-      align_h: hmUI.align.RIGHT,
-      align_v: hmUI.align.CENTER_V
-    })
-    this.createWidget(gamesLabelConfig.widgetType, gamesLabelConfig.config)
-
-    // GAMES row - Value
-    const gamesValueConfig = createText({
-      text: `  ${viewModel.currentSetGames.teamA} – ${viewModel.currentSetGames.teamB}`,
-      style: 'bodyLarge',
-      x: valueX,
-      y: headerSection.y + rowHeight,
-      w: valueWidth,
-      h: rowHeight,
-      color: TOKENS.colors.accent,
-      align_h: hmUI.align.LEFT,
-      align_v: hmUI.align.CENTER_V
-    })
-    this.createWidget(gamesValueConfig.widgetType, gamesValueConfig.config)
-  },
-
-  renderActiveState(layout, viewModel) {
-    const scoreArea = layout.sections.scoreArea
-    if (!scoreArea) return
-
-    const { width } = getScreenMetrics()
-    const halfWidth = Math.round(width / 2)
-
-    // Team A Label - centered within left column
-    const teamALabelEl = layout.elements.teamALabel
-    if (teamALabelEl) {
-      const teamALabelConfig = createText({
-        text: 'A',
-        style: 'body',
-        x: teamALabelEl.x,
-        y: teamALabelEl.y,
-        w: teamALabelEl.w,
-        h: teamALabelEl.h,
-        color: TOKENS.colors.mutedText,
-        align_h: hmUI.align.CENTER_H
-      })
-      this.createWidget(teamALabelConfig.widgetType, teamALabelConfig.config)
-    }
-
-    // Team B Label - centered within right column
-    const teamBLabelEl = layout.elements.teamBLabel
-    if (teamBLabelEl) {
-      const teamBLabelConfig = createText({
-        text: 'B',
-        style: 'body',
-        x: teamBLabelEl.x,
-        y: teamBLabelEl.y,
-        w: teamBLabelEl.w,
-        h: teamBLabelEl.h,
-        color: TOKENS.colors.mutedText,
-        align_h: hmUI.align.CENTER_H
-      })
-      this.createWidget(teamBLabelConfig.widgetType, teamBLabelConfig.config)
-    }
-
-    // Team A Score Button
-    const teamAScoreEl = layout.elements.teamAScore
-    if (teamAScoreEl) {
-      this.renderScoreButton(teamAScoreEl, viewModel.teamA.points, 'teamA')
-    }
-
-    // Team B Score Button
-    const teamBScoreEl = layout.elements.teamBScore
-    if (teamBScoreEl) {
-      this.renderScoreButton(teamBScoreEl, viewModel.teamB.points, 'teamB')
-    }
-
-    // Divider
-    const dividerEl = layout.elements.divider
-    if (dividerEl) {
-      const dividerConfig = createDivider({
-        x: Math.round(width / 2) - 1,
-        y: dividerEl.y,
-        h: dividerEl.h,
-        orientation: 'vertical',
-        color: TOKENS.colors.divider
-      })
-      this.createWidget(dividerConfig.widgetType, dividerConfig.config)
-    }
-
-    // Team A Minus Button
-    const teamAMinusEl = layout.elements.teamAMinus
-    if (teamAMinusEl) {
-      this.renderMinusButton(teamAMinusEl, 'teamA', halfWidth, 0)
-    }
-
-    // Team B Minus Button
-    const teamBMinusEl = layout.elements.teamBMinus
-    if (teamBMinusEl) {
-      this.renderMinusButton(teamBMinusEl, 'teamB', halfWidth, halfWidth)
-    }
-  },
-
-  renderScoreButton(element, points, team) {
-    if (!element) return
-
-    // Score button - uses custom styling (flat, large text)
-    const scoreTextSize = getFontSize('scoreDisplay')
-
-    this.createWidget(hmUI.widget.BUTTON, {
-      x: element.x,
-      y: element.y,
-      w: element.w,
-      h: element.h,
-      radius: 0,
-      normal_color: TOKENS.colors.background,
-      press_color: TOKENS.colors.background,
-      color: TOKENS.colors.text,
-      text_size: scoreTextSize,
-      text: String(points),
-      click_func: () => this.handleAddPointForTeam(team)
-    })
-  },
-
-  renderMinusButton(element, team, halfWidth, columnOffset) {
-    if (!element) return
-
-    // Ensure minimum 48x48 touch target for accessibility
-    const MIN_TOUCH_SIZE = 48
-    const buttonWidth = Math.max(element.w, MIN_TOUCH_SIZE)
-    const buttonHeight = Math.max(element.h, MIN_TOUCH_SIZE)
-
-    // Center the button horizontally within the column
-    const buttonX = columnOffset + Math.round((halfWidth - buttonWidth) / 2)
-    // Center the button vertically within the original allocated space
-    const buttonY = element.y + Math.round((element.h - buttonHeight) / 2)
-
-    const minusBtn = createButton({
-      x: buttonX,
-      y: buttonY,
-      w: buttonWidth,
-      h: buttonHeight,
-      variant: 'secondary',
-      text: '−',
-      onClick: () => this.handleRemovePointForTeam(team)
-    })
-
-    // Override for minus button styling - use visual height for radius to maintain pill shape
-    const visualRadius = Math.round(Math.min(element.w, element.h) / 2)
-    minusBtn.config.radius = visualRadius
-    minusBtn.config.color = TOKENS.colors.danger
-    // Use a slightly lighter shade for press state (matching original GAME_TOKENS.buttonSecondaryPressed)
-    minusBtn.config.press_color = 0x2d3036
-
-    this.createWidget(minusBtn.widgetType, minusBtn.config)
-  },
-
-  renderFooterElements(layout) {
-    const homeButtonEl = layout.elements.homeButton
-    const homeButtonMeta = GAME_LAYOUT.elements.homeButton._meta
-    const confirmFinishButtonEl = layout.elements.confirmFinishButton
-    const confirmFinishMeta = GAME_LAYOUT.elements.confirmFinishButton._meta
-
-    if (homeButtonEl && homeButtonMeta) {
-      const homeBtn = createButton({
-        x: Math.max(0, homeButtonEl.x - FOOTER_ICON_BUTTON_OFFSET),
-        y: homeButtonEl.y,
-        variant: 'icon',
-        normal_src: homeButtonMeta.icon,
-        onClick: () => this.handleBackToHome()
-      })
-      this.createWidget(homeBtn.widgetType, homeBtn.config)
-    }
-
-    if (confirmFinishButtonEl && confirmFinishMeta) {
-      const icon = this.manualFinishConfirmMode
-        ? confirmFinishMeta.confirmIcon
-        : confirmFinishMeta.icon
-      const confirmBtn = createButton({
-        x: confirmFinishButtonEl.x + FOOTER_ICON_BUTTON_OFFSET,
-        y: confirmFinishButtonEl.y,
-        variant: 'icon',
-        normal_src: icon,
-        press_src: icon,
-        onClick: () => this.handleManualFinishTap()
-      })
-      this.createWidget(confirmBtn.widgetType, confirmBtn.config)
-    }
   }
 })

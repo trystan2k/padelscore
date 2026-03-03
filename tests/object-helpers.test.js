@@ -129,6 +129,47 @@ test('scoresEqual should compare match state keys', () => {
   assert.equal(scoresEqual(state1, state2), true)
 })
 
+test('scoresEqual should compare shared extra keys deeply', () => {
+  const state1 = {
+    status: 'active',
+    timing: {
+      startedAt: '2024-01-01T00:00:00.000Z'
+    }
+  }
+
+  const state2 = {
+    status: 'active',
+    timing: {
+      startedAt: '2024-01-02T00:00:00.000Z'
+    }
+  }
+
+  assert.equal(scoresEqual(state1, state2), false)
+})
+
+test('scoresEqual should handle null and undefined inputs', () => {
+  assert.equal(scoresEqual(null, null), true)
+  assert.equal(scoresEqual(undefined, undefined), true)
+  assert.equal(scoresEqual(null, undefined), false)
+  assert.equal(scoresEqual(null, { status: 'active' }), false)
+  assert.equal(scoresEqual(undefined, { status: 'active' }), false)
+})
+
+test('scoresEqual should support null-prototype nested objects', () => {
+  const leftSetsWon = Object.create(null)
+  leftSetsWon.teamA = 1
+  leftSetsWon.teamB = 0
+
+  const rightSetsWon = Object.create(null)
+  rightSetsWon.teamA = 1
+  rightSetsWon.teamB = 0
+
+  assert.equal(
+    scoresEqual({ setsWon: leftSetsWon }, { setsWon: rightSetsWon }),
+    true
+  )
+})
+
 test('scoresEqual should return false for different state', () => {
   const state1 = {
     status: 'active',
