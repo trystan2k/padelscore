@@ -1,5 +1,6 @@
 import { gettext } from 'i18n'
 
+import { MATCH_SET_OPTIONS } from '../utils/constants.js'
 import { TOKENS, toPercentage } from '../utils/design-tokens.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createPageWithFooterButton } from '../utils/layout-presets.js'
@@ -16,8 +17,7 @@ import {
   createButton,
   createText
 } from '../utils/ui-components.js'
-
-const MATCH_SET_OPTIONS = Object.freeze([1, 3, 5])
+import { isRecord, isSupportedSetsToPlay } from '../utils/validation.js'
 
 /**
  * Layout schema for the setup screen.
@@ -86,7 +86,7 @@ const SETUP_LAYOUT = {
       align: 'center',
       _meta: {
         type: 'optionsRow',
-        options: [1, 3, 5],
+        options: MATCH_SET_OPTIONS,
         gap: '2.2%'
       }
     },
@@ -135,11 +135,7 @@ const SETUP_LAYOUT = {
 }
 
 function isValidSetsOption(setsToPlay) {
-  return MATCH_SET_OPTIONS.includes(setsToPlay)
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
+  return isSupportedSetsToPlay(setsToPlay)
 }
 
 function _isVerifiedActiveSession(matchState, setsToPlay) {

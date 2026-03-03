@@ -84,7 +84,9 @@ async function loadHomePageDefinition() {
   const startNewMatchFlowUrl = toProjectFileUrl(
     'tests/helpers/home-start-new-match-flow-bridge.js'
   )
+  const constantsUrl = toProjectFileUrl('utils/constants.js')
   const storageUrl = toProjectFileUrl('utils/storage.js')
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
@@ -115,7 +117,9 @@ async function loadHomePageDefinition() {
       "from '../utils/start-new-match-flow.js'",
       `from '${startNewMatchFlowUrl.href}'`
     )
+    .replace("from '../utils/constants.js'", `from '${constantsUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/design-tokens.js'",
       `from '${designTokensUrl.href}'`
@@ -172,11 +176,13 @@ let gamePageImportCounter = 0
 async function loadGamePageDefinition() {
   const sourceUrl = toProjectFileUrl('page/game.js')
   const scoreViewModelUrl = toProjectFileUrl('page/score-view-model.js')
+  const constantsUrl = toProjectFileUrl('utils/constants.js')
   const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
   const matchStateUrl = toProjectFileUrl('utils/match-state.js')
   const scoringConstantsUrl = toProjectFileUrl('utils/scoring-constants.js')
   const scoringEngineUrl = toProjectFileUrl('utils/scoring-engine.js')
   const storageUrl = toProjectFileUrl('utils/storage.js')
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const matchStorageUrl = toProjectFileUrl('utils/match-storage.js')
   const matchStateSchemaUrl = toProjectFileUrl('utils/match-state-schema.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
@@ -206,7 +212,9 @@ async function loadGamePageDefinition() {
       "from '../utils/scoring-engine.js'",
       `from '${scoringEngineUrl.href}'`
     )
+    .replace("from '../utils/constants.js'", `from '${constantsUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/match-storage.js'",
       `from '${matchStorageUrl.href}'`

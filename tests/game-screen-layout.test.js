@@ -60,11 +60,13 @@ function createPageInstance(definition) {
 async function loadGamePageDefinition() {
   const sourceUrl = toProjectFileUrl('page/game.js')
   const scoreViewModelUrl = toProjectFileUrl('page/score-view-model.js')
+  const constantsUrl = toProjectFileUrl('utils/constants.js')
   const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
   const matchStateUrl = toProjectFileUrl('utils/match-state.js')
   const scoringConstantsUrl = toProjectFileUrl('utils/scoring-constants.js')
   const scoringEngineUrl = toProjectFileUrl('utils/scoring-engine.js')
   const storageUrl = toProjectFileUrl('utils/storage.js')
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const matchStorageUrl = toProjectFileUrl('utils/match-storage.js')
   const matchStateSchemaUrl = toProjectFileUrl('utils/match-state-schema.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
@@ -94,7 +96,9 @@ async function loadGamePageDefinition() {
       "from '../utils/scoring-engine.js'",
       `from '${scoringEngineUrl.href}'`
     )
+    .replace("from '../utils/constants.js'", `from '${constantsUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/match-storage.js'",
       `from '${matchStorageUrl.href}'`
@@ -245,6 +249,7 @@ async function runWithRenderedGamePage(
   const originalClearTimeout = globalThis.clearTimeout
 
   const { hmUI, createdWidgets, shownToasts } = createHmUiRecorder()
+  const hmFsMock = createHmFsMock()
   const app = {
     globalData: {
       matchState: createInitialMatchState(1700000000),
@@ -259,7 +264,7 @@ async function runWithRenderedGamePage(
     }
   }
   globalThis.getApp = () => app
-  globalThis.hmFS = createHmFsMock().mock
+  globalThis.hmFS = hmFsMock.mock
 
   if (typeof options.setTimeout === 'function') {
     globalThis.setTimeout = options.setTimeout
@@ -924,6 +929,8 @@ test('game match completion updates match state', async () => {
 
       assert.equal(app.globalData.matchState.status, 'finished')
       assert.equal(app.globalData.matchState.winnerTeam, 'teamA')
+      assert.equal(page.persistedSessionState.setsToPlay, 1)
+      assert.equal(typeof page.persistedSessionState.setsToPlay, 'number')
     }
   )
 })

@@ -14,6 +14,12 @@ import {
   createButton,
   createText
 } from '../utils/ui-components.js'
+import {
+  cloneMatchState,
+  isRecord,
+  normalizeSetHistory,
+  toNonNegativeInteger
+} from '../utils/validation.js'
 
 /**
  * Declarative layout schema for the Summary screen.
@@ -107,45 +113,11 @@ const SUMMARY_LAYOUT = {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function cloneMatchState(matchState) {
-  try {
-    return JSON.parse(JSON.stringify(matchState))
-  } catch {
-    return matchState
-  }
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
-}
-
-function toNonNegativeInteger(value, fallback = 0) {
-  return Number.isInteger(value) && value >= 0 ? value : fallback
-}
-
-function toPositiveInteger(value, fallback = 1) {
-  return Number.isInteger(value) && value > 0 ? value : fallback
-}
-
 function normalizeSetsWon(setsWon) {
   return {
     teamA: toNonNegativeInteger(setsWon?.teamA, 0),
     teamB: toNonNegativeInteger(setsWon?.teamB, 0)
   }
-}
-
-function normalizeSetHistory(setHistory) {
-  if (!Array.isArray(setHistory)) {
-    return []
-  }
-
-  return setHistory
-    .map((entry, index) => ({
-      setNumber: toPositiveInteger(entry?.setNumber, index + 1),
-      teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
-      teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
-    }))
-    .sort((leftEntry, rightEntry) => leftEntry.setNumber - rightEntry.setNumber)
 }
 
 function isFinishedMatchState(matchState) {

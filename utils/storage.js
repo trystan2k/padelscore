@@ -1,13 +1,10 @@
+import {
+  resolveFsReadOnlyFlag,
+  resolveFsWriteCreateTruncateFlags
+} from './constants.js'
 import { MATCH_STATUS } from './match-state.js'
 import { SCORE_POINT_SEQUENCE } from './scoring-constants.js'
-
-// ---------------------------------------------------------------------------
-// hmFS flag constants (POSIX values — used as fallback if hmFS.O_* are undefined)
-// ---------------------------------------------------------------------------
-const FS_O_RDONLY = 0
-const FS_O_WRONLY = 1
-const FS_O_CREAT = 64 // 0x40
-const FS_O_TRUNC = 512 // 0x200
+import { isRecord } from './validation.js'
 
 export const MATCH_STATE_STORAGE_KEY = 'padel-buddy.match-state'
 export const LEGACY_MATCH_STATE_STORAGE_KEY = MATCH_STATE_STORAGE_KEY
@@ -209,10 +206,7 @@ function createHmFsFileStorageAdapter() {
       try {
         const filename = keyToFilename(key)
         const encoded = encodeUtf8(value)
-        const writeFlags =
-          (typeof hmFS.O_WRONLY === 'number' ? hmFS.O_WRONLY : FS_O_WRONLY) |
-          (typeof hmFS.O_CREAT === 'number' ? hmFS.O_CREAT : FS_O_CREAT) |
-          (typeof hmFS.O_TRUNC === 'number' ? hmFS.O_TRUNC : FS_O_TRUNC)
+        const writeFlags = resolveFsWriteCreateTruncateFlags(hmFS)
         fileId = hmFS.open(filename, writeFlags)
 
         if (fileId < 0) {
@@ -246,8 +240,7 @@ function createHmFsFileStorageAdapter() {
         }
 
         const size = statInfo.size
-        const readFlag =
-          typeof hmFS.O_RDONLY === 'number' ? hmFS.O_RDONLY : FS_O_RDONLY
+        const readFlag = resolveFsReadOnlyFlag(hmFS)
         fileId = hmFS.open(filename, readFlag)
 
         if (fileId < 0) {
@@ -324,14 +317,6 @@ function isMatchState(value) {
     isMatchStatus(value.status) &&
     isFiniteNumber(value.updatedAt)
   )
-}
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
 }
 
 /**

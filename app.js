@@ -11,6 +11,7 @@ import {
   MATCH_STATUS as PERSISTED_MATCH_STATUS
 } from './utils/match-state-schema.js'
 import { addPoint, removePoint as undoPoint } from './utils/scoring-engine.js'
+import { isRecord, toNonNegativeInteger } from './utils/validation.js'
 
 /**
  * @param {Record<string, unknown>} appInstance
@@ -20,10 +21,6 @@ import { addPoint, removePoint as undoPoint } from './utils/scoring-engine.js'
 function applyNextState(appInstance, nextState) {
   appInstance.globalData.matchState = nextState
   return nextState
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
 }
 
 const STARTUP_MIGRATION_FLAG_KEY = '_didRunLegacySessionMigration'
@@ -122,14 +119,6 @@ function emergencyPersistMatchState(globalData) {
   } catch {
     // Never let app.onDestroy throw — it would prevent proper app teardown.
   }
-}
-
-function toNonNegativeInteger(value, fallback = 0) {
-  if (Number.isInteger(value) && value >= 0) {
-    return value
-  }
-
-  return fallback
 }
 
 App({

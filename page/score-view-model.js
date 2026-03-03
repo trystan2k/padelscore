@@ -1,3 +1,9 @@
+import {
+  isRecord,
+  resolveWinnerTeamWithFallback,
+  toNonNegativeInteger
+} from '../utils/validation.js'
+
 /**
  * @param {import('../utils/match-state.js').MatchState} matchState
  * @param {{ persistedMatchState?: { setsWon?: { teamA?: number, teamB?: number }, winnerTeam?: 'teamA' | 'teamB', winner?: { team?: 'teamA' | 'teamB' } } | null }} [options]
@@ -7,7 +13,7 @@ export function createScoreViewModel(matchState, options = {}) {
     matchState,
     options.persistedMatchState
   )
-  const resolvedWinnerTeam = resolveWinnerTeam(
+  const resolvedWinnerTeam = resolveWinnerTeamWithFallback(
     matchState,
     options.persistedMatchState
   )
@@ -53,48 +59,4 @@ function resolveSetsWon(matchState, persistedMatchState) {
     teamA: 0,
     teamB: 0
   }
-}
-
-function resolveWinnerTeam(matchState, persistedMatchState) {
-  const runtimeWinnerTeam = extractWinnerTeam(matchState)
-
-  if (runtimeWinnerTeam) {
-    return runtimeWinnerTeam
-  }
-
-  const persistedWinnerTeam = extractWinnerTeam(persistedMatchState)
-
-  if (persistedWinnerTeam) {
-    return persistedWinnerTeam
-  }
-
-  return null
-}
-
-function extractWinnerTeam(matchState) {
-  if (!isRecord(matchState)) {
-    return null
-  }
-
-  if (isTeamIdentifier(matchState.winnerTeam)) {
-    return matchState.winnerTeam
-  }
-
-  if (isRecord(matchState.winner) && isTeamIdentifier(matchState.winner.team)) {
-    return matchState.winner.team
-  }
-
-  return null
-}
-
-function isTeamIdentifier(value) {
-  return value === 'teamA' || value === 'teamB'
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
-}
-
-function toNonNegativeInteger(value) {
-  return Number.isInteger(value) && value >= 0 ? value : 0
 }

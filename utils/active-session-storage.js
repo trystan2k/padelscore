@@ -1,4 +1,8 @@
 import {
+  resolveFsReadOnlyFlag,
+  resolveFsWriteCreateTruncateFlags
+} from './constants.js'
+import {
   CURRENT_SCHEMA_VERSION,
   deserializeMatchSession,
   isMatchState,
@@ -16,6 +20,17 @@ import {
   MATCH_STATE_STORAGE_KEY as LEGACY_RUNTIME_STORAGE_KEY,
   loadLegacyActiveSession
 } from './storage.js'
+import {
+  cloneMatchStateOrNull as cloneSession,
+  isNonNegativeInteger,
+  isPositiveInteger,
+  isRecord,
+  isTeamIdentifier,
+  normalizeSetHistory,
+  toNonNegativeIntegerWithRequiredFallback as toNonNegativeInteger,
+  toPersistedPointValue,
+  toPositiveIntegerWithRequiredFallback as toPositiveInteger
+} from './validation.js'
 
 /**
  * @typedef {import('./match-state-schema.js').MatchState & {
@@ -47,11 +62,6 @@ import {
  */
 
 const LOG_PREFIX = '[active-session-storage]'
-
-const FS_O_RDONLY = 0
-const FS_O_WRONLY = 1
-const FS_O_CREAT = 64
-const FS_O_TRUNC = 512
 
 export const ACTIVE_SESSION_FILE_PATH = '/data/active_session.json'
 
@@ -628,24 +638,6 @@ function normalizeLegacyRuntimeState(runtimeState) {
 }
 
 /**
- * @param {unknown} setHistory
- * @returns {Array<{ setNumber: number, teamAGames: number, teamBGames: number }>}
- */
-function normalizeSetHistory(setHistory) {
-  if (!Array.isArray(setHistory)) {
-    return []
-  }
-
-  return setHistory
-    .map((entry, index) => ({
-      setNumber: toPositiveInteger(entry?.setNumber, index + 1),
-      teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
-      teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
-    }))
-    .sort((leftEntry, rightEntry) => leftEntry.setNumber - rightEntry.setNumber)
-}
-
-/**
  * @param {unknown} setsToPlay
  * @param {unknown} setsNeededToWin
  * @returns {{ setsToPlay: import('./match-state-schema.js').SetsToPlay, setsNeededToWin: import('./match-state-schema.js').SetsNeededToWin }}
@@ -730,22 +722,6 @@ function resolveSetConfiguration(setsToPlay, setsNeededToWin) {
 }
 
 /**
- * @param {unknown} point
- * @returns {number}
- */
-function toPersistedPointValue(point) {
-  if (point === 'Ad') {
-    return 50
-  }
-
-  if (point === 'Game') {
-    return 60
-  }
-
-  return toNonNegativeInteger(point, 0)
-}
-
-/**
  * @param {ActiveSession} session
  * @param {unknown} source
  * @returns {ActiveSession}
@@ -782,7 +758,7 @@ function withHistoryCompatibilityMetadata(session, source) {
     nextSession.winnerTeam = source.winnerTeam
   }
 
-  if (isRecord(source.winner) && isValidWinnerTeam(source.winner.team)) {
+  if (isRecord(source.winner) && isTeamIdentifier(source.winner.team)) {
     nextSession.winner = {
       team: source.winner.team
     }
@@ -840,27 +816,6 @@ function withAtomicUpdateLock(callback) {
 }
 
 /**
- * @template T
- * @param {T} value
- * @returns {T | null}
- */
-function cloneSession(value) {
-  try {
-    return JSON.parse(JSON.stringify(value))
-  } catch {
-    return null
-  }
-}
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, any>}
- */
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
-}
-
-/**
  * @param {unknown} value
  * @returns {boolean}
  */
@@ -899,48 +854,6 @@ function hasLegacyRuntimeScoreShape(value) {
  */
 function isLegacyPointValue(value) {
   return value === 'Ad' || value === 'Game' || isNonNegativeInteger(value)
-}
-
-/**
- * @param {unknown} value
- * @returns {value is 'teamA' | 'teamB'}
- */
-function isValidWinnerTeam(value) {
-  return value === ACTIVE_TEAM || value === OPPOSING_TEAM
-}
-
-/**
- * @param {unknown} value
- * @param {number} fallback
- * @returns {number}
- */
-function toNonNegativeInteger(value, fallback) {
-  return Number.isInteger(value) && value >= 0 ? value : fallback
-}
-
-/**
- * @param {unknown} value
- * @returns {boolean}
- */
-function isNonNegativeInteger(value) {
-  return Number.isInteger(value) && value >= 0
-}
-
-/**
- * @param {unknown} value
- * @returns {boolean}
- */
-function isPositiveInteger(value) {
-  return Number.isInteger(value) && value > 0
-}
-
-/**
- * @param {unknown} value
- * @param {number} fallback
- * @returns {number}
- */
-function toPositiveInteger(value, fallback) {
-  return Number.isInteger(value) && value > 0 ? value : fallback
 }
 
 /**
@@ -1029,8 +942,7 @@ function readTextFile(filePath) {
       return null
     }
 
-    const readFlag =
-      typeof hmFS.O_RDONLY === 'number' ? hmFS.O_RDONLY : FS_O_RDONLY
+    const readFlag = resolveFsReadOnlyFlag(hmFS)
     fileDescriptor = hmFS.open(resolvedPath, readFlag)
 
     if (fileDescriptor < 0) {
@@ -1079,10 +991,7 @@ function writeTextFile(filePath, content) {
 
   try {
     const bytes = encodeUtf8(content)
-    const writeFlags =
-      (typeof hmFS.O_WRONLY === 'number' ? hmFS.O_WRONLY : FS_O_WRONLY) |
-      (typeof hmFS.O_CREAT === 'number' ? hmFS.O_CREAT : FS_O_CREAT) |
-      (typeof hmFS.O_TRUNC === 'number' ? hmFS.O_TRUNC : FS_O_TRUNC)
+    const writeFlags = resolveFsWriteCreateTruncateFlags(hmFS)
 
     fileDescriptor = hmFS.open(resolvedPath, writeFlags)
 

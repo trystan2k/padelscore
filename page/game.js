@@ -1,5 +1,5 @@
 import { gettext } from 'i18n'
-
+import { DEFAULT_SETS_TO_PLAY } from '../utils/constants.js'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
 import { createHistoryStack, deepCopyState } from '../utils/history-stack.js'
 import { resolveLayout } from '../utils/layout-engine.js'
@@ -10,7 +10,6 @@ import {
   toIsoTimestampSafe
 } from '../utils/match-state-schema.js'
 import { getActiveSession, saveActiveSession } from '../utils/match-storage.js'
-import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint, removePoint } from '../utils/scoring-engine.js'
 import { getScreenMetrics } from '../utils/screen-utils.js'
 import {
@@ -19,23 +18,28 @@ import {
   createDivider,
   createText
 } from '../utils/ui-components.js'
+import {
+  cloneMatchState,
+  cloneSetHistoryWithFirstSetFallback as cloneSetHistory,
+  isRecord,
+  isSupportedSetConfiguration,
+  isTeamIdentifier,
+  isTieBreakMode,
+  resolveSetsToPlayFromSetsNeededToWin,
+  resolveWinnerTeam,
+  toNonNegativeInteger,
+  toPersistedPointValue,
+  toPositiveInteger,
+  toRuntimePointValue,
+  toSupportedSetsToPlay
+} from '../utils/validation.js'
 import { createScoreViewModel } from './score-view-model.js'
 
 const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const MANUAL_FINISH_CONFIRM_WINDOW_MS = 3000
-const PERSISTED_ADVANTAGE_POINT_VALUE = 50
-const PERSISTED_GAME_POINT_VALUE = 60
-const DEFAULT_SETS_TO_PLAY = 3
-const TIE_BREAK_ENTRY_GAMES = 6
 const FOOTER_ICON_BUTTON_OFFSET = 36
-const REGULAR_GAME_POINT_VALUES = new Set([
-  SCORE_POINTS.LOVE,
-  SCORE_POINTS.FIFTEEN,
-  SCORE_POINTS.THIRTY,
-  SCORE_POINTS.FORTY
-])
 
 /**
  * Layout schema for the game screen.
@@ -190,20 +194,8 @@ const GAME_LAYOUT = {
   }
 }
 
-function cloneMatchState(matchState) {
-  try {
-    return JSON.parse(JSON.stringify(matchState))
-  } catch {
-    return matchState
-  }
-}
-
 function ensureNumber(value, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
 }
 
 function isPersistedMatchStateActive(matchState) {
@@ -211,97 +203,6 @@ function isPersistedMatchStateActive(matchState) {
     isRecord(matchState) && matchState.status === PERSISTED_MATCH_STATUS.ACTIVE
   )
 }
-
-function toNonNegativeInteger(value, fallback = 0) {
-  return Number.isInteger(value) && value >= 0 ? value : fallback
-}
-
-function toPositiveInteger(value, fallback = 1) {
-  return Number.isInteger(value) && value > 0 ? value : fallback
-}
-
-function toSupportedSetsToPlay(value, fallback = DEFAULT_SETS_TO_PLAY) {
-  return value === 1 || value === 3 || value === 5 ? value : fallback
-}
-
-function resolveSetsToPlayFromSetsNeededToWin(setsNeededToWin) {
-  if (setsNeededToWin <= 1) {
-    return 1
-  }
-
-  if (setsNeededToWin >= 3) {
-    return 5
-  }
-
-  return 3
-}
-
-function isSupportedSetConfiguration(setsToPlay, setsNeededToWin) {
-  return Math.ceil(setsToPlay / 2) === setsNeededToWin
-}
-
-function toPersistedPointValue(value) {
-  if (Number.isInteger(value) && value >= 0) {
-    return value
-  }
-
-  if (value === 'Ad') {
-    return PERSISTED_ADVANTAGE_POINT_VALUE
-  }
-
-  if (value === 'Game') {
-    return PERSISTED_GAME_POINT_VALUE
-  }
-
-  return 0
-}
-
-function isTieBreakMode(teamAGames, teamBGames) {
-  return (
-    teamAGames === TIE_BREAK_ENTRY_GAMES && teamBGames === TIE_BREAK_ENTRY_GAMES
-  )
-}
-
-function toRuntimePointValue(
-  value,
-  tieBreakMode,
-  fallback = SCORE_POINTS.LOVE
-) {
-  if (!Number.isInteger(value) || value < 0) {
-    return fallback
-  }
-
-  if (tieBreakMode) {
-    return value
-  }
-
-  if (value === PERSISTED_ADVANTAGE_POINT_VALUE) {
-    return SCORE_POINTS.ADVANTAGE
-  }
-
-  if (value === PERSISTED_GAME_POINT_VALUE) {
-    return SCORE_POINTS.GAME
-  }
-
-  if (REGULAR_GAME_POINT_VALUES.has(value)) {
-    return value
-  }
-
-  return value
-}
-
-function cloneSetHistory(setHistory) {
-  if (!Array.isArray(setHistory)) {
-    return []
-  }
-
-  return setHistory.map((entry) => ({
-    setNumber: toPositiveInteger(entry?.setNumber, 1),
-    teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
-    teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
-  }))
-}
-
 function createCurrentSetSnapshot(matchState) {
   const setNumber = toPositiveInteger(
     matchState?.currentSetStatus?.number,
@@ -365,22 +266,6 @@ function createManualFinishedMatchStateSnapshot(matchState) {
   }
 
   return nextState
-}
-
-function resolveWinnerTeam(matchState) {
-  if (!isRecord(matchState)) {
-    return null
-  }
-
-  if (isTeamIdentifier(matchState.winnerTeam)) {
-    return matchState.winnerTeam
-  }
-
-  if (isRecord(matchState.winner) && isTeamIdentifier(matchState.winner.team)) {
-    return matchState.winner.team
-  }
-
-  return null
 }
 
 function clearWinnerMetadata(matchState) {
@@ -656,10 +541,6 @@ function isHistoryStackLike(historyStack) {
     typeof historyStack.clear === 'function' &&
     typeof historyStack.isEmpty === 'function'
   )
-}
-
-function isTeamIdentifier(team) {
-  return team === 'teamA' || team === 'teamB'
 }
 
 function isSameMatchState(leftState, rightState) {
