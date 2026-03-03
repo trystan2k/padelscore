@@ -29,7 +29,7 @@ A padel score tracking app for Amazfit watches running Zepp OS. Track match scor
 
 ### Prerequisites
 
-- Node.js 16+ (tested with Node 20)
+- Node.js 24.x
 - Zeus CLI installed globally:
   ```bash
   npm i -g @zeppos/zeus-cli

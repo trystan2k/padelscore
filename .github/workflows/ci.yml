@@ -65,5 +65,8 @@ jobs:
       - name: Test suite
         run: npm run test
 
+      - name: Unification regression suite
+        run: npm run test:unification
+
       - name: Build
         run: npm run build:all

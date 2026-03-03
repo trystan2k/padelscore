@@ -5,7 +5,7 @@ This guide summarizes what you need to start building an Amazfit smartwatch app 
 ## What You Need
 
 - A Zepp/Open Platform account (for CLI login, app registration, publishing): <https://console.zepp.com>
-- Node.js installed (Quick Start uses Node 20 examples, minimum around 16+): <https://docs.zepp.com/docs/guides/quick-start/environment/>
+- Node.js 24.x (Zepp Quick Start guide also uses Node.js examples): <https://docs.zepp.com/docs/guides/quick-start/environment/>
 - Zeus CLI installed globally:
 
 ```bash
