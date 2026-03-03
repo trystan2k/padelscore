@@ -225,6 +225,7 @@ async function loadSummaryPageDefinition() {
   const matchHistoryStorageUrl = toProjectFileUrl(
     'utils/match-history-storage.js'
   )
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
@@ -260,6 +261,7 @@ async function loadSummaryPageDefinition() {
       "from '../utils/match-history-storage.js'",
       `from '${matchHistoryStorageUrl.href}'`
     )
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/design-tokens.js'",
       `from '${designTokensUrl.href}'`

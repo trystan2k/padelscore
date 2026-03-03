@@ -3866,12 +3866,77 @@
         "description": "Find and consolidate duplicated constants, validation helpers, and small utility functions used across pages and services into a single shared utilities module to reduce duplication and enforce canonical behavior.",
         "details": "Implementation Steps:\n\n1. **Codebase Audit**: Search the entire codebase to identify duplicated constants, validation helpers, and utility functions. Look for:\n   - Input validation for scores (e.g., score range checks)\n   - Timestamp parsing/formatting functions\n   - Common constants (e.g., default values, configuration settings)\n   - Repeated small utility functions across different modules\n\n2. **Create Shared Utility Modules**: Create two new utility files:\n   - `utils/validation.js`: Consolidate all validation helpers including score validation, timestamp validation, and any other input validation functions\n   - `utils/constants.js`: Consolidate all shared constants including default values, configuration settings, and any other static values\n\n3. **Define Canonical Implementations**: For each duplicated function/constant:\n   - Compare implementations to identify the most correct/complete version\n   - Reference the canonical contract (Task 53) for validation rules to ensure alignment\n   - Establish the single authoritative version as the canonical implementation\n\n4. **Update Modules**: Replace all inline or duplicated implementations with imports from the shared utilities:\n   - Search for usage patterns of the duplicated code\n   - Replace with imports (e.g., `import { validateScore } from '../utils/validation'`)\n   - Update references to use the shared constants\n\n5. **Behavior Verification**: Ensure that no behavior changes occur during consolidation:\n   - Confirm function signatures remain identical\n   - Verify return values match exactly\n   - Ensure error handling is preserved\n\nConsiderations:\n- Maintain backward compatibility with existing function signatures\n- Document any subtle differences found during the audit\n- Do not refactor or optimize beyond consolidation unless explicitly approved\n- Ensure the shared utilities follow the validation rules defined in the canonical contract",
         "testStrategy": "1. **Pre-Consolidation Baseline**: Run the existing test suite to capture all current passing tests as a baseline.\n\n2. **Search Verification**: After consolidation, use grep or similar tools to search for remaining instances of the previously duplicated code patterns to confirm all modules now import from the shared utilities.\n\n3. **Test Execution**: Run the complete test suite to verify:\n   - All previously passing tests continue to pass\n   - No regressions are introduced\n   - Behavior is identical to the pre-consolidation state\n\n4. **Unit Tests for Shared Utilities**: Create or update unit tests specifically for the consolidated validation helpers and constants:\n   - Test edge cases for validation functions (boundary values, invalid inputs)\n   - Verify constants have expected values\n   - Test that exported functions handle all use cases previously covered\n\n5. **Integration Verification**: Test pages and services that previously used duplicated helpers:\n   - Manually verify functionality in affected areas (game screen, settings, storage operations)\n   - Ensure input validation still works correctly across all entry points\n   - Confirm timestamp parsing/formatting produces identical results",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "53"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit codebase for duplicated constants and validation helpers",
+            "description": "Search the entire codebase to identify all duplicated constants, validation helpers, and utility functions across modules",
+            "dependencies": [],
+            "details": "Perform comprehensive codebase search to identify duplicated code patterns: score range validation functions, timestamp parsing/formatting functions, common constants (default values, configuration settings), and repeated small utility functions. Document each duplicate found with its file location, function signature, and implementation details. Create a mapping document showing all duplicates and their occurrences to guide consolidation efforts.",
+            "status": "done",
+            "testStrategy": "Run existing test suite to establish baseline; use grep/ripgrep to search for patterns like score validation, timestamp parsing, and constant declarations to identify duplicates",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T07:05:50.932Z"
+          },
+          {
+            "id": 2,
+            "title": "Create shared utility modules structure",
+            "description": "Create utils/validation.js and utils/constants.js files to house consolidated helpers and constants",
+            "dependencies": [
+              1
+            ],
+            "details": "Create two new utility files in the utils directory: validation.js for all validation helpers (score validation, timestamp validation, input validation functions) and constants.js for all shared constants (default values, configuration settings, static values). Set up proper file structure with export statements ready to receive the consolidated implementations. Ensure files follow project coding standards and include JSDoc comments for documentation.",
+            "status": "done",
+            "testStrategy": "Verify files are created in correct location with proper module structure and can be imported without errors",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T07:05:50.937Z"
+          },
+          {
+            "id": 3,
+            "title": "Define canonical implementations for identified duplicates",
+            "description": "Compare and establish single authoritative versions of each duplicated function and constant",
+            "dependencies": [
+              2
+            ],
+            "details": "For each duplicated function/constant identified in the audit, compare all implementations to determine the most correct and complete version. Reference the canonical contract from Task 53 for validation rules to ensure alignment. Establish each chosen implementation as the canonical version, moving it into the appropriate shared utility file. Document any subtle differences found between implementations and ensure error handling matches the best version found.",
+            "status": "done",
+            "testStrategy": "Review each canonical implementation against its contract requirements; verify function signatures match all original usages",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T07:05:50.940Z"
+          },
+          {
+            "id": 4,
+            "title": "Update all modules to import from shared utilities",
+            "description": "Replace all inline and duplicated implementations with imports from the new shared utility modules",
+            "dependencies": [
+              3
+            ],
+            "details": "Search for all usage patterns of the previously duplicated code throughout the codebase. Replace inline implementations and duplicated functions with imports from the shared utilities (e.g., import { validateScore } from '../utils/validation', import { DEFAULT_SCORE } from '../utils/constants'). Update all references to use the shared constants and functions. Ensure import paths are correct relative to each file's location. Remove the now-redundant duplicate code from each module.",
+            "status": "done",
+            "testStrategy": "Search codebase for remaining instances of old duplicate patterns to confirm complete replacement; verify all imports resolve correctly",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T07:05:50.945Z"
+          },
+          {
+            "id": 5,
+            "title": "Verify behavior and run regression tests",
+            "description": "Ensure no behavior changes occurred during consolidation and all tests pass",
+            "dependencies": [
+              4
+            ],
+            "details": "Run the full test suite to verify all tests continue to pass after consolidation. Confirm function signatures remain identical to their original implementations. Verify return values match exactly and error handling is preserved. Use grep or similar tools to search for any remaining instances of previously duplicated code patterns. Ensure backward compatibility is maintained and no subtle behavioral changes were introduced during the consolidation process.",
+            "status": "done",
+            "testStrategy": "Run complete test suite and verify all tests pass; compare results against baseline from task 1; use automated tools to verify no duplicate code remains",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-03T07:05:50.948Z"
+          }
+        ],
+        "updatedAt": "2026-03-03T07:05:50.948Z"
       },
       {
         "id": "61",
@@ -4017,9 +4082,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-02T23:45:41.424Z",
+      "lastModified": "2026-03-03T07:05:50.948Z",
       "taskCount": 70,
-      "completedCount": 55,
+      "completedCount": 56,
       "tags": [
         "master"
       ]

@@ -13,11 +13,16 @@ import {
   createButton,
   createText
 } from '../utils/ui-components.js'
-
-const PERSISTED_ADVANTAGE_POINT_VALUE = 50
-const PERSISTED_GAME_POINT_VALUE = 60
-const TIE_BREAK_ENTRY_GAMES = 6
-const REGULAR_GAME_POINT_VALUES = new Set([0, 15, 30, 40])
+import {
+  cloneMatchState,
+  cloneSetHistory,
+  isRecord,
+  isTieBreakMode,
+  resolveWinnerTeam,
+  toNonNegativeInteger,
+  toPositiveInteger,
+  toRuntimePointValue
+} from '../utils/validation.js'
 
 /**
  * Layout schema for the home screen.
@@ -108,91 +113,10 @@ const INDEX_LAYOUT = {
   }
 }
 
-function cloneMatchState(matchState) {
-  try {
-    return JSON.parse(JSON.stringify(matchState))
-  } catch {
-    return matchState
-  }
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null
-}
-
-function toNonNegativeInteger(value, fallback = 0) {
-  return Number.isInteger(value) && value >= 0 ? value : fallback
-}
-
-function toPositiveInteger(value, fallback = 1) {
-  return Number.isInteger(value) && value > 0 ? value : fallback
-}
-
-function cloneSetHistory(setHistory) {
-  if (!Array.isArray(setHistory)) {
-    return []
-  }
-
-  return setHistory.map((entry, index) => ({
-    setNumber: toPositiveInteger(entry?.setNumber, index + 1),
-    teamAGames: toNonNegativeInteger(entry?.teamAGames, 0),
-    teamBGames: toNonNegativeInteger(entry?.teamBGames, 0)
-  }))
-}
-
-function resolveWinnerTeam(matchState) {
-  if (!isRecord(matchState)) {
-    return null
-  }
-
-  if (matchState.winnerTeam === 'teamA' || matchState.winnerTeam === 'teamB') {
-    return matchState.winnerTeam
-  }
-
-  if (
-    isRecord(matchState.winner) &&
-    (matchState.winner.team === 'teamA' || matchState.winner.team === 'teamB')
-  ) {
-    return matchState.winner.team
-  }
-
-  return null
-}
-
 function isActivePersistedMatchState(matchState) {
   return (
     isRecord(matchState) && matchState.status === PERSISTED_MATCH_STATUS.ACTIVE
   )
-}
-
-function isTieBreakMode(teamAGames, teamBGames) {
-  return (
-    teamAGames === TIE_BREAK_ENTRY_GAMES && teamBGames === TIE_BREAK_ENTRY_GAMES
-  )
-}
-
-function toRuntimePointValue(value, tieBreakMode) {
-  if (!Number.isInteger(value) || value < 0) {
-    return 0
-  }
-
-  if (tieBreakMode) {
-    return value
-  }
-
-  if (value === PERSISTED_ADVANTAGE_POINT_VALUE) {
-    return 'Ad'
-  }
-
-  if (value === PERSISTED_GAME_POINT_VALUE) {
-    return 'Game'
-  }
-
-  if (REGULAR_GAME_POINT_VALUES.has(value)) {
-    return value
-  }
-
-  return value
 }
 
 function normalizePersistedMatchStateForRuntime(persistedMatchState) {

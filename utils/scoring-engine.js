@@ -1,5 +1,7 @@
+import { TIE_BREAK_ENTRY_GAMES } from './constants.js'
 import { deepCopyState } from './history-stack.js'
 import { SCORE_POINTS } from './scoring-constants.js'
+import { toNonNegativeInteger, toPositiveInteger } from './validation.js'
 
 const REGULAR_POINT_SEQUENCE = Object.freeze([
   SCORE_POINTS.LOVE,
@@ -11,7 +13,6 @@ const REGULAR_POINT_SEQUENCE = Object.freeze([
 const FORTY_POINT_INDEX = REGULAR_POINT_SEQUENCE.length - 1
 const MIN_GAMES_TO_WIN_SET = 6
 const MIN_GAME_MARGIN_TO_WIN_SET = 2
-const TIE_BREAK_ENTRY_GAMES = 6
 const MIN_TIE_BREAK_POINTS_TO_WIN_SET = 7
 const MIN_TIE_BREAK_POINT_MARGIN = 2
 const DEFAULT_SETS_NEEDED_TO_WIN = 2
@@ -108,24 +109,6 @@ function isTieBreakMode(state) {
  */
 function getTieBreakPoints(points) {
   return Number.isInteger(points) && points >= 0 ? points : 0
-}
-
-/**
- * @param {unknown} value
- * @param {number} fallback
- * @returns {number}
- */
-function toNonNegativeInteger(value, fallback = 0) {
-  return Number.isInteger(value) && value >= 0 ? value : fallback
-}
-
-/**
- * @param {unknown} value
- * @param {number} fallback
- * @returns {number}
- */
-function toPositiveInteger(value, fallback = 1) {
-  return Number.isInteger(value) && value > 0 ? value : fallback
 }
 
 /**

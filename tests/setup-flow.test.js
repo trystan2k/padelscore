@@ -50,10 +50,12 @@ function createPageInstance(definition) {
 
 async function loadSetupPageDefinition() {
   const sourceUrl = toProjectFileUrl('page/setup.js')
+  const constantsUrl = toProjectFileUrl('utils/constants.js')
   const matchSessionInitUrl = toProjectFileUrl('utils/match-session-init.js')
   const matchStorageUrl = toProjectFileUrl('utils/match-storage.js')
   const matchStateSchemaUrl = toProjectFileUrl('utils/match-state-schema.js')
   const storageUrl = toProjectFileUrl('utils/storage.js')
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
   const layoutPresetsUrl = toProjectFileUrl('utils/layout-presets.js')
@@ -71,6 +73,7 @@ async function loadSetupPageDefinition() {
       "from '../utils/match-session-init.js'",
       `from '${matchSessionInitUrl.href}'`
     )
+    .replace("from '../utils/constants.js'", `from '${constantsUrl.href}'`)
     .replace(
       "from '../utils/match-storage.js'",
       `from '${matchStorageUrl.href}'`
@@ -80,6 +83,7 @@ async function loadSetupPageDefinition() {
       `from '${matchStateSchemaUrl.href}'`
     )
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/design-tokens.js'",
       `from '${designTokensUrl.href}'`

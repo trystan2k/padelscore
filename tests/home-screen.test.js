@@ -138,7 +138,9 @@ async function loadHomePageDefinition() {
   const startNewMatchFlowUrl = toProjectFileUrl(
     'tests/helpers/home-start-new-match-flow-bridge.js'
   )
+  const constantsUrl = toProjectFileUrl('utils/constants.js')
   const storageUrl = toProjectFileUrl('utils/storage.js')
+  const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
@@ -169,7 +171,9 @@ async function loadHomePageDefinition() {
       "from '../utils/start-new-match-flow.js'",
       `from '${startNewMatchFlowUrl.href}'`
     )
+    .replace("from '../utils/constants.js'", `from '${constantsUrl.href}'`)
     .replace("from '../utils/storage.js'", `from '${storageUrl.href}'`)
+    .replace("from '../utils/validation.js'", `from '${validationUrl.href}'`)
     .replace(
       "from '../utils/design-tokens.js'",
       `from '${designTokensUrl.href}'`

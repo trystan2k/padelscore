@@ -1,24 +1,19 @@
+import { MATCH_SET_OPTIONS } from './constants.js'
 import {
   createDefaultMatchState,
   MATCH_STATUS,
-  SETS_TO_PLAY,
   toIsoTimestampSafe
 } from './match-state-schema.js'
+import { isSupportedSetsToPlay as isSupportedSetsToPlayValue } from './validation.js'
 
-export const SUPPORTED_SETS_TO_PLAY = Object.freeze([
-  SETS_TO_PLAY.ONE,
-  SETS_TO_PLAY.THREE,
-  SETS_TO_PLAY.FIVE
-])
-
-const supportedSetsToPlaySet = new Set(SUPPORTED_SETS_TO_PLAY)
+export const SUPPORTED_SETS_TO_PLAY = MATCH_SET_OPTIONS
 
 /**
  * @param {unknown} setsToPlay
  * @returns {setsToPlay is import('./match-state-schema.js').SetsToPlay}
  */
 export function isSupportedSetsToPlay(setsToPlay) {
-  return supportedSetsToPlaySet.has(setsToPlay)
+  return isSupportedSetsToPlayValue(setsToPlay)
 }
 
 /**
