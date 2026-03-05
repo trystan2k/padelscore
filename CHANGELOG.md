@@ -200,14 +200,13 @@ All notable changes to this project will be documented in this file.
 * **storage:** replace async storage with synchronous hmFS API ([3fc3aba](https://github.com/trystan2k/padelbuddy/commit/3fc3aba915db3278b608a881c0ee49d235a532e5))
 * **summary:** replace static history list with scrollable view and remove new game button ([97488a0](https://github.com/trystan2k/padelbuddy/commit/97488a04785cb72cee5a26e3a0186d8aa0ad8107))
 
+### Added
+
+* Initial release of Padel Buddy
+* Padel match score tracking for Amazfit watches
+* Support for GTR-3 and GTS-3 devices
+* Match history storage and viewing
+* Multi-language support (English, Portuguese, Spanish)
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [1.0.0] - 2025-02-25
-
-### Added
-- Initial release of Padel Buddy
-- Padel match score tracking for Amazfit watches
-- Support for GTR-3 and GTS-3 devices
-- Match history storage and viewing
-- Multi-language support (English, Portuguese, Spanish)
