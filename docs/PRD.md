@@ -1,5 +1,9 @@
 # Product Requirements Document (PRD)
 
+**Version:** 1.1 | **Updated:** 2026-03-05 | **Task:** #67
+
+> **Note:** For confirmed product decisions, see [PRD-Review.md](./PRD-Review.md) - the authoritative source for all confirmed decisions.
+
 ## 1. Overview
 
 ### 1.1 Product Name
@@ -217,14 +221,18 @@ The following must be stored locally on the device:
 
 ### 7.2 Persistence Rules
 
-- State must be saved:
-  - On every score change
-  - When navigating away from Game Screen
-  - When the app is backgrounded
+State must be saved:
+- On every score change
+- When navigating away from Game Screen
+- When the app is backgrounded (via `onDestroy` lifecycle callback)
 
-- State must be restored:
-  - On app reopen
-  - On "Resume Game"
+> **Note:** Uses Zepp OS v1.0 lifecycle - see [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for lifecycle semantics.
+
+State must be restored:
+- On app reopen (via `onInit` lifecycle callback)
+- On "Resume Game"
+
+> **Note:** Pages are destroyed and recreated on each navigation in Zepp OS v1.0.
 
 ---
 
@@ -284,17 +292,19 @@ Expected behavior:
 ## 12. Non-Goals (Out of Scope – v1)
 
 - Player names
-- Match history
+- ~~Match history~~ (removed - **now in scope**, see PRD-Review.md Section 1, Decision 1)
 - Tie-break configuration
 - Cloud sync
 - Companion phone app integration
+
+> **Note:** Match history is now in scope for v1.0. See [PRD-Review.md](./PRD-Review.md) for details.
 
 ---
 
 ## 13. Future Enhancements
 
 - Tie-break configuration options (e.g., super tie-break)
-- Match history
+- ~~Match history~~ (now implemented in v1.0)
 - Haptic feedback on score change
 - Voice input (if supported by Zepp OS)
 - Companion mobile app

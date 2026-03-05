@@ -4414,13 +4414,78 @@
         "description": "Update product requirement documents to reflect confirmed product decisions including match history scope, summary screen UI requirements, and release branching policies. Ensure all PRDs incorporate Zepp OS v1 lifecycle constraints and semantic requirements.",
         "details": "This task focuses on synchronizing the product documentation with the latest confirmed decisions from the remediation program. The documentation needs to accurately reflect:\n\n1. **Match History Scope**: Explicitly document that match history viewing and persistence remain within the product scope, including storage requirements and UI access patterns.\n\n2. **Summary Screen Requirements**: Clarify that the summary screen should NOT include a 'Start New Game' button, as this functionality is handled from the Home Screen.\n\n3. **Release Branching Policy**: Document the dual-stream release approach supporting both:\n   - Main branch releases for feature releases (tag format: X.Y.Z)\n   - Version branch releases (v*) for maintenance and hotfixes (tag format: X.Y.Z+patch)\n\n4. **Zepp OS v1 Lifecycle Semantics**: Update all lifecycle-related documentation to reflect Zepp OS v1.0 constraints:\n   - Document the available lifecycle events (app.onPause, app.onResume, etc.)\n   - Clarify that onShow/onHide are not available in v1.0\n   - Document persistence triggers for backgrounding/sleep events\n   - Include notes on state restoration requirements\n\nImplementation steps:\n1. Locate all PRD files in `docs/` and `.taskmaster/prds/` directories\n2. Review each PRD for sections referencing match history, summary screen UI, release process, and lifecycle events\n3. Update the relevant sections with the confirmed decisions\n4. Add version tags and update dates for all modified documents\n5. Ensure consistent terminology and formatting across all PRDs\n6. Cross-reference between related PRDs where decisions impact multiple documents",
         "testStrategy": "The verification will focus on documentation completeness and accuracy:\n\n1. **Content Verification**:\n   - Verify match history is clearly documented as in-scope with storage and UI requirements\n   - Confirm summary screen PRD explicitly excludes 'Start New Game' button\n   - Validate release branching policy documentation covers both main and v* branch patterns\n   - Check all lifecycle-related sections use Zepp v1.0 compatible terminology\n\n2. **Consistency Check**:\n   - Ensure no conflicts exist between updated PRDs\n   - Verify terminology is consistent across all documents\n   - Confirm version tags and dates are applied correctly\n\n3. **Stakeholder Review**:\n   - Submit PR/merge request for product/PM team review\n   - Collect explicit acknowledgment from stakeholders\n   - Address any feedback or clarification requests\n\n4. **Cross-Reference Validation**:\n   - Verify references between PRDs remain accurate after updates\n   - Ensure implementation tickets align with updated PRDs (no code changes needed per scope)",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "53",
           "65"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Locate and inventory all PRD files",
+            "description": "Search through the project directories to find all product requirement documents and create a comprehensive inventory.",
+            "dependencies": [],
+            "details": "Navigate to the `docs/` and `.taskmaster/prds/` directories and perform a comprehensive search for all PRD files. Create an inventory list that includes file paths, names, and any version information currently present. This inventory will serve as the baseline for all subsequent review and update activities.",
+            "status": "done",
+            "testStrategy": "Verify the inventory list by manually checking each directory against the generated list to ensure no PRD files were missed.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T10:20:06.455Z"
+          },
+          {
+            "id": 2,
+            "title": "Review PRDs and identify sections requiring updates",
+            "description": "Systematically review each PRD to locate sections referencing match history, summary screen UI, release process, and lifecycle events.",
+            "dependencies": [
+              1
+            ],
+            "details": "Using the inventory from subtask 1, review each PRD file to identify sections that mention match history scope, summary screen UI requirements, release branching policies, and lifecycle event handling. Create a detailed mapping document that specifies which PRDs contain which relevant sections and what specific changes are needed for each based on the confirmed product decisions.",
+            "status": "done",
+            "testStrategy": "Cross-reference the mapping document against the original confirmed decisions list to ensure all required updates have been identified.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T10:20:06.458Z"
+          },
+          {
+            "id": 3,
+            "title": "Update PRDs with confirmed product decisions",
+            "description": "Modify PRD sections to document match history scope, summary screen requirements, and release branching policy.",
+            "dependencies": [
+              2
+            ],
+            "details": "Update the identified PRD sections with the following confirmed decisions: 1) Explicitly document that match history viewing and persistence remain in-scope, including storage requirements and UI access patterns. 2) Clarify that the summary screen should NOT include a 'Start New Game' button as this functionality is handled from the Home Screen. 3) Document the dual-stream release approach supporting main branch releases (X.Y.Z) for features and version branch releases (v*) for maintenance and hotfixes (X.Y.Z+patch).",
+            "status": "done",
+            "testStrategy": "Verify each updated section accurately reflects the confirmed decisions by comparing against the original requirements document.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T10:20:06.461Z"
+          },
+          {
+            "id": 4,
+            "title": "Update all PRDs with Zepp OS v1 lifecycle semantics",
+            "description": "Incorporate Zepp OS v1.0 lifecycle constraints and semantic requirements into all relevant PRD sections.",
+            "dependencies": [
+              3
+            ],
+            "details": "Update all lifecycle-related documentation across the PRDs to reflect Zepp OS v1.0 constraints. This includes: documenting the available lifecycle events (app.onPause, app.onResume, etc.), explicitly noting that onShow/onHide events are NOT available in v1.0, documenting persistence triggers for backgrounding/sleep events, and including detailed notes on state restoration requirements for these lifecycle scenarios.",
+            "status": "done",
+            "testStrategy": "Cross-reference the lifecycle documentation against official Zepp OS v1.0 documentation to ensure all constraints and events are accurately represented.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T10:20:06.465Z"
+          },
+          {
+            "id": 5,
+            "title": "Add metadata and ensure consistency across all PRDs",
+            "description": "Apply version tags, update dates, standardize terminology, and add cross-references between related PRDs.",
+            "dependencies": [
+              4
+            ],
+            "details": "For all modified PRD documents, add appropriate version tags and update the modification dates to reflect the current changes. Review all documents to ensure consistent terminology and formatting across the entire PRD suite. Add cross-references between related PRDs where decisions impact multiple documents (e.g., match history changes affecting UI and storage PRDs). Perform a final consistency check across all documents.",
+            "status": "done",
+            "testStrategy": "Perform a visual and content audit of all modified PRDs to verify consistent formatting, terminology, proper version tagging, and accurate cross-references.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T10:20:06.468Z"
+          }
+        ],
+        "updatedAt": "2026-03-05T10:20:06.468Z"
       },
       {
         "id": "68",
@@ -4470,9 +4535,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-05T08:24:31.320Z",
+      "lastModified": "2026-03-05T10:20:06.468Z",
       "taskCount": 70,
-      "completedCount": 62,
+      "completedCount": 63,
       "tags": [
         "master"
       ]

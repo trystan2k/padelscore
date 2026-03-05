@@ -1,5 +1,9 @@
 # PRD - Manual Match Finish with Coach/Whistle Confirmation
 
+**Version:** 1.0 | **Updated:** 2026-03-05 | **Task:** #67
+
+> **Note:** For confirmed product decisions, see [PRD-Review.md](./PRD-Review.md) - the authoritative source for all confirmed decisions.
+
 ## 1. Overview
 
 ### 1.1 Feature Name
@@ -111,6 +115,8 @@ Manual finish must behave the same as scoring-based finish in lifecycle outcomes
 
 - Navigate to Summary screen.
 - Persist finished match state.
+  - **Note:** Persistence triggered via `onDestroy()` in Zepp OS v1.0
+  - See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4
 - Save match to history.
 - Ensure no resumable active match appears on Home.
 
@@ -126,7 +132,9 @@ Manual finish must behave the same as scoring-based finish in lifecycle outcomes
 ## 6. Edge Cases
 
 - Prevent duplicate append of current set snapshot if action is triggered twice.
-- Ensure confirmation timer is cleared on navigation and `onDestroy`.
+- Ensure confirmation timer is cleared on navigation and `onDestroy()`.
+  - **Note:** `onDestroy()` is the only cleanup lifecycle in Zepp OS v1.0
+  - See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4
 - If match is already finished, manual finish action should be no-op.
 - If score data is partially missing, fallback safely without crashing.
 

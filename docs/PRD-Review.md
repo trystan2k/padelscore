@@ -1,11 +1,15 @@
 # PRD-Review
 
+**Version:** 1.1 | **Updated:** 2026-03-05 | **Task:** #67
+
 ## 1. Title and Metadata
 
 - PRD name: PRD-Review
 - Date: 2026-03-02
 - Status: Approved for implementation
-- Scope statement: This document is the source of truth for the remediation initiative that aligns runtime/state architecture, release automation, and product documentation with confirmed decisions from the deep review session.
+- Scope statement: This document is the **single source of truth** for the remediation initiative that aligns runtime/state architecture, release automation, and product documentation with confirmed decisions from the deep review session.
+
+**Important:** This document is the authoritative source for all confirmed product decisions. Other PRDs should reference this document rather than duplicating decision details.
 
 ### Confirmed Product Decisions
 
@@ -14,6 +18,104 @@
 - Releases must support both `main` and `v*` branches.
 - Schema and storage unification is required now.
 - PRD lifecycle wording must remain Zepp OS v1-compatible.
+
+### Detailed Confirmed Decisions
+
+#### Decision 1: Match History Scope
+
+**Decision**: Match history is **IN SCOPE** for v1.0  
+**Previous status**: Listed as "Out of Scope" in original PRD.md Section 12  
+**Correction date**: 2026-03-05
+
+**Features included**:
+- View list of completed matches
+- View detailed match results (sets, games, scores)
+- Delete individual matches from history
+- Persistent storage across app restarts
+
+**Implementation references**:
+- UI: `page/history.js`, `page/history-detail.js`
+- Storage: `utils/match-storage.js` (history functions)
+- Data: Match history persisted separately from active session
+
+**Acceptance**: Any PRD stating match history is out of scope is outdated. See PRD.md Section 12 (corrected) and this document.
+
+---
+
+#### Decision 2: Summary Screen Requirements
+
+**Decision**: Summary screen does **NOT** require "Start New Game" button  
+**Rationale**: New game flow is handled exclusively from Home Screen  
+**Correction date**: 2026-03-05
+
+**Correct behavior**:
+- Summary screen shows: winner, final scores, set history
+- Summary screen actions: Return to Home only
+- New game flow: Home Screen → Start New Game → Setup → Game
+
+**Implementation references**:
+- Summary page: `page/summary.js`
+- Home page: `page/index.js`
+
+**Acceptance**: Any PRD requiring "Start New Game" on summary screen is incorrect. Users start new games from Home Screen only.
+
+---
+
+#### Decision 3: Release Branching Policy
+
+**Decision**: Dual-stream release approach with main and version branches  
+**Implementation date**: 2026-03-05 (Task #65)
+
+**Release streams**:
+1. **Main branch (`main`)**: Feature releases
+   - Trigger: Push/merge to main
+   - Tag format: `vX.Y.Z` (semantic versioning)
+   - Examples: `v1.0.0`, `v1.1.0`, `v2.0.0`
+   
+2. **Version branches (`v*`)**: Maintenance and hotfix releases
+   - Pattern: `v1.0.x`, `v1.1.x`, etc.
+   - Tag format: `vX.Y.Z` (same semantic versioning as main; patch/minor bumps determined by commits)
+   - Examples: `v1.0.1`, `v1.0.2`, `v1.1.1`
+   - Channel: derived from branch name (e.g., `v1.0.x` branch → `1.0.x` channel)
+
+**Implementation references**:
+- Workflow: `.github/workflows/release.yml`
+- Config: `.releaserc.json`
+- Documentation: `RELEASE.md`
+
+**Acceptance**: All PRDs must reference this dual-stream approach for release policy.
+
+---
+
+#### Decision 4: Zepp OS v1.0 Lifecycle Semantics
+
+**Decision**: Use only Zepp OS v1.0-compatible lifecycle methods  
+**Audit completion**: 2026-02-23 (Task #32)
+
+**Available lifecycle methods**:
+- `onInit(params)`: Page initialization, parse params, load data
+- `build()`: Create UI widgets, render screen
+- `onDestroy()`: Cleanup, persist state, release resources
+
+**NOT available in v1.0** (removed in Task #32):
+- `onShow()` - Not supported, pages are destroyed/recreated on navigation
+- `onHide()` - Not supported, use `onDestroy()` for exit logic
+- `onResume()` - Not supported, no page-stack persistence
+- `onPause()` - Not supported, use `onDestroy()` for state persistence
+
+**State persistence pattern**:
+- **Entry**: `onInit()` → load persisted state
+- **Exit**: `onDestroy()` → save current state
+- **Navigation**: Always triggers destroy → init → build cycle
+
+**Implementation references**:
+- Audit summary: `.taskmaster/notes/lifecycle-audit-summary.md`
+- Removed from: `page/index.js`, `page/setup.js`, `page/summary.js`, `page/game.js`
+- Test update: `tests/home-screen.test.js`
+
+**Acceptance**: Any PRD referencing `onShow/onHide/onResume/onPause` as available methods must be corrected. These methods do not exist in Zepp OS v1.0.
+
+---
 
 ## 2. Executive Summary of Findings
 
@@ -214,7 +316,27 @@ Current implementation and docs are not consistently aligned with confirmed prod
 - No summary-screen requirement for "Start New Game".
 - No big-bang rewrite that removes migration compatibility in one step.
 
-## 9. Source References
+## 9. How to Use This Document
+
+This PRD-Review.md is the **single source of truth** for confirmed product decisions.
+
+### For Other PRDs
+- Reference this document for shared decisions
+- Do not duplicate decision details in individual PRDs
+- Add "See PRD-Review.md Section X" for relevant decisions
+- Update this document if new decisions are confirmed
+
+### For Developers
+- Check this document before implementing features
+- If implementation contradicts this document, escalate for clarification
+- Update this document when product decisions change
+
+### For Stakeholders
+- This document reflects the latest confirmed product direction
+- Individual PRDs may contain outdated information if not yet updated
+- Always reference this document for current decisions
+
+## 10. Source References
 
 ### Key code and config surfaces
 
