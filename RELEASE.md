@@ -72,17 +72,47 @@ shared/        # Shared modules
 | `test:` | `test: add unit tests for score` | No release |
 | `style:` | `style: format code with biome` | No release |
 
-### Ignored File Paths
+### Path Filtering: CI vs. Release
 
-Changes to these paths are **always ignored** for releases:
+This repository uses **two different path filtering mechanisms** for different purposes:
 
+| Mechanism | Purpose | Configured In | Effect |
+|-----------|---------|---------------|--------|
+| **CI paths-ignore** | Skip CI workflow entirely | `.github/workflows/ci.yml` | Push to main/v* with only these paths won't trigger CI (PRs always trigger CI) |
+| **Release releasable paths** | Determine if release should happen | `.github/workflows/release.yml` | Changes must be in these paths to trigger a release |
+
+**CI paths-ignore** (prevents CI from running):
 ```
 .opencode/     # Agent configurations
 .taskmaster/   # Task management
 .husky/        # Git hooks
-.github/       # GitHub workflows
 docs/          # Documentation folder
-*.md           # Markdown files
+README.md      # Main readme
+AGENTS.md      # Agent instructions
+CONTEXT.md     # Project context
+```
+
+**Release releasable paths** (triggers a release when changed):
+```
+page/          # UI pages/screens
+app.js         # Main application entry
+app.json       # App configuration
+app-side/      # App-side service code
+setting/       # Settings page code
+utils/         # Utility functions
+assets/        # Images, icons, fonts
+shared/        # Shared modules
+```
+
+> **Note**: Paths not in the "releasable paths" list (like `.github/`, `*.md`, `LICENSE`) won't trigger a release, even if they're not in the CI paths-ignore list.
+
+### Other Paths That Don't Trigger Releases
+
+Changes to these paths won't trigger a release (even though they may trigger CI):
+
+```
+.github/       # GitHub workflows
+*.md           # Markdown files (except README.md, AGENTS.md, CONTEXT.md which are in CI paths-ignore)
 LICENSE        # License file
 .gitignore     # Git ignore rules
 ```
@@ -305,8 +335,10 @@ When a release is triggered, the following steps execute automatically:
 
 ### 3. Quality Checks
 ```bash
-npm run test    # Run test suite
-npm run lint    # Run Biome linter
+npm run lint              # Biome linter
+npm run format:check      # Format check (no auto-fix)
+npm run test              # Unit test suite
+npm run test:unification  # Unification regression suite
 ```
 
 ### 4. Build
