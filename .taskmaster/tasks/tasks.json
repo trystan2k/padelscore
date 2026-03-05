@@ -4493,13 +4493,74 @@
         "description": "Update README.md and CONTEXT.md to reflect current project status, Zepp OS v1 constraints, entry points, and QA commands (npm run complete-check), including links to RELEASE.md and PRD updates.",
         "details": "This task involves refreshing the project documentation to ensure accuracy and alignment with the current state of the codebase and release processes.\n\n**Implementation Steps:**\n\n1. **Audit Current Documentation**\n   - Review README.md to identify outdated sections, incorrect entry points, or missing information\n   - Review CONTEXT.md to ensure it accurately reflects the current project architecture and Zepp OS v1 constraints\n   - Document all discrepancies between documentation and actual implementation\n\n2. **Update README.md**\n   - Update project description and overview to reflect current state\n   - Document the correct entry points for the application (e.g., main page/screen files)\n   - Add/update the QA commands section, specifically including `npm run complete-check`\n   - Update installation and setup instructions to reflect current build processes\n   - Ensure all links to other documentation files are current and valid\n   - Add clear link to RELEASE.md (updated in Task 66) for release process information\n   - Add reference to PRD updates if available\n   - Verify and update any Zepp OS v1 specific constraints or requirements\n\n3. **Update CONTEXT.md**\n   - Update project context to match current architecture and design\n   - Ensure Zepp OS v1 constraints are accurately documented (screen handling, storage APIs, etc.)\n   - Update references to core components: unified storage service, screen utilities, UI system\n   - Ensure consistency with README.md descriptions\n   - Include link to RELEASE.md for release process reference\n\n4. **Cross-Reference Verification**\n   - Ensure README.md and CONTEXT.md are consistent with each other\n   - Verify all referenced commands work as documented\n   - Confirm all external links and file references are valid\n   - Check that documentation aligns with actual codebase structure\n\n5. **Scope Boundaries**\n   - Focus on accuracy fixes only—do not overhaul design docs or restructure content\n   - Maintain existing format and structure unless accuracy requires changes\n   - Avoid expanding scope beyond what is necessary for accuracy",
         "testStrategy": "1. **Documentation Content Review**\n   - Read through updated README.md to ensure all sections are clear, complete, and accurate\n   - Read through updated CONTEXT.md to verify it accurately reflects the project state\n   - Verify all links included in both files resolve correctly (file paths and URLs)\n   - Check that RELEASE.md link points to the correct location\n\n2. **Command Validation**\n   - Run `npm run complete-check` to ensure it executes as documented\n   - Verify any other commands mentioned in the documentation work as expected\n   - Confirm setup/installation instructions can be followed successfully\n\n3. **Codebase Alignment Check**\n   - Confirm entry points mentioned in documentation exist in the codebase\n   - Verify project structure descriptions match actual directory layout\n   - Check that all referenced files, modules, and utilities are present\n   - Validate Zepp OS v1 constraints listed match actual implementation limitations\n\n4. **Peer Review**\n   - Request a review from a team member not involved in the documentation update\n   - Ask reviewer to verify documentation clarity and completeness\n   - Confirm reviewer can successfully follow setup and QA instructions without ambiguity\n\n5. **PR Review Process**\n   - Submit pull request with documentation changes\n   - Ensure PR description clearly outlines what sections were updated and why\n   - Address all review comments before merging",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "65",
           "66"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit current README.md and CONTEXT.md documentation",
+            "description": "Review both README.md and CONTEXT.md files to identify outdated sections, incorrect entry points, missing information, and discrepancies with the actual codebase implementation.",
+            "dependencies": [],
+            "details": "Open README.md and systematically review each section for outdated information, incorrect entry points, or missing details. Open CONTEXT.md and verify it accurately reflects current project architecture and Zepp OS v1 constraints. Create a checklist or notes documenting all identified discrepancies between documentation and actual implementation, including specific line references and what needs to be corrected.",
+            "status": "pending",
+            "testStrategy": "Create a comprehensive audit log document listing all identified issues with specific file paths, line numbers, and descriptions of discrepancies found during the review.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Update README.md with current project information",
+            "description": "Update the README.md file based on audit findings to reflect current project state, correct entry points, QA commands, and include links to RELEASE.md and PRD updates.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the project description and overview section to reflect current state. Document correct entry points for the application (main page/screen files). Add or update the QA commands section, specifically including `npm run complete-check`. Update installation and setup instructions to match current build processes. Ensure all links to other documentation files are current and valid. Add a clear link to RELEASE.md for release process information. Include reference to PRD updates if available. Verify and update any Zepp OS v1 specific constraints or requirements.",
+            "status": "pending",
+            "testStrategy": "Verify all commands mentioned in README.md execute successfully. Click all internal and external links to ensure they resolve correctly. Have a colleague review the updated README for clarity and completeness.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Update CONTEXT.md with current architecture and constraints",
+            "description": "Update CONTEXT.md to match current project architecture, design, and accurately document Zepp OS v1 constraints with links to core components and RELEASE.md.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the project context section to match current architecture and design. Ensure Zepp OS v1 constraints are accurately documented including screen handling and storage APIs. Update references to core components: unified storage service, screen utilities, and UI system. Ensure consistency with README.md descriptions. Include a link to RELEASE.md for release process reference. Verify all component references point to existing files and modules in the codebase.",
+            "status": "pending",
+            "testStrategy": "Cross-reference all component mentions in CONTEXT.md against the actual codebase to verify accuracy. Ensure all described constraints align with Zepp OS v1 documentation.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Perform cross-reference verification between documentation files",
+            "description": "Verify that README.md and CONTEXT.md are consistent with each other, all referenced commands work correctly, and all links and file references are valid.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Compare README.md and CONTEXT.md to ensure consistency in descriptions, component references, and architectural details. Verify all referenced commands work as documented by running each command. Confirm all external links and file references are valid and accessible. Check that documentation aligns with actual codebase structure by spot-checking key file paths and component descriptions. Resolve any inconsistencies found between the two documents.",
+            "status": "pending",
+            "testStrategy": "Create a verification checklist covering all links, commands, and cross-references between files. Run each documented command to confirm successful execution. Document and resolve any broken links or inconsistencies.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Final documentation review and validation",
+            "description": "Conduct a final review of both updated documentation files to ensure all requirements are met, scope boundaries are respected, and documentation is production-ready.",
+            "dependencies": [
+              4
+            ],
+            "details": "Perform a final comprehensive review of both README.md and CONTEXT.md to verify all identified issues from the audit have been addressed. Confirm the QA commands section includes `npm run complete-check`. Verify links to RELEASE.md and PRD updates are present and correct. Ensure scope boundaries were maintained—only accuracy fixes were applied without unnecessary design overhauls or restructuring. Confirm existing format and structure was preserved unless accuracy required changes. Validate that both documents provide accurate, current information for new and existing developers.",
+            "status": "pending",
+            "testStrategy": "Have a developer unfamiliar with recent changes review both documents to test clarity. Perform a git diff against the original files to ensure only necessary accuracy changes were made. Mark task complete when all validation criteria pass.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-03-05T14:30:05.568Z"
       },
       {
         "id": "69",
@@ -4535,9 +4596,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-05T10:20:06.468Z",
+      "lastModified": "2026-03-05T14:30:05.568Z",
       "taskCount": 70,
-      "completedCount": 63,
+      "completedCount": 64,
       "tags": [
         "master"
       ]

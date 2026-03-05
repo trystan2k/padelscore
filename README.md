@@ -24,6 +24,9 @@ A padel score tracking app for Amazfit watches running Zepp OS. Track match scor
 2. **Setup Screen** - Configure match settings before starting
 3. **Game Screen** - Main scoring interface with touch controls
 4. **Summary Screen** - View match history and final scores
+5. **History Screen** - Browse all past matches
+6. **History Detail Screen** - View full details of a specific match
+7. **Settings Screen** - Configure app preferences
 
 ## Getting Started
 
@@ -79,33 +82,74 @@ zeus build
 
 This generates a `.zab` package file ready for distribution.
 
+> **Note**: This project uses automated releases via GitHub Actions. 
+> See [RELEASE.md](RELEASE.md) for details on the release process.
+
 ## Development
 
 ### Project Structure
 
 ```
 padelscore/
-├── app.js                 # Application entry point
+├── app.js                 # Main application entry point
 ├── app.json               # App configuration (permissions, targets, i18n)
 ├── page/                  # Watch UI screens
-│   ├── index.js          # Home screen
+│   ├── index.js          # Home screen entry point
 │   ├── setup.js          # Match setup screen
-│   ├── game.js           # Main game screen
-│   └── summary.js        # Match summary screen
-├── utils/                 # Core business logic
+│   ├── game.js           # Main game screen (orchestrator)
+│   ├── game/             # Game screen modules
+│   │   ├── logic.js      # Scoring/state logic
+│   │   ├── persistence.js # Match persistence
+│   │   └── ui-binding.js # UI rendering
+│   ├── summary.js        # Match summary screen
+│   ├── history.js        # Match history list
+│   ├── history-detail.js # Match history details
+│   ├── score-view-model.js # Score display view model
+│   ├── settings.js       # App settings
+│   └── i18n/             # Internationalization files (en-US, es-ES, pt-BR)
+├── utils/                 # Core business logic (key files shown)
 │   ├── scoring-engine.js # Padel scoring logic
 │   ├── match-state.js    # State management
 │   ├── match-storage.js  # Persistence layer
 │   └── history-stack.js  # Undo/redo functionality
 ├── tests/                 # Test suite
 ├── assets/                # Icons and resources
+├── app-side/              # Side service (phone)
+├── setting/               # Settings page
+├── scripts/               # Build and utility scripts
 └── docs/                  # Documentation and development logs
 ```
 
-### Running Tests
+### Entry Points
+
+The application has two key entry points:
+
+- **`app.js`**: Main application entry point that initializes global state, handles app lifecycle (onCreate/onDestroy), and manages match state persistence
+- **`page/index.js`**: Home screen entry point that provides the main user interface for starting new matches or resuming existing games
+
+Both work together: `app.js` sets up the global context, while `page/index.js` provides the first user-facing screen.
+
+### Testing and Quality Assurance
+
+Run the complete quality check (linting, formatting, and tests):
 
 ```bash
-npm test
+npm run complete-check
+```
+
+This command runs:
+- **Biome linting** (`npm run lint:fix`) - Checks and fixes code quality issues
+- **Biome formatting** (`npm run format`) - Ensures consistent code style
+- **Unit tests** (`npm test`) - Runs the test suite
+
+Individual commands are also available:
+
+```bash
+npm test                  # Run tests only
+npm run lint              # Check for lint errors
+npm run lint:fix          # Fix lint errors automatically
+npm run format            # Format code
+npm run format:check      # Check formatting without changes
 ```
 
 ### Code Style
@@ -125,9 +169,9 @@ This project uses an automated quality gate stack to enforce consistent code sty
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `npm run lint` | `biome check .` | Check all files for lint errors |
-| `npm run lint:fix` | `biome check --write .` | Auto-fix lint and format issues |
-| `npm run format` | `biome format --write .` | Format all files (style only) |
+| `npm run lint` | `biome lint --error-on-warnings .` | Check all files for lint errors (warnings fail the check) |
+| `npm run lint:fix` | `biome lint --error-on-warnings --write .` | Auto-fix lint errors automatically |
+| `npm run format` | `biome format --error-on-warnings --write .` | Format all files (style only) |
 
 Configuration is in [`biome.json`](./biome.json). Key settings:
 - Single quotes, no semicolons, 2-space indentation, LF line endings
@@ -181,6 +225,18 @@ The app implements traditional padel/tennis scoring:
 ## Documentation
 
 - [Getting Started Guide](docs/GET_STARTED.md)
-- [Product Requirements Document](docs/PRD.md)
+- [Release Process](RELEASE.md) - Automated release workflow and version management
+- [Changelog](CHANGELOG.md) - Version history and release notes
+
+### Product Requirements
+
+- [Main PRD](docs/PRD.md) - Core product requirements
+- [QA Remediation PRD v1.1](docs/PRD-QA-Remediation-v1.1.md) - Quality assurance improvements
+- [Refactor Layout PRD](docs/PRD-Refactor-Layout.md) - UI layout refactoring requirements
+- [Finish Match PRD](docs/PRD-Finish-Match.md) - Match completion flow requirements
+- [Review PRD](docs/PRD-Review.md) - Code review and quality requirements
+
+### Other Resources
+
 - [Development Logs](docs/development-logs/)
 - [Zepp OS Official Documentation](https://docs.zepp.com/docs/1.0/intro/)

@@ -89,3 +89,31 @@ Before implementing any page logic:
 1. Verify all lifecycle methods are in the v1.0 list above
 2. Check API references use `/docs/1.0/` paths
 3. Run tests and verify on real device before assuming it works
+
+---
+
+## Version Management
+
+This project maintains version consistency across three files:
+- `package.json` - npm package version
+- `app.json` - Zepp OS app version
+- `utils/version.js` - Runtime version constant
+
+Current version is tracked in `package.json`, `app.json`, and `utils/version.js`.
+
+Version updates are handled automatically by the release workflow. 
+See [RELEASE.md](RELEASE.md) for details.
+
+---
+
+## Related Documentation
+
+- [RELEASE.md](RELEASE.md) - Release process and version management
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [PRD Files](docs/) - Product requirements documents:
+  - [Main PRD](docs/PRD.md) - Core product requirements
+  - [QA Remediation PRD v1.1](docs/PRD-QA-Remediation-v1.1.md) - Quality assurance improvements
+  - [Refactor Layout PRD](docs/PRD-Refactor-Layout.md) - UI layout refactoring requirements
+  - [Finish Match PRD](docs/PRD-Finish-Match.md) - Match completion flow requirements
+  - [Review PRD](docs/PRD-Review.md) - Code review and quality requirements
+- [Zepp OS v1.0 Documentation](https://docs.zepp.com/docs/1.0/intro/) - Official API reference
