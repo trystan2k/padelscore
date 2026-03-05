@@ -4116,9 +4116,10 @@
             "description": "Search the codebase for duplicate implementations of screen metrics helpers and document their locations and usage.",
             "dependencies": [],
             "details": "Perform a comprehensive search across all page files (page/index, page/game, etc.) and component files to identify duplicate implementations of: Device Pixel Ratio (DPR) calculations, Screen width/height retrieval helpers, Orientation detection helpers (landscape/portrait), Any other screen metric utilities not in utils/screen-utils.js. Document each location including file path, function names, and how they are used.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Manual verification: Use grep/ripgrep to search for patterns like 'devicePixelRatio', 'screen.width', 'screen.height', orientation-related code, and any custom DPR/screen functions. Compile a list of all duplicate implementations found.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:22.227Z"
           },
           {
             "id": 2,
@@ -4128,9 +4129,10 @@
               1
             ],
             "details": "Review existing utilities in utils/screen-utils.js (getScreenMetrics, clamp, etc.). Add any missing helper functions identified in the audit: getDPR() - returns device pixel ratio, getOrientation() - returns 'portrait' or 'landscape', and any other identified helpers. Ensure function signatures are clean and consistent. Add JSDoc comments for any new functions. Do not change existing algorithms beyond minor standardization.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Code review: Verify that all functions from the audit are now present in utils/screen-utils.js. Check that function signatures are properly defined and JSDoc comments are complete.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:22.232Z"
           },
           {
             "id": 3,
@@ -4140,9 +4142,10 @@
               2
             ],
             "details": "For each page file (page/index, page/game, and other page files identified in the audit): Add import statements for the required functions from utils/screen-utils.js. Replace all calls to local helper functions with calls to the imported functions. Remove the duplicate local helper function code from these files. Ensure no functionality is broken during the replacement.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Manual testing: Open each modified page file and verify that imports are correctly added at the top. Confirm that local helper definitions have been removed and all references point to the imported utilities.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:22.236Z"
           },
           {
             "id": 4,
@@ -4152,9 +4155,10 @@
               2
             ],
             "details": "For each component file identified in the audit that contains screen-related utilities: Add import statements for the required functions from utils/screen-utils.js. Replace all calls to local helper functions with calls to the imported functions. Remove the duplicate local helper function code from these files. Ensure consistent naming conventions and return value formats.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Code review: Verify that component files no longer contain local implementations of screen helpers. Confirm all imports are correctly structured and function calls match the centralized utility signatures.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:22.239Z"
           },
           {
             "id": 5,
@@ -4165,11 +4169,13 @@
               4
             ],
             "details": "Run comprehensive grep/ripgrep searches for patterns like hmUI.getScreenMetrics(), window.devicePixelRatio, or custom DPR/orientation functions to confirm no duplicate local implementations remain. Verify all screen metric usage now imports from utils/screen-utils.js. Test that screen metrics are correctly retrieved in the application. Ensure consistent return value formats across all usages.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Static analysis: Run grep/ripgrep searches to confirm all duplicates are removed. Functional testing: Run the application on simulator (round and square) and verify that screen metrics, orientation detection, and DPR calculations work correctly in all modified pages and components.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:22.243Z"
           }
-        ]
+        ],
+        "updatedAt": "2026-03-05T18:57:22.243Z"
       },
       {
         "id": "64",
@@ -4506,9 +4512,10 @@
             "description": "Review both README.md and CONTEXT.md files to identify outdated sections, incorrect entry points, missing information, and discrepancies with the actual codebase implementation.",
             "dependencies": [],
             "details": "Open README.md and systematically review each section for outdated information, incorrect entry points, or missing details. Open CONTEXT.md and verify it accurately reflects current project architecture and Zepp OS v1 constraints. Create a checklist or notes documenting all identified discrepancies between documentation and actual implementation, including specific line references and what needs to be corrected.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create a comprehensive audit log document listing all identified issues with specific file paths, line numbers, and descriptions of discrepancies found during the review.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:26.266Z"
           },
           {
             "id": 2,
@@ -4518,9 +4525,10 @@
               1
             ],
             "details": "Update the project description and overview section to reflect current state. Document correct entry points for the application (main page/screen files). Add or update the QA commands section, specifically including `npm run complete-check`. Update installation and setup instructions to match current build processes. Ensure all links to other documentation files are current and valid. Add a clear link to RELEASE.md for release process information. Include reference to PRD updates if available. Verify and update any Zepp OS v1 specific constraints or requirements.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify all commands mentioned in README.md execute successfully. Click all internal and external links to ensure they resolve correctly. Have a colleague review the updated README for clarity and completeness.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:26.272Z"
           },
           {
             "id": 3,
@@ -4530,9 +4538,10 @@
               1
             ],
             "details": "Update the project context section to match current architecture and design. Ensure Zepp OS v1 constraints are accurately documented including screen handling and storage APIs. Update references to core components: unified storage service, screen utilities, and UI system. Ensure consistency with README.md descriptions. Include a link to RELEASE.md for release process reference. Verify all component references point to existing files and modules in the codebase.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Cross-reference all component mentions in CONTEXT.md against the actual codebase to verify accuracy. Ensure all described constraints align with Zepp OS v1 documentation.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:26.276Z"
           },
           {
             "id": 4,
@@ -4543,9 +4552,10 @@
               3
             ],
             "details": "Compare README.md and CONTEXT.md to ensure consistency in descriptions, component references, and architectural details. Verify all referenced commands work as documented by running each command. Confirm all external links and file references are valid and accessible. Check that documentation aligns with actual codebase structure by spot-checking key file paths and component descriptions. Resolve any inconsistencies found between the two documents.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create a verification checklist covering all links, commands, and cross-references between files. Run each documented command to confirm successful execution. Document and resolve any broken links or inconsistencies.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:26.279Z"
           },
           {
             "id": 5,
@@ -4555,12 +4565,13 @@
               4
             ],
             "details": "Perform a final comprehensive review of both README.md and CONTEXT.md to verify all identified issues from the audit have been addressed. Confirm the QA commands section includes `npm run complete-check`. Verify links to RELEASE.md and PRD updates are present and correct. Ensure scope boundaries were maintained—only accuracy fixes were applied without unnecessary design overhauls or restructuring. Confirm existing format and structure was preserved unless accuracy required changes. Validate that both documents provide accurate, current information for new and existing developers.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Have a developer unfamiliar with recent changes review both documents to test clarity. Perform a git diff against the original files to ensure only necessary accuracy changes were made. Mark task complete when all validation criteria pass.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2026-03-05T18:57:26.283Z"
           }
         ],
-        "updatedAt": "2026-03-05T14:30:05.568Z"
+        "updatedAt": "2026-03-05T18:57:26.283Z"
       },
       {
         "id": "69",
@@ -4728,7 +4739,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-05T16:16:46.567Z",
+      "lastModified": "2026-03-05T18:57:26.283Z",
       "taskCount": 70,
       "completedCount": 66,
       "tags": [
