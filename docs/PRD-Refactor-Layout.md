@@ -1,9 +1,12 @@
 # PRD: UI Layout System Refactor
 
+**Version:** 1.0 | **Updated:** 2026-03-05 | **Task:** #67  
 **Status:** Approved  
 **Created:** 2026-02-25  
 **Author:** AI Assistant  
 **Target:** Padel Buddy v1.0 (Zepp OS)
+
+> **Note:** For confirmed product decisions, see [PRD-Review.md](./PRD-Review.md) - the authoritative source for all confirmed decisions.
 
 ---
 
@@ -392,6 +395,9 @@ function isRoundScreen(width, height) {
 - Layout resolution happens once per `build()` call
 - No runtime layout recalculation needed
 - Token lookups are O(1) object property access
+- **Note:** In Zepp OS v1.0, `build()` is called on every page creation
+  - Pages are destroyed and recreated on each navigation
+  - See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for lifecycle semantics
 
 ---
 

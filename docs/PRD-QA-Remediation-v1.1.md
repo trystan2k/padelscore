@@ -1,5 +1,9 @@
 # Product Requirements Document (PRD)
 
+**Version:** 1.1 | **Updated:** 2026-03-05 | **Task:** #67
+
+> **Note:** For confirmed product decisions, see [PRD-Review.md](./PRD-Review.md) - the authoritative source for all confirmed decisions.
+
 ## 1. Overview
 
 ### 1.1 Document Name
@@ -66,9 +70,13 @@ Deliver a resilient match session flow that:
 ### 3.2 Out of Scope
 
 - Player names and roster management.
-- Match history across multiple completed matches.
 - Cloud sync and phone companion sync.
 - Tie-break rule configuration.
+- Advanced cross-match analytics (e.g., aggregate stats across many matches).
+
+> **Note:** Basic **match history viewing and persistence** is ✅ IN SCOPE (implemented in v1.0).
+> See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 1 for details.
+> The original "match history" entry referred to advanced multi-match analytics, not basic history.
 
 ---
 
@@ -92,6 +100,8 @@ The app must persist active match state to local storage:
 - after set transitions,
 - when navigating away from Game,
 - when app/page lifecycle events indicate interruption (sleep/background/exit paths),
+  - **Note:** In Zepp OS v1.0, this is handled via `onDestroy()` callback
+  - See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for lifecycle semantics
 - and immediately after a new match session is created.
 
 The persisted state must include enough data to restore the exact match context, including selected set format and per-set progress.
@@ -142,8 +152,9 @@ When match status is `finished`, app must show a summary screen containing:
 
 Summary screen actions:
 
-- `Home` (return to Home),
-- `Start New Game` (begin setup for a new match).
+- `Home` (return to Home Screen)
+
+> **Note:** "Start New Game" is **NOT** on summary screen. Users start new games from Home Screen only. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 2.
 
 ### FR-7: New Match Reset Rules
 
@@ -189,7 +200,9 @@ The persisted active session must include at minimum:
 
 ### 7.3 Completion Flow
 
-`Game (match finished) -> Match Summary -> Home or Start New Game`
+`Game (match finished) -> Match Summary -> Home`
+
+> **Note:** Users start new games from Home Screen only, not from Summary screen. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 2.
 
 ---
 

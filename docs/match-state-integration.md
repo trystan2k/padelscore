@@ -1,6 +1,10 @@
 # MatchState Integration Notes
 
+**Version:** 1.1 | **Updated:** 2026-03-05 | **Task:** #67
+
 This document defines the integration contract for the MatchState lifecycle: when to save, when to load, when to clear, and which upcoming tasks depend on this behavior.
+
+> **Note:** This document uses Zepp OS v1.0 lifecycle semantics. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for lifecycle details.
 
 ## Scope
 
@@ -16,14 +20,14 @@ This document defines the integration contract for the MatchState lifecycle: whe
 | After each scoring mutation | `saveState(state)` + `saveMatchState(state)` (debounced) | Prevent point loss from interruption between taps while avoiding burst writes | Queue immediate persistence request; coalesce rapid requests; latest snapshot wins |
 | After set completion | `saveMatchState(state)` | Preserve `setsWon`, `setHistory`, and next-set reset | Persist immediately after set bookkeeping |
 | After match completion | `saveMatchState(state)` | Preserve finished status for summary/resume rules | Persist with `status: 'finished'` before navigation |
-| Lifecycle interruption (`onHide`, fallback `onDestroy`) | Forced flush via persistence coordinator | Cover background/suspend/exit paths | Cancel debounce delay and persist latest pending/runtime snapshot once (dedupe hide/destroy bursts) |
+| Lifecycle interruption (`onDestroy`) | Forced flush via persistence coordinator | Cover background/suspend/exit paths | Cancel debounce delay and persist latest pending/runtime snapshot |
 | New match flow / explicit reset | `clearMatchState()` | Remove stale session so setup starts fresh | Delete `ACTIVE_MATCH_SESSION` (or write empty fallback) |
 
 ## Trigger Matrix (Task 14)
 
 - Scoring actions (`add`/`remove`) enqueue persistence immediately after runtime state mutation and render.
 - Queue window is debounced at `180ms` to reduce duplicate writes during burst interactions.
-- Lifecycle exits (`onHide`, `onDestroy`, back-home action) force-flush pending snapshots without waiting for debounce.
+- Lifecycle exits (`onDestroy`, back-home action) force-flush pending snapshots without waiting for debounce.
 - Writes are serialized (single in-flight save at a time) and use latest-state-wins replay if a newer snapshot arrives mid-save.
 - Runtime persistence is write-through during migration: legacy `saveState` stays active and schema `saveMatchState` is updated in the same coordinator pass.
 
@@ -44,7 +48,7 @@ Do not defer save until navigation only. Navigation saves are a forced flush saf
 
 Load at runtime bootstrap points:
 
-1. home page initialization/onShow to decide whether Resume is visible
+1. home page initialization (via `onInit`) to decide whether Resume is visible
 2. game page initialization when runtime state is missing
 3. post-undo restore flows that rebuild state from persistence (if runtime stack is unavailable)
 
@@ -83,7 +87,7 @@ function persistAndRender(nextState) {
   void saveMatchState(nextState)
 }
 
-onHide() {
+onDestroy() {
   const state = this.getRuntimeMatchState()
   void saveMatchState(state)
 }
@@ -150,4 +154,4 @@ Start new match/reset -> clearMatchState() -> create fresh runtime state
 - Runtime write-through compatibility remains intentional during migration: `page/game.js` continues dual writes (`saveState` + `saveMatchState`) so legacy runtime snapshots and schema sessions stay aligned.
 - New match/reset flows continue to clear both stores (`clearState` + `clearMatchState`) until legacy runtime storage is fully removed.
 - During transition, keep behavior equivalent: fail-safe loads, idempotent saves, explicit clears.
-- Task 14 introduced dedupe for overlapping lifecycle callbacks (`onHide` then `onDestroy`) so only one final state snapshot is committed when state did not change.
+- In Zepp OS v1.0, `onDestroy()` is the only lifecycle exit callback available. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for details.
