@@ -1210,6 +1210,9 @@ gh pr edit 123 --remove-assignee user1
 # Add reviewers
 gh pr edit 123 --add-reviewer user1,user2
 
+# Add Copilot as Reviewer
+gh pr edit 123 --add-reviewer @copilot
+
 # Remove reviewers
 gh pr edit 123 --remove-reviewer user1
 
