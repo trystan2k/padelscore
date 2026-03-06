@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0](https://github.com/trystan2k/padelbuddy/compare/v1.11.3...v1.12.0) (2026-03-06)
+
+### Features
+
+* add haptic feedback for score controls and match summary ([984583a](https://github.com/trystan2k/padelbuddy/commit/984583a209e070ab8abe1079253a9faafe67dbea))
+* **ci:** add unification regression suite to quality gate ([3b3fca9](https://github.com/trystan2k/padelbuddy/commit/3b3fca90b1412cedc8a62e13f605a12f803a8a6a))
+
 ## [1.11.3](https://github.com/trystan2k/padelbuddy/compare/v1.11.2...v1.11.3) (2026-03-03)
 
 ### Code Refactoring
