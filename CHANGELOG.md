@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0](https://github.com/trystan2k/padelbuddy/compare/v1.12.0...v1.13.0) (2026-03-06)
+
+### Features
+
+* add safe top handling for square screen header offset ([c9d4f18](https://github.com/trystan2k/padelbuddy/commit/c9d4f18889fd539d9d3ec6a2186f40a2b37cf931))
+
 ## [1.12.0](https://github.com/trystan2k/padelbuddy/compare/v1.11.3...v1.12.0) (2026-03-06)
 
 ### Features
