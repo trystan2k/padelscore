@@ -1,5 +1,8 @@
-import { resolveFsReadOnlyFlag } from './constants.js'
-import { keyToFilename, saveToFile } from './match-history-storage.js'
+import {
+  keyToFilename,
+  loadFromFile,
+  saveToFile
+} from './match-history-storage.js'
 
 export const HAPTIC_FEEDBACK_STORAGE_KEY = 'padel-buddy.haptic-feedback-enabled'
 
@@ -50,16 +53,6 @@ function isHmFsStorageAvailable() {
   )
 }
 
-function decodeAscii(bytes) {
-  let value = ''
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    value += String.fromCharCode(bytes[index])
-  }
-
-  return value
-}
-
 function createHmFsStorageAdapter() {
   return {
     setItem(key, value) {
@@ -69,41 +62,7 @@ function createHmFsStorageAdapter() {
 
     getItem(key) {
       const filename = keyToFilename(key)
-      let fileId = -1
-
-      try {
-        const [statInfo, statErr] = hmFS.stat(filename)
-
-        if (statErr !== 0 || !statInfo || statInfo.size <= 0) {
-          return null
-        }
-
-        fileId = hmFS.open(filename, resolveFsReadOnlyFlag(hmFS))
-
-        if (fileId < 0) {
-          return null
-        }
-
-        const buffer = new Uint8Array(statInfo.size)
-        const readResult = hmFS.read(fileId, buffer.buffer, 0, statInfo.size)
-
-        if (readResult < 0) {
-          return null
-        }
-
-        const value = decodeAscii(buffer)
-        return value.length > 0 ? value : null
-      } catch {
-        return null
-      } finally {
-        if (fileId >= 0) {
-          try {
-            hmFS.close(fileId)
-          } catch {
-            // Ignore close errors.
-          }
-        }
-      }
+      return loadFromFile(filename)
     },
 
     removeItem(key) {
@@ -162,7 +121,7 @@ export function loadHapticFeedbackEnabled() {
 }
 
 export function saveHapticFeedbackEnabled(enabled) {
-  const normalizedEnabled = enabled !== false
+  const normalizedEnabled = enabled === true
 
   try {
     getRuntimeStorage().setItem(

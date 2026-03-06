@@ -35,6 +35,7 @@ const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
 const PERSISTENCE_DEBOUNCE_WINDOW_MS = 180
 const MANUAL_FINISH_CONFIRM_WINDOW_MS = 3000
+const SCORE_HAPTIC_SCENE = 24
 
 function getCurrentTimestampMs() {
   if (
@@ -168,7 +169,7 @@ Page({
 
     try {
       vibrate.stop()
-      vibrate.scene = 24
+      vibrate.scene = SCORE_HAPTIC_SCENE
       vibrate.start()
     } catch {
       // Non-fatal: haptic feedback unavailable.

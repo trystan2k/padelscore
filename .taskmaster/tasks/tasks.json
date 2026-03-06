@@ -4810,15 +4810,15 @@
             "status": "done",
             "testStrategy": "Test single and rapid taps on the decrement button to confirm haptic feedback works. Navigate away from the game page and verify no unexpected vibrations occur. Re-enter the game page and confirm haptics still function.",
             "parentId": "undefined",
-            "updatedAt": "2026-03-06T09:21:37.464Z"
+            "updatedAt": "2026-03-06T11:31:51.251Z"
           }
         ],
-        "updatedAt": "2026-03-06T09:21:37.464Z"
+        "updatedAt": "2026-03-06T11:31:51.251Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-06T09:21:37.465Z",
+      "lastModified": "2026-03-06T11:31:51.252Z",
       "taskCount": 71,
       "completedCount": 67,
       "tags": [

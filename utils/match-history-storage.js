@@ -184,7 +184,7 @@ export function saveToFile(filename, data) {
  * @param {string} filename
  * @returns {string|null}
  */
-function loadFromFile(filename) {
+export function loadFromFile(filename) {
   if (!isHmFsAvailable()) {
     return null
   }

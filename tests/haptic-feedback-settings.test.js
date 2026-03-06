@@ -58,6 +58,33 @@ test('saveHapticFeedbackEnabled persists false value', () => {
   }
 })
 
+test('saveHapticFeedbackEnabled enables only when value is true boolean', () => {
+  const originalHmFS = globalThis.hmFS
+  const { mock, fileStore } = createHmFsMock()
+
+  globalThis.hmFS = mock
+
+  try {
+    assert.equal(saveHapticFeedbackEnabled(1), false)
+    assert.equal(
+      readFileStoreKey(fileStore, HAPTIC_FEEDBACK_STORAGE_KEY),
+      'false'
+    )
+
+    assert.equal(saveHapticFeedbackEnabled(true), true)
+    assert.equal(
+      readFileStoreKey(fileStore, HAPTIC_FEEDBACK_STORAGE_KEY),
+      'true'
+    )
+  } finally {
+    if (typeof originalHmFS === 'undefined') {
+      delete globalThis.hmFS
+    } else {
+      globalThis.hmFS = originalHmFS
+    }
+  }
+})
+
 test('clearHapticFeedbackEnabled resets to default true', () => {
   const originalHmFS = globalThis.hmFS
   const { mock, fileStore } = createHmFsMock()
