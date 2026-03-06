@@ -379,14 +379,9 @@ function resolveSections(sections, resolved, width, height, isRound, safeTop) {
     }
 
     // Check if top is an expression referencing other sections
-    if (safeSection.top != null && typeof safeSection.top === 'string') {
-      const isExpr = safeSection.top.match(
-        /^(\w+)\.(\w+)(\s*[+-]\s*\d+(?:\.\d+)?(%|px)?)?$/
-      )
-      if (isExpr) {
-        expressionSections.push({ name, section: safeSection })
-        return
-      }
+    if (isSectionReferenceExpression(safeSection.top)) {
+      expressionSections.push({ name, section: safeSection })
+      return
     }
 
     // Handle fill sections - track for later
