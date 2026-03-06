@@ -4814,12 +4814,27 @@
           }
         ],
         "updatedAt": "2026-03-06T11:31:51.251Z"
+      },
+      {
+        "id": "72",
+        "title": "Fix GTS 3 Square Screen System Header Overlap",
+        "description": "Implement a global safe top area that automatically adjusts layout positioning for square devices (GTS 3/GTS 3 Pro) to prevent app headers from rendering behind the fixed system header.",
+        "details": "Implement a safe top area solution for GTS 3 square devices to prevent app content overlap with the system header.\n\n**Implementation Steps:**\n\n1. **Update utils/screen-utils.js:**\n   - Add `safeTop` property to getScreenMetrics() return object\n   - For GTS 3 (square, isRound=false, height=450px): return safeTop = 45-50px (~11% of height)\n   - For GTR 3 (round, isRound=true): return safeTop = 0 (no change)\n   - Store system header height as a configurable constant (SYSTEM_HEADER_HEIGHT_SQUARE) for easy tuning\n   - Add optional parameter to getScreenMetrics() to allow per-page safeTop override\n\n2. **Update utils/layout-presets.js:**\n   - Modify createStandardPageLayout() to accept and use safeTop parameter from screen metrics\n   - Default header section top position to safeTop value instead of hardcoded top: 0\n   - Maintain backward compatibility for existing pages that don't pass safeTop (default to 0 if not provided)\n   - Update TOKENS.spacing.headerTop usage to consider safeTop offset\n\n3. **Update utils/layout-engine.js:**\n   - Ensure section resolution passes through and respects safeTop from screen metrics\n   - No breaking changes to existing behavior\n   - Support percentage-based layouts with safeTop offset applied correctly\n\n**Technical Considerations:**\n- Device detection already exists via isRound property in screen-utils.js\n- GTS 3/GTS 3 Pro use deviceSource 224, 225 (design: 390x450px)\n- GTR 3 uses deviceSource 227 (design: 454x454px)\n- System header height is approximately 11% of screen height on GTS 3 (start with 45-50px, adjust during testing)\n- Current header position uses TOKENS.spacing.headerTop (4%)\n- Zero regression on round screens (safeTop=0 ensures this)\n- Layout engine already supports percentage-based positioning",
+        "testStrategy": "1. **GTR 3 (Round) Regression Testing:**\n   - Run app on GTR 3 simulator\n   - Verify all pages render identically to before (index, setup, game, summary, history, history-detail, game-settings, settings)\n   - Confirm no layout shifts or spacing changes\n   - Verify round screen safe insets still work correctly\n\n2. **GTS 3 (Square) Functional Testing:**\n   - Run app on GTS 3 simulator\n   - Verify app header appears below system header on all pages\n   - Confirm no overlap between app content and system header\n   - Check that app name and time in system header are fully visible\n   - Test all pages: index, setup, game, summary, history, history-detail, game-settings, settings\n\n3. **Safe Top Area Validation:**\n   - Adjust SYSTEM_HEADER_HEIGHT_SQUARE constant and verify safeTop updates accordingly\n   - Test percentage-based layouts still calculate correctly with safeTop offset\n   - Verify safeTop can be overridden per-page if needed (add temporary override to one page for testing)\n\n4. **Code Quality:**\n   - Run npm run complete-check and ensure it passes\n   - Verify no console errors on either device simulator\n\n5. **Visual QA Checklist:**\n   - [ ] GTS 3: App content starts below system header (no overlap)\n   - [ ] GTR 3: Layout remains unchanged (no regression)\n   - [ ] All pages render correctly on both devices\n   - [ ] Spacing is consistent across all pages on GTS 3",
+        "status": "pending",
+        "dependencies": [
+          "41",
+          "63"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-03-06T12:20:08.645Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-06T11:31:51.252Z",
-      "taskCount": 71,
+      "lastModified": "2026-03-06T12:20:08.645Z",
+      "taskCount": 72,
       "completedCount": 67,
       "tags": [
         "master"
