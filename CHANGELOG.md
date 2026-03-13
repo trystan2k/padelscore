@@ -2,17 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.14.0](https://github.com/trystan2k/padelbuddy/compare/v1.13.0...v1.14.0) (2026-03-13)
-
-### Features
-
-* bootstrap 3.6+ app identity baseline and remove unused modules ([e0fb6b3](https://github.com/trystan2k/padelbuddy/commit/e0fb6b391a7c16dda8f2e822471d36749294190f))
-* migrate app.json to single-target v3 screen-family config ([ccfab6d](https://github.com/trystan2k/padelbuddy/commit/ccfab6d5ae73108b9a2ae25d1053d6f95bfa8d9b))
-
-### Bug Fixes
-
-* correct semantic-release maintenance branch range ([716ebbd](https://github.com/trystan2k/padelbuddy/commit/716ebbd5f9af1fcd04e4ea8a844456b1604bc068))
-
 ## [1.13.0](https://github.com/trystan2k/padelbuddy/compare/v1.12.0...v1.13.0) (2026-03-06)
 
 ### Features
