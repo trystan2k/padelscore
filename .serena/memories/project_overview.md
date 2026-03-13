@@ -15,8 +15,6 @@ A padel match score tracker app for Amazfit watches running Zepp OS v1.0.
 - `app.js` / `app.json` – global app logic and config
 - `page/` – UI pages: index (home), setup (game config), game (scoring), summary, history
 - `utils/` – shared utilities: match-state.js, match-storage.js, storage.js, scoring-engine.js, etc.
-- `app-side/` – side service (phone)
-- `setting/` – settings page
 - `assets/` – images and resources
 
 ## Storage

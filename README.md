@@ -114,8 +114,6 @@ padelscore/
 │   └── history-stack.js  # Undo/redo functionality
 ├── tests/                 # Test suite
 ├── assets/                # Icons and resources
-├── app-side/              # Side service (phone)
-├── setting/               # Settings page
 ├── scripts/               # Build and utility scripts
 └── docs/                  # Documentation and development logs
 ```
@@ -128,6 +126,12 @@ The application has two key entry points:
 - **`page/index.js`**: Home screen entry point that provides the main user interface for starting new matches or resuming existing games
 
 Both work together: `app.js` sets up the global context, while `page/index.js` provides the first user-facing screen.
+
+### App Identity Baseline
+
+- **appId**: `1108585`
+- **Version baseline**: `3.0.0` (`package.json`, `app.json`, and `utils/version.js` kept in sync)
+- **Module topology**: dedicated `app-side/` and `setting/` modules were removed after confirming they were placeholder-only and unused at runtime
 
 ### Testing and Quality Assurance
 

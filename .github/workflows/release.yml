@@ -64,7 +64,7 @@ jobs:
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
 
           # Define releasable paths (code that affects the app)
-          RELEASABLE="page/|app.js|app.json|app-side/|setting/|utils/|assets/|shared/"
+          RELEASABLE="page/|app.js|app.json|utils/|assets/|shared/"
 
           # Check if any releasable files changed
           if echo "$CHANGED_FILES" | grep -qE "^($RELEASABLE)"; then
