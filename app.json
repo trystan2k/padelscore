@@ -1,5 +1,5 @@
 {
-  "configVersion": "v2",
+  "configVersion": "v3",
   "app": {
     "appId": 1108585,
     "appName": "Padel Buddy",
@@ -12,16 +12,16 @@
     "vender": "zepp",
     "description": "Track padel match scores on your Amazfit watch."
   },
-  "permissions": ["device:os.local_storage"],
+  "permissions": [],
   "runtime": {
     "apiVersion": {
-      "compatible": "1.0.0",
-      "target": "1.0.1",
-      "minVersion": "1.0.0"
+      "compatible": "3.6",
+      "target": "3.6",
+      "minVersion": "3.6"
     }
   },
   "targets": {
-    "gtr-3": {
+    "gt": {
       "module": {
         "page": {
           "pages": [
@@ -38,42 +38,26 @@
       },
       "platforms": [
         {
-          "name": "gtr3",
-          "deviceSource": 226
+          "st": "s",
+          "sr": "w390",
+          "dw": 390
         },
         {
-          "name": "gtr3-w",
-          "deviceSource": 227
-        }
-      ],
-      "designWidth": 454
-    },
-    "gts-3": {
-      "module": {
-        "page": {
-          "pages": [
-            "page/index",
-            "page/setup",
-            "page/game",
-            "page/summary",
-            "page/history",
-            "page/history-detail",
-            "page/game-settings",
-            "page/settings"
-          ]
-        }
-      },
-      "platforms": [
-        {
-          "name": "Zurich",
-          "deviceSource": 224
+          "st": "r",
+          "sr": "w454",
+          "dw": 454
         },
         {
-          "name": "ZurichW",
-          "deviceSource": 225
+          "st": "r",
+          "sr": "w466",
+          "dw": 454
+        },
+        {
+          "st": "r",
+          "sr": "w480",
+          "dw": 454
         }
-      ],
-      "designWidth": 390
+      ]
     }
   },
   "i18n": {

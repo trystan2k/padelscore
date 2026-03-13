@@ -1,0 +1,4 @@
+What: Task 74 implemented the Zepp OS v3 manifest using `targets.<key>.platforms[]` entries with `st`, `sr`, and `dw`, keeping `gtr-3`/`gts-3` target keys only as asset namespaces while moving device selection to screen-family qualifiers.
+Why: Official Zepp OS v3 sample manifests validated `platforms[].dw` rather than v2 `designWidth` or the Taskmaster `screenFamily` example, and preserving the existing target keys avoided a broader asset tree migration in the same task.
+Where: `app.json`, `docs/plan/Plan 74 Migrate app.json to v3 Screen-Family Targets.md`, `assets/gtr-3.w454-r`, `assets/gtr-3.w466-r`, `assets/gtr-3.w480-r`, `assets/gts-3.w390-s`
+Learned: Zeus v3 packaging did not resolve the old v2 asset directories once screen-family qualifiers were introduced, so qualifier-specific asset directories were needed for build correctness.

@@ -4977,12 +4977,74 @@
         "description": "Update app.json configuration to comply with v3 schema specifications (minVersion 3.6), add screen-family targets for specific device resolutions, audit permissions, and validate all page module entries to ensure proper app structure.",
         "details": "This task migrates the application configuration to the modern Zepp OS v3 app.json schema, which introduces screen-family targets for better multi-device support. The migration requires updating the manifest to support specific screen resolutions while ensuring all page modules are properly registered and permissions are correctly audited.\n\n**Implementation Steps:**\n\n1. **Update app.json Header and Version:**\n   - Set `minVersion` to \"3.6\"\n   - Ensure `version` matches the baseline established in Task 73 (\"1.0.0\" or appropriate version)\n   - Verify `appId` matches the new 3.6+ identifier from Task 73\n   - Add or update `target` field to specify v3 compatibility\n\n2. **Add Screen-Family Targets:**\n   Add the following `screenFamily` entries to the configuration:\n   ```json\n   {\n     \"screenFamily\": [\n       { \"w\": 390, \"h\": 450, \"type\": \"square\" },\n       { \"w\": 454, \"h\": 454, \"type\": \"round\" },\n       { \"w\": 466, \"h\": 466, \"type\": \"round\" },\n       { \"w\": 480, \"h\": 480, \"type\": \"round\" }\n     ]\n   }\n   ```\n\n3. **Audit and Update Permissions:**\n   - Review all `permissions` entries in app.json\n   - Ensure `storage_data` permission is present (required for match state persistence)\n   - Remove any deprecated or unused permissions\n   - Verify all permissions are properly formatted for v3 schema\n\n4. **Validate Page Module Entries:**\n   Verify the following pages are registered in the `pages` section:\n   - `page/index` (Home Screen)\n   - `page/setup` (Setup Screen)\n   - `page/game` (Game Screen)\n   - `page/summary` (Summary Screen)\n   - `page/history` (History List Screen)\n   - `page/history-detail` (History Detail Screen)\n   - `page/settings` (Settings Screen)\n   - `page/game-settings` (Game Settings Screen)\n\n   For each page entry, ensure:\n   - Correct path format for v3 schema\n   - `virtualKey` values are unique (if used)\n   - No duplicate or orphaned entries\n\n5. **Remove Deprecated v2 Properties:**\n   - Remove any `i18n` entries if using localized v2 format\n   - Remove `watchface` property if not a watchface app\n   - Ensure no legacy configuration properties remain\n\n6. **Add Design System Configuration (if applicable):**\n   - If the new layout system requires app-level configuration, add the necessary entries\n   - Verify design tokens reference is correct if defined at app level",
         "testStrategy": "1. **Schema Validation:**\n   - Use Zepp OS CLI validation tool to verify app.json conforms to v3 schema\n   - Run JSON linter to ensure no syntax errors\n   - Verify `minVersion` is exactly \"3.6\"\n\n2. **Screen-Family Simulator Testing:**\n   - Launch Zepp OS simulator\n   - Test loading app on w390-s (square) target\n   - Test loading app on w454-r (round) target\n   - Test loading app on w466-r (round) target\n   - Test loading app on w480-r (round) target\n   - Verify no \"unsupported device\" errors on any target\n   - Confirm app launches successfully on all screen families\n\n3. **Page Navigation Verification:**\n   - For each target family, verify all registered pages are accessible\n   - Test navigation flow: index → setup → game → summary\n   - Test utility pages: settings, history, history-detail, game-settings\n   - Confirm no \"page not found\" errors\n\n4. **Permissions Runtime Testing:**\n   - Launch app on simulator\n   - Verify storage operations work (save/load match state)\n   - Check for any permission-related console errors\n\n5. **Configuration Integrity Check:**\n   - Compare new app.json with backup of pre-migration version\n   - Verify all required pages from original config are present\n   - Confirm no pages were accidentally removed during migration",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "73"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update app.json Header and Version Configuration",
+            "description": "Update the app.json manifest header fields to comply with Zepp OS v3.6 schema requirements",
+            "dependencies": [],
+            "details": "Set minVersion to '3.6', ensure version matches baseline from Task 73 ('1.0.0' or appropriate), verify appId matches new 3.6+ identifier, and add or update target field to specify v3 compatibility mode",
+            "status": "pending",
+            "testStrategy": "Use Zepp OS CLI validation tool to verify app.json conforms to v3 schema, run JSON linter to ensure no syntax errors, verify minVersion is exactly '3.6'",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Configure Screen-Family Targets for Multi-Device Support",
+            "description": "Add screenFamily configuration entries to support specific device resolutions and screen shapes",
+            "dependencies": [
+              1
+            ],
+            "details": "Add screenFamily array with four entries: {w: 390, h: 450, type: 'square'} for square screens, and three round screen configurations {w: 454, h: 454, type: 'round'}, {w: 466, h: 466, type: 'round'}, {w: 480, h: 480, type: 'round'}",
+            "status": "pending",
+            "testStrategy": "Launch Zepp OS simulator and test loading app on w390-s (square) and w454-r, w466-r, w480-r (round) device profiles to verify screen-family targets are properly recognized",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Audit and Update Permissions for v3 Schema Compliance",
+            "description": "Review and update all permissions entries to ensure proper v3 schema formatting and required capabilities",
+            "dependencies": [
+              1
+            ],
+            "details": "Review all permissions in app.json, ensure storage_data permission is present for match state persistence, remove any deprecated or unused permissions, and verify all permissions follow v3 schema formatting requirements",
+            "status": "pending",
+            "testStrategy": "Run validation tool to confirm permissions are properly formatted, verify storage_data permission is listed, cross-reference with actual usage in codebase to ensure no unused or missing permissions",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Validate and Configure Page Module Entries",
+            "description": "Verify all 8 page modules are properly registered in app.json with correct v3 path format",
+            "dependencies": [
+              1
+            ],
+            "details": "Verify and register all pages: page/index (Home), page/setup (Setup), page/game (Game), page/summary (Summary), page/history (History List), page/history-detail (History Detail), page/settings (Settings), page/game-settings (Game Settings). Ensure correct v3 path format, unique virtualKey values, and no duplicate or orphaned entries",
+            "status": "pending",
+            "testStrategy": "Use validation tool to verify all page entries have correct paths, cross-check virtualKey values for uniqueness, build project to confirm no missing page file references",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Remove Legacy Properties and Final Cleanup",
+            "description": "Remove all deprecated v2 configuration properties and complete migration cleanup",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Remove deprecated v2 i18n entries if using localized v2 format, remove watchface property if not applicable, ensure no legacy configuration properties remain, and add design system configuration entries if required by the new layout system",
+            "status": "pending",
+            "testStrategy": "Run complete schema validation to ensure no deprecated properties remain, build project successfully, perform final review of app.json to confirm clean v3 structure",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-03-13T15:14:09.826Z"
       },
       {
         "id": "75",
@@ -5064,9 +5126,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-13T13:35:40.583Z",
+      "lastModified": "2026-03-13T15:14:09.827Z",
       "taskCount": 79,
-      "completedCount": 69,
+      "completedCount": 70,
       "tags": [
         "master"
       ]

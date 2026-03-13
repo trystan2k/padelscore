@@ -1,0 +1,4 @@
+What: Refined Task 74 to use a single generic Zepp OS v3 target key `gt` with all supported screen families (`w390-s`, `w454-r`, `w466-r`, `w480-r`) under one `targets.gt.platforms` array.
+Why: The user requested a cleaner v3-native manifest matching the official hello-world/sample style while staying within Task 74 manifest scope.
+Where: `app.json`, `docs/plan/Plan 74 Migrate app.json to v3 Screen-Family Targets.md`, `assets/gt.w390-s`, `assets/gt.w454-r`, `assets/gt.w466-r`, `assets/gt.w480-r`
+Learned: Zeus accepted the single-target manifest, but explicit `sr`/`st` platform qualifiers still require matching qualifier-specific asset directories; there was no clean shared `gt.r`/`gt.s` fallback for this exact four-family matrix.

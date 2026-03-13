@@ -443,16 +443,12 @@ test('game settings switch persists vibration preference across reload', async (
   }
 })
 
-test('app routes register game settings page for both targets', async () => {
+test('app routes register game settings page for the target', async () => {
   const appConfigPath = toProjectFileUrl('app.json')
   const appConfig = JSON.parse(await readFile(appConfigPath, 'utf8'))
 
   assert.equal(
-    appConfig.targets['gtr-3'].module.page.pages.includes('page/game-settings'),
-    true
-  )
-  assert.equal(
-    appConfig.targets['gts-3'].module.page.pages.includes('page/game-settings'),
+    appConfig.targets['gt'].module.page.pages.includes('page/game-settings'),
     true
   )
 })

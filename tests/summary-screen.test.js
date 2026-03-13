@@ -732,16 +732,12 @@ test('summary haptic trigger does not start pulses when setting is disabled', as
   )
 })
 
-test('app routes register summary screen for both targets', async () => {
+test('app routes register summary screen for the target', async () => {
   const appConfigPath = toProjectFileUrl('app.json')
   const appConfig = JSON.parse(await readFile(appConfigPath, 'utf8'))
 
   assert.equal(
-    appConfig.targets['gtr-3'].module.page.pages.includes('page/summary'),
-    true
-  )
-  assert.equal(
-    appConfig.targets['gts-3'].module.page.pages.includes('page/summary'),
+    appConfig.targets['gt'].module.page.pages.includes('page/summary'),
     true
   )
 })
