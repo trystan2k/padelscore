@@ -4,6 +4,8 @@ const DEFAULT_DEVICE_INFO = {
   screenShape: 'square',
   isRound: false
 }
+const DEFAULT_TOAST_DURATION = 2000
+const DEFAULT_VIBRATION_DURATION = 50
 
 const state = createInitialState()
 
@@ -31,7 +33,7 @@ export const router = {
   navigateBack(delta = 1) {
     state.routerHistory.push({
       type: 'navigateBack',
-      delta
+      delta: normalizePositiveInteger(delta, 1)
     })
 
     return true
@@ -69,11 +71,11 @@ export const gesture = {
 }
 
 export const toast = {
-  showToast(message, duration = 2000) {
+  showToast(message, duration = DEFAULT_TOAST_DURATION) {
     state.toast = {
       visible: true,
-      message,
-      duration
+      message: String(message ?? ''),
+      duration: normalizePositiveInteger(duration, DEFAULT_TOAST_DURATION)
     }
 
     return true
@@ -130,14 +132,17 @@ export const storage = {
 
 export const haptics = {
   vibrate(duration) {
-    state.hapticsCalls.push({ type: 'vibrate', duration })
+    state.hapticsCalls.push({
+      type: 'vibrate',
+      duration: normalizePositiveInteger(duration, DEFAULT_VIBRATION_DURATION)
+    })
     return true
   },
 
   vibratePattern(pattern) {
     state.hapticsCalls.push({
       type: 'vibratePattern',
-      pattern: Array.isArray(pattern) ? [...pattern] : []
+      pattern: normalizeVibrationPattern(pattern)
     })
     return true
   }
@@ -258,6 +263,24 @@ function createInitialState() {
     deviceInfo: { ...DEFAULT_DEVICE_INFO },
     hapticsCalls: []
   }
+}
+
+function normalizePositiveInteger(value, fallback) {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value)
+  }
+
+  return fallback
+}
+
+function normalizeVibrationPattern(pattern) {
+  if (!Array.isArray(pattern)) {
+    return []
+  }
+
+  return pattern
+    .map((step) => normalizePositiveInteger(step, 0))
+    .filter((step) => step > 0)
 }
 
 function normalizeGestureType(gestureType) {

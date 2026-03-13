@@ -1,0 +1,4 @@
+What: Added a serialization guard to platform adapter storage.setItem so unsupported values return null without mutating stored data, and normalized the manual mock router.navigateBack delta like production.
+Why: Latest Task 75 review requested a tiny polish pass to keep adapter boundaries non-throwing and mock behavior aligned with production normalization.
+Where: utils/platform-adapters.js, tests/__mocks__/platform-adapters.js, tests/platform-adapters.test.js
+Learned: Guarding serialization before any write preserves the previous stored value for the same key when JSON.stringify fails, which keeps behavior predictable.

@@ -4,6 +4,8 @@ const KEEP_AWAKE_DURATION = 2147483
 const DEFAULT_TOAST_DURATION = 2000
 const DEFAULT_VIBRATION_DURATION = 50
 const STORAGE_VALUE_PREFIX = '__padel_buddy_platform_adapters__:'
+const STORAGE_VALUE_MISSING = Symbol('storage-value-missing')
+const STORAGE_VALUE_INVALID = Symbol('storage-value-invalid')
 
 const fallbackStorage = createInMemoryStorage()
 const gestureRegistrations = []
@@ -362,12 +364,19 @@ export const storage = {
   setItem(key, value) {
     const normalizedKey = String(key)
     const runtimeStorage = resolveRuntimeStorage()
+    let serializedValue = null
 
-    fallbackStorage.setItem(normalizedKey, value)
+    try {
+      serializedValue = serializeStorageValue(value)
+    } catch {
+      return null
+    }
+
+    fallbackStorage.setItem(normalizedKey, serializedValue)
 
     if (runtimeStorage && typeof runtimeStorage.setItem === 'function') {
       try {
-        runtimeStorage.setItem(normalizedKey, serializeStorageValue(value))
+        runtimeStorage.setItem(normalizedKey, serializedValue)
       } catch {
         // Ignore runtime storage failures and keep the in-memory value.
       }
@@ -382,17 +391,33 @@ export const storage = {
 
     if (runtimeStorage && typeof runtimeStorage.getItem === 'function') {
       try {
-        const storedValue = runtimeStorage.getItem(normalizedKey)
+        const storedValue = deserializeStorageValue(
+          runtimeStorage.getItem(normalizedKey)
+        )
 
-        if (storedValue !== null && typeof storedValue !== 'undefined') {
-          return deserializeStorageValue(storedValue)
+        if (
+          storedValue !== STORAGE_VALUE_MISSING &&
+          storedValue !== STORAGE_VALUE_INVALID
+        ) {
+          return storedValue
         }
       } catch {
         // Fall back to in-memory storage.
       }
     }
 
-    return fallbackStorage.getItem(normalizedKey)
+    const fallbackValue = deserializeStorageValue(
+      fallbackStorage.getItem(normalizedKey)
+    )
+
+    if (
+      fallbackValue === STORAGE_VALUE_MISSING ||
+      fallbackValue === STORAGE_VALUE_INVALID
+    ) {
+      return null
+    }
+
+    return fallbackValue
   },
 
   removeItem(key) {
@@ -831,6 +856,10 @@ function serializeStorageValue(value) {
 }
 
 function deserializeStorageValue(value) {
+  if (value === null || typeof value === 'undefined') {
+    return STORAGE_VALUE_MISSING
+  }
+
   if (typeof value !== 'string') {
     return value
   }
@@ -842,7 +871,7 @@ function deserializeStorageValue(value) {
   try {
     return JSON.parse(value.slice(STORAGE_VALUE_PREFIX.length))
   } catch {
-    return null
+    return STORAGE_VALUE_INVALID
   }
 }
 

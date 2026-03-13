@@ -42,6 +42,7 @@ const RUNTIME_GLOBAL_KEYS = [
   'settingsStorage',
   'vibrator'
 ]
+const STORAGE_VALUE_PREFIX = '__padel_buddy_platform_adapters__:'
 
 beforeEach(() => {
   resetPlatformAdaptersMock()
@@ -119,6 +120,103 @@ test('platform adapters load and smoke-test safely without a Zepp runtime', asyn
     platformAdapters.storage.setItem('transient', 'value')
     platformAdapters.storage.clear()
     assert.equal(platformAdapters.storage.getItem('transient'), null)
+  })
+})
+
+test('platform adapters clone fallback storage values instead of sharing references', async () => {
+  await withRuntimeGlobals({}, async () => {
+    const platformAdapters = await importFresh('utils/platform-adapters.js')
+    const storedValue = {
+      score: {
+        home: 15,
+        away: 0
+      }
+    }
+
+    platformAdapters.storage.setItem('session', storedValue)
+    storedValue.score.home = 30
+
+    const firstRead = platformAdapters.storage.getItem('session')
+    assert.deepEqual(firstRead, {
+      score: {
+        home: 15,
+        away: 0
+      }
+    })
+
+    firstRead.score.away = 15
+
+    assert.deepEqual(platformAdapters.storage.getItem('session'), {
+      score: {
+        home: 15,
+        away: 0
+      }
+    })
+  })
+})
+
+test('platform adapters fall back to in-memory storage when runtime values are malformed', async () => {
+  let runtimeStorage = null
+
+  await withRuntimeGlobals(
+    {
+      LocalStorage: class {
+        constructor() {
+          this.values = new Map()
+          runtimeStorage = this
+        }
+
+        setItem(key, value) {
+          this.values.set(key, value)
+        }
+
+        getItem(key) {
+          return this.values.has(key) ? this.values.get(key) : null
+        }
+
+        removeItem(key) {
+          this.values.delete(key)
+        }
+
+        clear() {
+          this.values.clear()
+        }
+      }
+    },
+    async () => {
+      const platformAdapters = await importFresh('utils/platform-adapters.js')
+      const expectedValue = {
+        enabled: true,
+        mode: 'recovery'
+      }
+
+      platformAdapters.storage.setItem('settings', expectedValue)
+      runtimeStorage.values.set('settings', `${STORAGE_VALUE_PREFIX}{bad-json}`)
+
+      assert.deepEqual(
+        platformAdapters.storage.getItem('settings'),
+        expectedValue
+      )
+    }
+  )
+})
+
+test('platform adapters return null and preserve prior value when setItem cannot serialize', async () => {
+  await withRuntimeGlobals({}, async () => {
+    const platformAdapters = await importFresh('utils/platform-adapters.js')
+    const circularValue = {}
+
+    circularValue.self = circularValue
+
+    platformAdapters.storage.setItem('settings', { enabled: true })
+
+    assert.equal(
+      platformAdapters.storage.setItem('settings', circularValue),
+      null
+    )
+    assert.deepEqual(platformAdapters.storage.getItem('settings'), {
+      enabled: true
+    })
   })
 })
 
@@ -508,6 +606,34 @@ test('platform adapter mock tracks router, toast, storage, keep-awake, device, h
     { type: 'vibratePattern', pattern: [20, 20, 20] }
   ])
   assert.equal(getGestureRegistrations().length, 1)
+})
+
+test('platform adapter mock normalizes toast and haptics like production adapters', () => {
+  mockToast.showToast(123, 0)
+  mockHaptics.vibrate(-20)
+  mockHaptics.vibratePattern([15.2, 0, -5, '30', 20.6])
+
+  assert.deepEqual(getToastState(), {
+    visible: true,
+    message: '123',
+    duration: 2000
+  })
+  assert.deepEqual(getHapticsCalls(), [
+    { type: 'vibrate', duration: 50 },
+    { type: 'vibratePattern', pattern: [15, 21] }
+  ])
+})
+
+test('platform adapter mock normalizes navigateBack delta like production adapters', () => {
+  mockRouter.navigateBack(0)
+  mockRouter.navigateBack(2.4)
+  mockRouter.navigateBack('bad')
+
+  assert.deepEqual(getRouterHistory(), [
+    { type: 'navigateBack', delta: 1 },
+    { type: 'navigateBack', delta: 2 },
+    { type: 'navigateBack', delta: 1 }
+  ])
 })
 
 test('platform adapter mock reset clears state for isolated tests', () => {

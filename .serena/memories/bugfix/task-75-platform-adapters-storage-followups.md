@@ -1,0 +1,4 @@
+What: Updated Task 75 platform adapters so fallback storage stores serialized payloads, malformed runtime storage values fall back to the in-memory copy, and manual platform-adapter mocks now normalize toast and haptics inputs like production.
+Why: PR #73 Copilot review follow-up requested tighter parity between runtime and fallback adapter semantics and better regression coverage.
+Where: utils/platform-adapters.js, tests/__mocks__/platform-adapters.js, tests/platform-adapters.test.js
+Learned: The prior fallback adapter kept raw object references, which diverged from runtime string-storage semantics and let corrupted runtime payloads mask valid in-memory values.
