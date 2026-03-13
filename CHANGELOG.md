@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0](https://github.com/trystan2k/padelbuddy/compare/v3.0.0...v3.1.0) (2026-03-13)
+
+### Features
+
+* add Zepp 3.6 platform adapters with mocks, tests, and documentation ([5bc6dba](https://github.com/trystan2k/padelbuddy/commit/5bc6dbaed0bdb70f3650787b784076a96335f558))
+
 ## [1.13.0](https://github.com/trystan2k/padelbuddy/compare/v1.12.0...v1.13.0) (2026-03-06)
 
 ### Features
