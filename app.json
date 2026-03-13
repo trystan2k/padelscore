@@ -1,12 +1,12 @@
 {
   "configVersion": "v2",
   "app": {
-    "appId": 1106804,
+    "appId": 1108585,
     "appName": "Padel Buddy",
     "appType": "app",
     "version": {
       "code": 1,
-      "name": "1.13.0"
+      "name": "3.0.0"
     },
     "icon": "icon.png",
     "vender": "zepp",
@@ -34,12 +34,6 @@
             "page/game-settings",
             "page/settings"
           ]
-        },
-        "app-side": {
-          "path": "app-side/index"
-        },
-        "setting": {
-          "path": "setting/index"
         }
       },
       "platforms": [
@@ -67,12 +61,6 @@
             "page/game-settings",
             "page/settings"
           ]
-        },
-        "app-side": {
-          "path": "app-side/index"
-        },
-        "setting": {
-          "path": "setting/index"
         }
       },
       "platforms": [

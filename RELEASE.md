@@ -52,8 +52,6 @@ Changes to these paths will trigger a release (when combined with a release-trig
 page/          # UI pages/screens
 app.js         # Main application entry
 app.json       # App configuration
-app-side/      # App-side service code
-setting/       # Settings page code
 utils/         # Utility functions
 assets/        # Images, icons, fonts
 shared/        # Shared modules
@@ -97,8 +95,6 @@ CONTEXT.md     # Project context
 page/          # UI pages/screens
 app.js         # Main application entry
 app.json       # App configuration
-app-side/      # App-side service code
-setting/       # Settings page code
 utils/         # Utility functions
 assets/        # Images, icons, fonts
 shared/        # Shared modules
@@ -456,8 +452,6 @@ node scripts/sync-version.js
 | `page/**` | ✅ Yes |
 | `app.js` | ✅ Yes |
 | `app.json` | ✅ Yes |
-| `app-side/**` | ✅ Yes |
-| `setting/**` | ✅ Yes |
 | `utils/**` | ✅ Yes |
 | `assets/**` | ✅ Yes |
 | `shared/**` | ✅ Yes |

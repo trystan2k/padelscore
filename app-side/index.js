@@ -1,7 +1,0 @@
-AppSideService({
-  onInit() {},
-
-  onRun() {},
-
-  onDestroy() {}
-})
