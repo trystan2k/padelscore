@@ -3,8 +3,8 @@
     "main",
     {
       "name": "v*",
-      "range": "${name.replace(/^v/, '')}",
-      "channel": "${name.replace(/^v/, '')}"
+      "range": "${name.replace(/^v/, '')}.x",
+      "channel": "${name.replace(/^v/, '')}.x"
     }
   ],
   "tagFormat": "v${version}",
