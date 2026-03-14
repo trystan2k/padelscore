@@ -612,6 +612,46 @@ test('platform adapters expose reset helper for integration isolation', async ()
   })
 })
 
+test('platform adapters storage.removeItem reports failure when runtime storage lacks removal methods', async () => {
+  await withRuntimeGlobals(
+    {
+      localStorage: {
+        setItem() {},
+        getItem() {
+          return null
+        }
+      }
+    },
+    async () => {
+      const platformAdapters = await importFresh('utils/platform-adapters.js')
+
+      assert.equal(
+        platformAdapters.storage.removeItem('missing-methods'),
+        false
+      )
+    }
+  )
+})
+
+test('platform adapters storage.clear reports failure when runtime storage lacks clear method', async () => {
+  await withRuntimeGlobals(
+    {
+      localStorage: {
+        setItem() {},
+        getItem() {
+          return null
+        },
+        removeItem() {}
+      }
+    },
+    async () => {
+      const platformAdapters = await importFresh('utils/platform-adapters.js')
+
+      assert.equal(platformAdapters.storage.clear(), false)
+    }
+  )
+})
+
 test('platform adapter mock tracks router, toast, storage, keep-awake, device, haptics, and gestures', () => {
   const gestureElement = { id: 'home-screen' }
   const triggeredPayloads = []

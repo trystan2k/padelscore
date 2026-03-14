@@ -451,37 +451,54 @@ export const storage = {
   removeItem(key) {
     const normalizedKey = String(key)
     const runtimeStorage = resolveRuntimeStorage()
-    let didRemoveFromRuntime = true
 
     fallbackStorage.removeItem(normalizedKey)
 
-    if (runtimeStorage) {
-      try {
-        runtimeStorage.removeItem?.(normalizedKey)
-        runtimeStorage.deleteItem?.(normalizedKey)
-      } catch {
-        didRemoveFromRuntime = false
-      }
+    if (!runtimeStorage) {
+      return true
     }
 
-    return didRemoveFromRuntime
+    const hasRemoveItem = typeof runtimeStorage.removeItem === 'function'
+    const hasDeleteItem = typeof runtimeStorage.deleteItem === 'function'
+
+    if (!hasRemoveItem && !hasDeleteItem) {
+      return false
+    }
+
+    try {
+      if (hasRemoveItem) {
+        runtimeStorage.removeItem(normalizedKey)
+      }
+
+      if (hasDeleteItem) {
+        runtimeStorage.deleteItem(normalizedKey)
+      }
+
+      return true
+    } catch {
+      return false
+    }
   },
 
   clear() {
     const runtimeStorage = resolveRuntimeStorage()
-    let didClearRuntimeStorage = true
 
     fallbackStorage.clear()
 
-    if (runtimeStorage) {
-      try {
-        runtimeStorage.clear?.()
-      } catch {
-        didClearRuntimeStorage = false
-      }
+    if (!runtimeStorage) {
+      return true
     }
 
-    return didClearRuntimeStorage
+    if (typeof runtimeStorage.clear !== 'function') {
+      return false
+    }
+
+    try {
+      runtimeStorage.clear()
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
@@ -555,6 +572,57 @@ export const haptics = {
         } catch {
           // Fall through to legacy vibration.
         }
+      }
+    }
+
+    const legacySensor = resolveLegacyVibrateSensor()
+
+    if (
+      legacySensor &&
+      typeof legacySensor.start === 'function' &&
+      typeof legacySensor.stop === 'function' &&
+      typeof setTimeout === 'function' &&
+      normalizedPattern.length > 0
+    ) {
+      try {
+        legacySensor.stop()
+
+        let elapsedMs = 0
+        let shouldVibrate = true
+
+        for (let index = 0; index < normalizedPattern.length; index += 1) {
+          const stepDuration = normalizedPattern[index]
+
+          if (shouldVibrate) {
+            const startDelayMs = elapsedMs
+            setTimeout(() => {
+              try {
+                legacySensor.start()
+              } catch {
+                // Ignore start failures.
+              }
+            }, startDelayMs)
+
+            elapsedMs += stepDuration
+
+            const stopDelayMs = elapsedMs
+            setTimeout(() => {
+              try {
+                legacySensor.stop()
+              } catch {
+                // Ignore stop failures.
+              }
+            }, stopDelayMs)
+          } else {
+            elapsedMs += stepDuration
+          }
+
+          shouldVibrate = !shouldVibrate
+        }
+
+        return true
+      } catch {
+        // Fall through to single legacy vibration.
       }
     }
 

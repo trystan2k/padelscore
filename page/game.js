@@ -40,6 +40,7 @@ import {
 
 const INTERACTION_LATENCY_TARGET_MS = 100
 const SCORING_DEBOUNCE_WINDOW_MS = 300
+const PERSISTENCE_THROTTLE_WINDOW_MS = 350
 
 function getCurrentTimestampMs() {
   if (
@@ -106,6 +107,7 @@ Page({
     this.persistedSessionState = null
     this.manualFinishConfirmMode = false
     this.lastPersistedRuntimeStateSignature = null
+    this.lastPersistedRuntimeStateAt = null
 
     // Validate session synchronously before build() runs.
     this.validateSessionAccess()
@@ -233,6 +235,7 @@ Page({
       this.lastPersistedRuntimeStateSignature = hasValidActiveSession
         ? serializeMatchStateForComparison(persistedMatchState)
         : null
+      this.lastPersistedRuntimeStateAt = null
 
       if (!hasValidActiveSession) {
         this.navigateToSetupPage()
@@ -243,6 +246,7 @@ Page({
       this.persistedSessionState = null
       this.isSessionAccessGranted = false
       this.lastPersistedRuntimeStateSignature = null
+      this.lastPersistedRuntimeStateAt = null
       this.navigateToSetupPage()
       return false
     }
@@ -358,50 +362,76 @@ Page({
       return true
     }
 
-    this.persistRuntimeStateSnapshot(runtimeState, signature)
+    const persistedAt = getCurrentTimestampMs()
+
+    if (
+      !shouldForcePersistence &&
+      Number.isFinite(this.lastPersistedRuntimeStateAt) &&
+      Number.isFinite(persistedAt) &&
+      persistedAt - this.lastPersistedRuntimeStateAt <
+        PERSISTENCE_THROTTLE_WINDOW_MS
+    ) {
+      return true
+    }
+
+    const didPersist = this.persistRuntimeStateSnapshot(runtimeState, signature)
+
+    if (didPersist && Number.isFinite(persistedAt)) {
+      this.lastPersistedRuntimeStateAt = persistedAt
+    }
 
     return true
   },
 
   persistRuntimeStateSnapshot(runtimeState, signature) {
     if (!isValidRuntimeMatchState(runtimeState)) {
-      return
+      return false
     }
 
     const persistedMatchStateSnapshot = createPersistedMatchStateSnapshot(
       runtimeState,
       this.persistedSessionState
     )
+    let didPersist = false
 
     if (persistedMatchStateSnapshot !== null) {
       try {
         // Wrap persistence in try/catch so a write-time crash never breaks gameplay.
-        saveState(persistedMatchStateSnapshot)
-        this.persistedSessionState = cloneMatchState(
-          persistedMatchStateSnapshot
-        )
+        didPersist = saveState(persistedMatchStateSnapshot) === true
 
-        // Cache the last written schema snapshot in globalData so app.onDestroy
-        // can flush it as a safety net if page.onDestroy is skipped.
-        const app = this.getAppInstance()
-        if (app) {
-          app.globalData._lastPersistedSchemaState = this.persistedSessionState
-        }
-      } catch {
-        // Schema persistence failed (e.g. toISOString unavailable on device).
-        // Keep persistedSessionState as-is so the in-memory session stays valid.
-        if (this.persistedSessionState === null) {
+        if (didPersist) {
           this.persistedSessionState = cloneMatchState(
             persistedMatchStateSnapshot
           )
+
+          // Cache the last written schema snapshot in globalData so app.onDestroy
+          // can flush it as a safety net if page.onDestroy is skipped.
+          const app = this.getAppInstance()
+          if (app) {
+            app.globalData._lastPersistedSchemaState =
+              this.persistedSessionState
+          }
         }
+      } catch {
+        didPersist = false
+      }
+
+      if (!didPersist && this.persistedSessionState === null) {
+        // Keep a fallback in-memory snapshot so the active session remains usable.
+        this.persistedSessionState = cloneMatchState(
+          persistedMatchStateSnapshot
+        )
       }
     }
 
-    this.lastPersistedRuntimeStateSignature =
-      signature.length > 0
-        ? signature
-        : serializeMatchStateForComparison(runtimeState)
+    if (didPersist) {
+      this.lastPersistedRuntimeStateSignature =
+        signature.length > 0
+          ? signature
+          : serializeMatchStateForComparison(runtimeState)
+    }
+
+    return didPersist
   },
 
   navigateToSummaryPage() {
