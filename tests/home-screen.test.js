@@ -145,7 +145,13 @@ async function loadHomePageDefinition() {
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
   const layoutPresetsUrl = toProjectFileUrl('utils/layout-presets.js')
   const platformAdaptersUrl = toProjectFileUrl('utils/platform-adapters.js')
+  const platformAdaptersImportUrl = new URL(platformAdaptersUrl.href)
   const uiComponentsUrl = toProjectFileUrl('utils/ui-components.js')
+
+  platformAdaptersImportUrl.searchParams.set(
+    'home-screen',
+    String(homePageImportCounter)
+  )
 
   let source = await readFile(sourceUrl, 'utf8')
 
@@ -189,7 +195,7 @@ async function loadHomePageDefinition() {
     )
     .replace(
       "from '../utils/platform-adapters.js'",
-      `from '${platformAdaptersUrl.href}'`
+      `from '${platformAdaptersImportUrl.href}'`
     )
     .replace(
       "from '../utils/ui-components.js'",
@@ -325,16 +331,22 @@ async function runHomePageScenario(options = {}, runAssertions) {
     page.build()
     await waitForAsyncPageUpdates()
 
-    return await runAssertions({
-      app,
-      createdWidgets,
-      page,
-      navigationCalls,
-      loadedMatchStorageKeys,
-      clearedMatchStorageKeys,
-      getVisibleButtons,
-      getVisibleButtonLabels
-    })
+    try {
+      return await runAssertions({
+        app,
+        createdWidgets,
+        page,
+        navigationCalls,
+        loadedMatchStorageKeys,
+        clearedMatchStorageKeys,
+        getVisibleButtons,
+        getVisibleButtonLabels
+      })
+    } finally {
+      if (typeof page.onDestroy === 'function') {
+        page.onDestroy()
+      }
+    }
   } finally {
     if (typeof originalHmUI === 'undefined') {
       delete globalThis.hmUI

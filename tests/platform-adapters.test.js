@@ -541,7 +541,13 @@ test('platform adapters use legacy globals when modern shims are unavailable', a
   }
 
   assert.deepEqual(runtimeCalls.router, [
-    { type: 'gotoPage', payload: { url: 'page/history?filter=recent' } },
+    {
+      type: 'gotoPage',
+      payload: {
+        url: 'page/history?filter=recent',
+        param: { filter: 'recent' }
+      }
+    },
     { type: 'gotoPage', payload: { url: 'page/index' } },
     { type: 'goBack' },
     { type: 'goBack' },

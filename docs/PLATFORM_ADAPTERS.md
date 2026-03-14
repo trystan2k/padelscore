@@ -30,11 +30,12 @@ import {
 router.navigateTo(pagePath, params)
 router.redirectTo(pagePath, params)
 router.navigateBack(delta)
+router.goHome()
 ```
 
 - Preferred intent: future Zepp 3.6 routing calls.
-- Current compatibility path: uses modern-style router shims when available, otherwise falls back to legacy `hmApp.gotoPage()` and `hmApp.goBack()`.
-- Param behavior: params are preserved in the payload and appended to the legacy URL as a query string.
+- Current compatibility path: uses modern-style router shims when available, otherwise falls back to legacy `hmApp.gotoPage()`, `hmApp.goBack()`, and `hmApp.gotoHome()`.
+- Param behavior: params are preserved in the payload, appended to the legacy URL as a query string, and passed through the legacy `param` field for v1 `onInit(params)` compatibility.
 
 Before:
 
@@ -46,6 +47,7 @@ After:
 
 ```js
 router.navigateTo('page/setup')
+router.goHome()
 ```
 
 Current migration examples:

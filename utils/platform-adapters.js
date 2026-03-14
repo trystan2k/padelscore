@@ -41,7 +41,7 @@ export const router = {
 
     if (legacyApp && typeof legacyApp.gotoPage === 'function') {
       try {
-        legacyApp.gotoPage({ url: payload.url })
+        legacyApp.gotoPage(createLegacyNavigationPayload(payload))
         return true
       } catch {
         // Ignore runtime navigation failures.
@@ -76,7 +76,7 @@ export const router = {
 
     if (legacyApp && typeof legacyApp.gotoPage === 'function') {
       try {
-        legacyApp.gotoPage({ url: payload.url })
+        legacyApp.gotoPage(createLegacyNavigationPayload(payload))
         return true
       } catch {
         // Ignore runtime navigation failures.
@@ -741,6 +741,19 @@ function createNavigationPayload(pagePath, params) {
     url: buildNavigationUrl(normalizedPath, params),
     params: normalizeParams(params)
   }
+}
+
+function createLegacyNavigationPayload(payload) {
+  const normalizedParams = normalizeParams(payload?.params)
+  const legacyPayload = {
+    url: payload?.url ?? ''
+  }
+
+  if (Object.keys(normalizedParams).length > 0) {
+    legacyPayload.param = normalizedParams
+  }
+
+  return legacyPayload
 }
 
 function buildNavigationUrl(pagePath, params) {
