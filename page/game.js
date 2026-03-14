@@ -363,11 +363,16 @@ Page({
     }
 
     const persistedAt = getCurrentTimestampMs()
+    const hasReliablePersistedAt =
+      Number.isFinite(persistedAt) && persistedAt > 0
+    const hasReliableLastPersistedAt =
+      Number.isFinite(this.lastPersistedRuntimeStateAt) &&
+      this.lastPersistedRuntimeStateAt > 0
 
     if (
       !shouldForcePersistence &&
-      Number.isFinite(this.lastPersistedRuntimeStateAt) &&
-      Number.isFinite(persistedAt) &&
+      hasReliableLastPersistedAt &&
+      hasReliablePersistedAt &&
       persistedAt - this.lastPersistedRuntimeStateAt <
         PERSISTENCE_THROTTLE_WINDOW_MS
     ) {
@@ -376,7 +381,7 @@ Page({
 
     const didPersist = this.persistRuntimeStateSnapshot(runtimeState, signature)
 
-    if (didPersist && Number.isFinite(persistedAt)) {
+    if (didPersist && hasReliablePersistedAt) {
       this.lastPersistedRuntimeStateAt = persistedAt
     }
 
