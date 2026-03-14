@@ -5216,13 +5216,78 @@
         "description": "Refactor the screen adaptation system to support w390-s, w454-r, w466-r, and w480-r device families, removing legacy GTS 3-specific assumptions and defining a clear policy for square device status bars.",
         "details": "This task involves a complete overhaul of the screen adaptation layer to support the new v3 screen-family targets. The implementation should:\n\n1. **Update utils/screen-utils.js**:\n   - Extend `getScreenMetrics()` to detect and return the current screen family (w390-s, w454-r, w466-r, w480-r)\n   - Remove any hardcoded GTS 3 (w454-r) assumptions from utility functions\n   - Add family-specific configurations for status bar heights and safe areas\n\n2. **Define Square 'Status Bar' Policy**:\n   - For square devices (w390-s), establish a consistent top padding/reservation for system status indicators\n   - Document the policy in JSDoc comments for the screen utilities\n   - Ensure all pages respect this padding in their layout calculations\n\n3. **Update Design Tokens for Families**:\n   - Review and update utils/design-tokens.js to support all four target families\n   - Define family-specific spacing, font sizes, and safe area insets\n   - Ensure assets (PNGs, icons) are appropriately sized for each resolution\n\n4. **Layout Adaptation Refactoring**:\n   - Replace legacy hardcoded positions and sizes with family-aware calculations\n   - Update any remaining page/index.js or page/game.js code that uses specific numeric values\n   - Implement consistent header rendering that accounts for status bar on square devices\n\n5. **Asset Optimization**:\n   - Audit existing assets in assets/ directory\n   - Ensure scaling ratios are correct for each screen family\n   - Add placeholder assets if missing for any family",
         "testStrategy": "1. **Unit Tests**: Run layout utility tests to verify screen family detection works correctly for all four targets. Test that `getScreenMetrics()` returns correct values for each family.\n\n2. **Visual Inspection on Square Device**: Launch app on w390-s simulator and verify header elements do not overlap with system status bar. Check all screens (Home, Game, Settings).\n\n3. **Visual Inspection on Round Devices**: Launch on w454-r, w466-r, and w480-r simulators to verify layouts render correctly without cutting off or overlapping elements.\n\n4. **Regression Testing**: Verify existing functionality (Start Game, Resume Game, Scoring) still works correctly on all device families.\n\n5. **Asset Validation**: Check that all images, icons, and graphical elements display crisply at their intended sizes on each device family.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "41",
           "74"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend getScreenMetrics() to support four screen families",
+            "description": "Update utils/screen-utils.js to detect and return metrics for w390-s, w454-r, w466-r, and w480-r device families",
+            "dependencies": [],
+            "details": "Modify getScreenMetrics() function to return a screen family property based on screen dimensions. Remove all hardcoded GTS 3 (w454-r) assumptions from existing utility functions. Add configuration objects for each family containing status bar heights, safe area insets, and other family-specific properties. Implement detection logic that maps screen width/height to the correct family identifier.",
+            "status": "done",
+            "testStrategy": "Unit tests to verify getScreenMetrics() returns correct family identifier for all four target screen sizes. Verify family-specific configuration values are returned accurately for each device type.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-14T15:24:17.129Z"
+          },
+          {
+            "id": 2,
+            "title": "Define and document square device status bar policy",
+            "description": "Establish consistent status bar handling for square (w390-s) devices and document the policy",
+            "dependencies": [
+              1
+            ],
+            "details": "For w390-s square devices, define a standard top padding/reservation value for system status indicators. Add comprehensive JSDoc comments in screen-utils.js explaining the status bar policy. Create a helper function getStatusBarHeight() that returns family-appropriate padding values. Ensure the policy accounts for Zepp OS system UI behavior on square screens.",
+            "status": "done",
+            "testStrategy": "Visual inspection on w390-s simulator to confirm header elements do not overlap system status indicators. Code review to ensure JSDoc documentation is complete and accurate.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-14T15:24:17.136Z"
+          },
+          {
+            "id": 3,
+            "title": "Update design tokens for multi-family support",
+            "description": "Refactor utils/design-tokens.js to support family-specific spacing, fonts, and safe areas",
+            "dependencies": [],
+            "details": "Review and restructure design-tokens.js to export family-specific configurations for all four target families. Define distinct spacing scales, font sizes, and safe area insets for w390-s, w454-r, w466-r, and w480-r. Ensure tokens can be dynamically selected based on the current screen family. Add scaling ratios for assets and icons appropriate to each resolution.",
+            "status": "done",
+            "testStrategy": "Unit tests verifying design tokens return correct values for each screen family. Cross-reference token values against device specifications to ensure accuracy.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-14T15:24:17.141Z"
+          },
+          {
+            "id": 4,
+            "title": "Refactor page layouts to use family-aware calculations",
+            "description": "Replace hardcoded layout values with dynamic family-aware calculations in page/index.js and page/game.js",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Audit page/index.js and page/game.js for hardcoded pixel values and magic numbers. Replace all legacy hardcoded positions and sizes with calculations using getScreenMetrics() and design tokens. Implement consistent header rendering that properly accounts for status bar padding on square devices. Ensure all layout logic adapts based on current screen family detection.",
+            "status": "done",
+            "testStrategy": "Visual inspection on all four device simulators to verify layouts render correctly without overlap or clipping. Regression test on original GTS 3 to ensure no functionality loss.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-14T15:24:17.146Z"
+          },
+          {
+            "id": 5,
+            "title": "Audit and optimize assets for all screen families",
+            "description": "Review assets directory and ensure proper scaling for w390-s, w454-r, w466-r, and w480-r families",
+            "dependencies": [
+              4
+            ],
+            "details": "Conduct comprehensive audit of all assets in assets/ directory. Verify scaling ratios are correct for each screen family resolution. Identify any missing assets and create placeholder PNGs or icons for unsupported families. Update asset loading logic to select appropriately sized assets based on current screen family. Document required asset dimensions for each family.",
+            "status": "done",
+            "testStrategy": "Visual verification on each device simulator that assets display at correct sizes and quality. Automated script to check all required asset files exist.",
+            "parentId": "undefined",
+            "updatedAt": "2026-03-14T15:24:17.150Z"
+          }
+        ],
+        "updatedAt": "2026-03-14T15:24:17.150Z"
       },
       {
         "id": "78",
@@ -5262,9 +5327,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-13T23:57:55.304Z",
+      "lastModified": "2026-03-14T15:24:17.150Z",
       "taskCount": 79,
-      "completedCount": 72,
+      "completedCount": 73,
       "tags": [
         "master"
       ]

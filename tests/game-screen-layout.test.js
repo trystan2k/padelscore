@@ -16,6 +16,7 @@ import {
 } from '../utils/match-state-schema.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint } from '../utils/scoring-engine.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { createHmFsMock } from './helpers/hmfs-mock.js'
 import {
   createLocalStorageMock,
@@ -286,6 +287,7 @@ async function runWithRenderedGamePage(
 
   const { hmUI, createdWidgets, shownToasts } = createHmUiRecorder()
   const hmFsMock = createHmFsMock()
+  const deviceInfo = options.deviceInfo ?? { width, height }
   const app = {
     globalData: {
       matchState: createInitialMatchState(1700000000),
@@ -296,7 +298,7 @@ async function runWithRenderedGamePage(
   globalThis.hmUI = hmUI
   globalThis.hmSetting = {
     getDeviceInfo() {
-      return { width, height }
+      return deviceInfo
     }
   }
   globalThis.getApp = () => app
@@ -546,16 +548,48 @@ test('game screen keeps set, points, and controls in top-to-bottom layout order'
   assert.equal(headerBottom < controlsTop, true)
 })
 
-test('game controls keep key visible widgets in bounds for square and round screens', async () => {
+test('game screen keeps square-family header text below the reserved top inset', async () => {
+  await runWithRenderedGamePage(
+    390,
+    450,
+    ({ createdWidgets }) => {
+      const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT').filter(
+        hasVisibleRect
+      )
+      const topMostTextY = Math.min(
+        ...textWidgets.map((widget) => widget.properties.y)
+      )
+
+      assert.equal(textWidgets.length > 0, true)
+      assert.equal(topMostTextY >= SYSTEM_HEADER_HEIGHT_SQUARE, true)
+    },
+    {
+      deviceInfo: { width: 390, height: 450, screenShape: 'square' }
+    }
+  )
+})
+
+test('game controls keep key visible widgets in bounds across supported families', async () => {
   const screenScenarios = [
-    { width: 390, height: 450 },
-    { width: 390, height: 390 },
-    { width: 454, height: 454 }
+    { width: 390, height: 450, screenShape: 'square' },
+    { width: 454, height: 454, screenShape: 'round' },
+    { width: 466, height: 466, screenShape: 'round' },
+    { width: 480, height: 480, screenShape: 'round' }
   ]
 
   for (const scenario of screenScenarios) {
-    const { createdWidgets, width, height } =
-      await renderGameScreenForDimensions(scenario.width, scenario.height)
+    const { createdWidgets, width, height } = await runWithRenderedGamePage(
+      scenario.width,
+      scenario.height,
+      ({ createdWidgets }) => ({
+        createdWidgets,
+        width: scenario.width,
+        height: scenario.height
+      }),
+      {
+        deviceInfo: scenario
+      }
+    )
     const buttons = getVisibleWidgets(createdWidgets, 'BUTTON')
     const visibleTextWidgets = getVisibleWidgets(createdWidgets, 'TEXT').filter(
       hasVisibleRect
@@ -1268,9 +1302,10 @@ test('game manual finish confirmation timer is cleared on home navigation and de
 
 test('game controls keep minimum 48x48 touch targets in active state', async () => {
   const screenScenarios = [
-    { width: 390, height: 450 },
-    { width: 390, height: 390 },
-    { width: 454, height: 454 }
+    { width: 390, height: 450, screenShape: 'square' },
+    { width: 454, height: 454, screenShape: 'round' },
+    { width: 466, height: 466, screenShape: 'round' },
+    { width: 480, height: 480, screenShape: 'round' }
   ]
 
   for (const scenario of screenScenarios) {
@@ -1296,6 +1331,9 @@ test('game controls keep minimum 48x48 touch targets in active state', async () 
             assert.equal(button.properties.h >= 48, true)
           }
         })
+      },
+      {
+        deviceInfo: scenario
       }
     )
   }

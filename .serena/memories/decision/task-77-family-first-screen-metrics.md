@@ -1,0 +1,4 @@
+What: Rebuilt `utils/screen-utils.js` around explicit `w390-s`, `w454-r`, `w466-r`, and `w480-r` family detection, returning `screenFamily`, `screenShape`, `statusBarHeight`, and `safeTop`, with `w390-s` reserving a fixed 48px top inset and round families reserving 0.
+Why: Task 77 required removing legacy GTS 3 assumptions while preserving the square-device UI with a minimal, consistent status-bar reservation.
+Where: `utils/screen-utils.js`, `utils/design-tokens.js`, and the adaptation-focused test suite.
+Learned: Width/height plus optional `screenShape` is enough to classify the supported family matrix in tests, so runtime asset switching was unnecessary; manifest family folders remain the source of truth for asset selection.

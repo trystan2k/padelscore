@@ -4,6 +4,7 @@ import test from 'node:test'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { matchStorage } from '../utils/match-storage.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { toProjectFileUrl } from './helpers/project-paths.js'
 
@@ -353,9 +354,11 @@ async function runSummaryPageScenario(options = {}, runAssertions) {
   let loadCallCount = 0
 
   globalThis.hmUI = hmUI
+  const deviceInfo = options.deviceInfo ?? { width: 390, height: 450 }
+
   globalThis.hmSetting = {
     getDeviceInfo() {
-      return { width: 390, height: 450 }
+      return deviceInfo
     }
   }
   globalThis.hmApp = {
@@ -649,6 +652,24 @@ test('summary screen shows fallback copy when no finished data is available', as
     async ({ createdWidgets }) => {
       const buttons = getVisibleButtonLabels(createdWidgets)
       assert.equal(buttons.length >= 1, true)
+    }
+  )
+})
+
+test('summary screen keeps title below the square-family top inset', async () => {
+  await runSummaryPageScenario(
+    {
+      deviceInfo: { width: 390, height: 450, screenShape: 'square' },
+      matchStorageLoadResponses: [serializePersistedMatchState()]
+    },
+    async ({ createdWidgets }) => {
+      const textWidgets = getVisibleWidgets(createdWidgets, 'TEXT')
+      const topMostTextY = Math.min(
+        ...textWidgets.map((widget) => widget.properties.y)
+      )
+
+      assert.equal(textWidgets.length > 0, true)
+      assert.equal(topMostTextY >= SYSTEM_HEADER_HEIGHT_SQUARE, true)
     }
   )
 })

@@ -8,11 +8,53 @@
  */
 
 export const SYSTEM_HEADER_HEIGHT_SQUARE = 48
+export const SCREEN_FAMILY_W390_S = 'w390-s'
+export const SCREEN_FAMILY_W454_R = 'w454-r'
+export const SCREEN_FAMILY_W466_R = 'w466-r'
+export const SCREEN_FAMILY_W480_R = 'w480-r'
+export const SCREEN_FAMILY_UNKNOWN = 'unknown'
 
-const GTS_3_SQUARE_DEVICE_SOURCES = new Set([224, 225])
-const GTS_3_SQUARE_WIDTH = 390
-const GTS_3_SQUARE_HEIGHT = 450
-const GTS_3_SQUARE_DIMENSION_TOLERANCE = 2
+const SQUARE_DEVICE_SOURCES = new Set([224, 225])
+const SCREEN_DIMENSION_TOLERANCE = 2
+
+const SCREEN_FAMILY_CONFIGS = Object.freeze({
+  [SCREEN_FAMILY_W390_S]: Object.freeze({
+    screenFamily: SCREEN_FAMILY_W390_S,
+    width: 390,
+    height: 450,
+    screenShape: 'square',
+    isRound: false,
+    statusBarHeight: SYSTEM_HEADER_HEIGHT_SQUARE
+  }),
+  [SCREEN_FAMILY_W454_R]: Object.freeze({
+    screenFamily: SCREEN_FAMILY_W454_R,
+    width: 454,
+    height: 454,
+    screenShape: 'round',
+    isRound: true,
+    statusBarHeight: 0
+  }),
+  [SCREEN_FAMILY_W466_R]: Object.freeze({
+    screenFamily: SCREEN_FAMILY_W466_R,
+    width: 466,
+    height: 466,
+    screenShape: 'round',
+    isRound: true,
+    statusBarHeight: 0
+  }),
+  [SCREEN_FAMILY_W480_R]: Object.freeze({
+    screenFamily: SCREEN_FAMILY_W480_R,
+    width: 480,
+    height: 480,
+    screenShape: 'round',
+    isRound: true,
+    statusBarHeight: 0
+  })
+})
+
+const SUPPORTED_SCREEN_FAMILIES = Object.freeze(
+  Object.keys(SCREEN_FAMILY_CONFIGS)
+)
 
 /**
  * Retrieves screen metrics including dimensions and round screen detection.
@@ -20,90 +62,254 @@ const GTS_3_SQUARE_DIMENSION_TOLERANCE = 2
  *
  * @param {Object|number} [overrides={}] - Optional metrics overrides for testing
  * @param {number} [overrides.safeTop] - Explicit safeTop override
- * @returns {{width: number, height: number, isRound: boolean, safeTop: number}} Screen metrics object
+ * @param {number} [overrides.statusBarHeight] - Explicit status bar height override
+ * @param {number} [overrides.width] - Explicit width override
+ * @param {number} [overrides.height] - Explicit height override
+ * @param {string} [overrides.screenFamily] - Explicit screen family override
+ * @param {string} [overrides.screenShape] - Explicit screen shape override ('round' or 'square')
+ * @param {number} [overrides.deviceSource] - Explicit square-device source override used by family detection
+ * @param {Object} [overrides.deviceInfo] - Explicit device info override
+ * @returns {{width: number, height: number, isRound: boolean, safeTop: number, statusBarHeight: number, screenFamily: string, screenShape: string}} Screen metrics object
  *
  * @example
- * const { width, height, isRound, safeTop } = getScreenMetrics()
- * // width: 466 (GTR 3), height: 466 (GTR 3), isRound: true
- * // width: 390 (GTS 3), height: 450 (GTS 3), isRound: false
+ * const { width, height, isRound, safeTop, screenFamily } = getScreenMetrics()
+ * // width: 466, height: 466, screenFamily: 'w466-r', isRound: true
+ * // width: 390, height: 450, screenFamily: 'w390-s', isRound: false
  */
 export function getScreenMetrics(overrides = {}) {
-  const safeTopOverride =
-    typeof overrides === 'number' ? overrides : overrides?.safeTop
-
-  // Default fallback for test environments
-  if (
-    typeof hmSetting === 'undefined' ||
-    typeof hmSetting.getDeviceInfo !== 'function'
-  ) {
-    const width = 390
-    const height = 450
-    const isRound = false
-
-    return {
-      width,
-      height,
-      isRound,
-      safeTop: resolveSafeTop({
-        width,
-        height,
-        isRound,
-        safeTopOverride
-      })
-    }
-  }
-
-  const deviceInfo = hmSetting.getDeviceInfo()
-  const width = ensureNumber(deviceInfo?.width, 390)
-  const height = ensureNumber(deviceInfo?.height, 450)
-  const isRound = Math.abs(width - height) <= Math.round(width * 0.04)
-  const deviceSource = Number(deviceInfo?.deviceSource)
+  const normalizedOverrides = normalizeMetricOverrides(overrides)
+  const deviceInfo = resolveDeviceInfo(normalizedOverrides.deviceInfo)
+  const width = ensureNumber(
+    normalizedOverrides.width ?? deviceInfo?.width,
+    390
+  )
+  const height = ensureNumber(
+    normalizedOverrides.height ?? deviceInfo?.height,
+    450
+  )
+  const screenShape = resolveScreenShape(
+    normalizedOverrides.screenShape ?? deviceInfo?.screenShape,
+    width,
+    height
+  )
+  const screenFamily = resolveScreenFamily({
+    explicitScreenFamily: normalizedOverrides.screenFamily,
+    reportedScreenFamily:
+      deviceInfo?.screenFamily ?? deviceInfo?.screen_family ?? deviceInfo?.sr,
+    width,
+    height,
+    screenShape,
+    deviceSource: normalizedOverrides.deviceSource ?? deviceInfo?.deviceSource
+  })
+  const screenFamilyConfig = SCREEN_FAMILY_CONFIGS[screenFamily]
+  const statusBarHeight = resolveStatusBarHeight({
+    height,
+    statusBarHeightOverride: normalizedOverrides.statusBarHeight,
+    defaultStatusBarHeight: screenFamilyConfig?.statusBarHeight ?? 0
+  })
 
   return {
     width,
     height,
-    isRound,
+    isRound: screenShape === 'round',
+    screenFamily,
+    screenShape,
+    statusBarHeight,
     safeTop: resolveSafeTop({
-      deviceSource,
-      width,
       height,
-      isRound,
-      safeTopOverride
+      safeTopOverride: normalizedOverrides.safeTop,
+      statusBarHeight
     })
   }
 }
 
-function resolveSafeTop({
-  deviceSource,
-  width,
-  height,
-  isRound,
-  safeTopOverride
-}) {
+/**
+ * Returns the detected status bar height for the current family.
+ * Square `w390-s` reserves a fixed 48px top inset; supported round families reserve 0.
+ *
+ * @param {Object|number} [overrides={}] - Optional metrics overrides for testing
+ * @returns {number} Detected status bar height in pixels
+ */
+export function getStatusBarHeight(overrides = {}) {
+  return getScreenMetrics(overrides).statusBarHeight
+}
+
+function normalizeMetricOverrides(overrides) {
+  if (typeof overrides === 'number') {
+    return { safeTop: overrides }
+  }
+
+  if (!overrides || typeof overrides !== 'object') {
+    return {}
+  }
+
+  return overrides
+}
+
+function resolveDeviceInfo(overrideDeviceInfo) {
+  if (overrideDeviceInfo && typeof overrideDeviceInfo === 'object') {
+    return overrideDeviceInfo
+  }
+
+  if (
+    typeof hmSetting === 'undefined' ||
+    typeof hmSetting.getDeviceInfo !== 'function'
+  ) {
+    return null
+  }
+
+  try {
+    return hmSetting.getDeviceInfo() ?? null
+  } catch {
+    return null
+  }
+}
+
+function resolveSafeTop({ height, safeTopOverride, statusBarHeight }) {
   if (typeof safeTopOverride === 'number' && !Number.isNaN(safeTopOverride)) {
     return clamp(Math.round(safeTopOverride), 0, height)
   }
 
-  if (isRound) {
-    return 0
-  }
-
-  if (isGts3SquareDevice(deviceSource, width, height)) {
-    return SYSTEM_HEADER_HEIGHT_SQUARE
-  }
-
-  return 0
+  return clamp(statusBarHeight, 0, height)
 }
 
-function isGts3SquareDevice(deviceSource, width, height) {
-  if (!GTS_3_SQUARE_DEVICE_SOURCES.has(deviceSource)) {
+function resolveStatusBarHeight({
+  height,
+  statusBarHeightOverride,
+  defaultStatusBarHeight
+}) {
+  if (
+    typeof statusBarHeightOverride === 'number' &&
+    !Number.isNaN(statusBarHeightOverride)
+  ) {
+    return clamp(Math.round(statusBarHeightOverride), 0, height)
+  }
+
+  return clamp(defaultStatusBarHeight, 0, height)
+}
+
+function resolveScreenFamily({
+  explicitScreenFamily,
+  reportedScreenFamily,
+  width,
+  height,
+  screenShape,
+  deviceSource
+}) {
+  const supportedExplicitFamily = normalizeScreenFamily(
+    explicitScreenFamily,
+    screenShape
+  )
+  if (supportedExplicitFamily) {
+    return supportedExplicitFamily
+  }
+
+  const supportedReportedFamily = normalizeScreenFamily(
+    reportedScreenFamily,
+    screenShape
+  )
+  if (supportedReportedFamily) {
+    return supportedReportedFamily
+  }
+
+  const matchedFamily = matchScreenFamilyByDimensions(
+    width,
+    height,
+    screenShape
+  )
+  if (matchedFamily) {
+    return matchedFamily
+  }
+
+  if (
+    screenShape === 'square' &&
+    SQUARE_DEVICE_SOURCES.has(Number(deviceSource)) &&
+    isWithinScreenFamilyTolerance(SCREEN_FAMILY_W390_S, width, height)
+  ) {
+    return SCREEN_FAMILY_W390_S
+  }
+
+  return SCREEN_FAMILY_UNKNOWN
+}
+
+function normalizeScreenFamily(screenFamily, screenShape) {
+  if (typeof screenFamily !== 'string') {
+    return null
+  }
+
+  const normalizedFamily = screenFamily.trim().toLowerCase()
+
+  if (SUPPORTED_SCREEN_FAMILIES.includes(normalizedFamily)) {
+    return normalizedFamily
+  }
+
+  const widthOnlyMatch = normalizedFamily.match(/^w(\d{3})$/)
+  if (!widthOnlyMatch) {
+    return null
+  }
+
+  const normalizedShape = screenShape === 'round' ? 'r' : 's'
+  const derivedFamily = `w${widthOnlyMatch[1]}-${normalizedShape}`
+
+  return SUPPORTED_SCREEN_FAMILIES.includes(derivedFamily)
+    ? derivedFamily
+    : null
+}
+
+function matchScreenFamilyByDimensions(width, height, screenShape) {
+  return (
+    SUPPORTED_SCREEN_FAMILIES.find((screenFamily) => {
+      const config = SCREEN_FAMILY_CONFIGS[screenFamily]
+
+      return (
+        config.screenShape === screenShape &&
+        isWithinScreenFamilyTolerance(screenFamily, width, height)
+      )
+    }) ?? null
+  )
+}
+
+function isWithinScreenFamilyTolerance(screenFamily, width, height) {
+  const config = SCREEN_FAMILY_CONFIGS[screenFamily]
+  if (!config) {
     return false
   }
 
   return (
-    Math.abs(width - GTS_3_SQUARE_WIDTH) <= GTS_3_SQUARE_DIMENSION_TOLERANCE &&
-    Math.abs(height - GTS_3_SQUARE_HEIGHT) <= GTS_3_SQUARE_DIMENSION_TOLERANCE
+    Math.abs(width - config.width) <= SCREEN_DIMENSION_TOLERANCE &&
+    Math.abs(height - config.height) <= SCREEN_DIMENSION_TOLERANCE
   )
+}
+
+/**
+ * Resolves the effective screen shape from an explicit shape hint or width/height heuristics.
+ * Accepts long-form values (`round`, `square`) and shorthand runtime variants (`r`, `s`).
+ *
+ * @param {string} [screenShape] - Optional runtime-reported screen shape hint
+ * @param {number} width - Screen width in pixels
+ * @param {number} height - Screen height in pixels
+ * @returns {'round'|'square'} The normalized screen shape
+ */
+export function resolveScreenShape(screenShape, width, height) {
+  if (typeof screenShape === 'string') {
+    const normalizedShape = screenShape.trim().toLowerCase()
+
+    if (normalizedShape === 'round' || normalizedShape === 'square') {
+      return normalizedShape
+    }
+
+    if (normalizedShape === 'r') {
+      return 'round'
+    }
+
+    if (normalizedShape === 's') {
+      return 'square'
+    }
+  }
+
+  return Math.abs(width - height) <= Math.round(width * 0.04)
+    ? 'round'
+    : 'square'
 }
 
 /**

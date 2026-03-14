@@ -72,6 +72,13 @@ export const TOKENS = Object.freeze({
   }
 })
 
+const FAMILY_TOKEN_OVERRIDES = Object.freeze({})
+
+const DEFAULT_FAMILY_TOKENS = Object.freeze({
+  typography: Object.freeze({}),
+  sizing: Object.freeze({})
+})
+
 /**
  * Retrieves a color value from the TOKENS.colors object using dot notation.
  *
@@ -111,6 +118,7 @@ export function getColor(path) {
  * Uses centralized getScreenMetrics() from screen-utils.js.
  *
  * @param {string} typographyKey - The typography token key (e.g., 'pageTitle', 'body')
+ * @param {Object} [metrics=getScreenMetrics()] - Optional screen metrics used to resolve width and any family token overrides
  * @returns {number} The calculated font size in pixels, rounded to nearest integer
  * @throws {Error} If the typography key doesn't exist
  *
@@ -118,16 +126,31 @@ export function getColor(path) {
  * getFontSize('pageTitle')  // Returns Math.round(width * 0.0825)
  * getFontSize('body')       // Returns Math.round(width * 0.055)
  */
-export function getFontSize(typographyKey) {
+export function getFontSize(typographyKey, metrics = getScreenMetrics()) {
   if (!(typographyKey in TOKENS.typography)) {
     throw new Error(
       `Unknown typography token: "${typographyKey}". Available tokens: ${Object.keys(TOKENS.typography).join(', ')}`
     )
   }
 
-  const { width: screenWidth } = getScreenMetrics()
-  const ratio = TOKENS.typography[typographyKey]
+  const { width: screenWidth } = metrics
+  const ratio =
+    getFamilyTokens(metrics).typography[typographyKey] ??
+    TOKENS.typography[typographyKey]
   return Math.round(screenWidth * ratio)
+}
+
+/**
+ * Returns the current family token overlay.
+ * Shared tokens remain the default baseline unless a supported family needs an override.
+ *
+ * @param {Object} [metrics] - Optional screen metrics from getScreenMetrics()
+ * @returns {{typography: Object, sizing: Object}} Family token overlay
+ */
+export function getFamilyTokens(metrics = getScreenMetrics()) {
+  const screenFamily = metrics?.screenFamily
+
+  return FAMILY_TOKEN_OVERRIDES[screenFamily] ?? DEFAULT_FAMILY_TOKENS
 }
 
 /**

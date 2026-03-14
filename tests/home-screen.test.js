@@ -4,6 +4,7 @@ import test from 'node:test'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { matchStorage } from '../utils/match-storage.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { toProjectFileUrl } from './helpers/project-paths.js'
 
@@ -259,9 +260,11 @@ async function runHomePageScenario(options = {}, runAssertions) {
     : [null]
 
   globalThis.hmUI = hmUI
+  const deviceInfo = options.deviceInfo ?? { width: 390, height: 450 }
+
   globalThis.hmSetting = {
     getDeviceInfo() {
-      return { width: 390, height: 450 }
+      return deviceInfo
     }
   }
   globalThis.hmApp = {
@@ -734,4 +737,78 @@ test('home resume click fails safe when reloaded session throws', async () => {
       ])
     }
   )
+})
+
+test('home screen keeps header and actions within supported family bounds', async () => {
+  const scenarios = [
+    {
+      name: 'w390-s',
+      deviceInfo: { width: 390, height: 450, screenShape: 'square' },
+      minimumTopY: SYSTEM_HEADER_HEIGHT_SQUARE
+    },
+    {
+      name: 'w454-r',
+      deviceInfo: { width: 454, height: 454, screenShape: 'round' },
+      minimumTopY: 0
+    },
+    {
+      name: 'w466-r',
+      deviceInfo: { width: 466, height: 466, screenShape: 'round' },
+      minimumTopY: 0
+    },
+    {
+      name: 'w480-r',
+      deviceInfo: { width: 480, height: 480, screenShape: 'round' },
+      minimumTopY: 0
+    }
+  ]
+
+  for (const scenario of scenarios) {
+    await runHomePageScenario(
+      {
+        deviceInfo: scenario.deviceInfo,
+        matchStorageLoadResponses: [
+          serializePersistedMatchState({ status: 'active' })
+        ]
+      },
+      async ({ createdWidgets, getVisibleButtons }) => {
+        const visibleTextWidgets = createdWidgets.filter(
+          (widget) => widget.type === 'TEXT' && !widget.deleted
+        )
+        const visibleButtons = getVisibleButtons(createdWidgets)
+
+        assert.equal(
+          visibleTextWidgets.length >= 2,
+          true,
+          `${scenario.name} should render the home header text`
+        )
+        assert.equal(
+          visibleButtons.length >= 3,
+          true,
+          `${scenario.name} should render the primary, resume, and settings actions`
+        )
+
+        const topMostTextY = Math.min(
+          ...visibleTextWidgets.map((widget) => widget.properties.y)
+        )
+
+        assert.equal(
+          topMostTextY >= scenario.minimumTopY,
+          true,
+          `${scenario.name} should keep header text below the reserved top inset`
+        )
+
+        visibleButtons.forEach((widget) => {
+          const { x, y } = widget.properties
+
+          assert.equal(Number.isFinite(x), true)
+          assert.equal(Number.isFinite(y), true)
+          assert.equal(x >= 0, true)
+          assert.equal(y >= 0, true)
+          assert.equal(x < scenario.deviceInfo.width, true)
+          assert.equal(y < scenario.deviceInfo.height, true)
+        })
+      }
+    )
+  }
 })

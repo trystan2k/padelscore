@@ -11,7 +11,7 @@ import test from 'node:test'
 // ============================================
 // Test 1: getScreenMetrics returns valid metrics
 // ============================================
-test('getScreenMetrics returns width, height, isRound, and safeTop', async () => {
+test('getScreenMetrics returns width, height, shape, and family metadata', async () => {
   const { getScreenMetrics } = await import('../utils/screen-utils.js')
 
   const metrics = getScreenMetrics()
@@ -20,10 +20,25 @@ test('getScreenMetrics returns width, height, isRound, and safeTop', async () =>
   assert.ok('width' in metrics, 'metrics should have width property')
   assert.ok('height' in metrics, 'metrics should have height property')
   assert.ok('isRound' in metrics, 'metrics should have isRound property')
+  assert.ok(
+    'screenShape' in metrics,
+    'metrics should have screenShape property'
+  )
+  assert.ok(
+    'screenFamily' in metrics,
+    'metrics should have screenFamily property'
+  )
+  assert.ok(
+    'statusBarHeight' in metrics,
+    'metrics should have statusBarHeight property'
+  )
   assert.ok('safeTop' in metrics, 'metrics should have safeTop property')
   assert.equal(typeof metrics.width, 'number', 'width should be a number')
   assert.equal(typeof metrics.height, 'number', 'height should be a number')
   assert.equal(typeof metrics.isRound, 'boolean', 'isRound should be a boolean')
+  assert.equal(typeof metrics.screenShape, 'string')
+  assert.equal(typeof metrics.screenFamily, 'string')
+  assert.equal(typeof metrics.statusBarHeight, 'number')
   assert.equal(typeof metrics.safeTop, 'number', 'safeTop should be a number')
 })
 
@@ -31,7 +46,11 @@ test('getScreenMetrics returns width, height, isRound, and safeTop', async () =>
 // Test 2: getScreenMetrics returns fallback values in test environment
 // ============================================
 test('getScreenMetrics returns fallback values when hmSetting is unavailable', async () => {
-  const { getScreenMetrics } = await import('../utils/screen-utils.js')
+  const {
+    getScreenMetrics,
+    SCREEN_FAMILY_W390_S,
+    SYSTEM_HEADER_HEIGHT_SQUARE
+  } = await import('../utils/screen-utils.js')
 
   const metrics = getScreenMetrics()
 
@@ -39,14 +58,19 @@ test('getScreenMetrics returns fallback values when hmSetting is unavailable', a
   assert.equal(metrics.width, 390, 'should return default width 390')
   assert.equal(metrics.height, 450, 'should return default height 450')
   assert.equal(metrics.isRound, false, 'should return default isRound false')
-  assert.equal(metrics.safeTop, 0, 'should return default safeTop 0')
+  assert.equal(metrics.screenFamily, SCREEN_FAMILY_W390_S)
+  assert.equal(metrics.statusBarHeight, SYSTEM_HEADER_HEIGHT_SQUARE)
+  assert.equal(metrics.safeTop, SYSTEM_HEADER_HEIGHT_SQUARE)
 })
 
 test('getScreenMetrics safeTop override supports clamping and legacy number input', async () => {
-  const { getScreenMetrics } = await import('../utils/screen-utils.js')
+  const { getScreenMetrics, SYSTEM_HEADER_HEIGHT_SQUARE } = await import(
+    '../utils/screen-utils.js'
+  )
 
   const clampedHigh = getScreenMetrics({ safeTop: 9999 })
   assert.equal(clampedHigh.safeTop, clampedHigh.height)
+  assert.equal(clampedHigh.statusBarHeight, SYSTEM_HEADER_HEIGHT_SQUARE)
 
   const clampedLow = getScreenMetrics({ safeTop: -10 })
   assert.equal(clampedLow.safeTop, 0)
@@ -58,40 +82,62 @@ test('getScreenMetrics safeTop override supports clamping and legacy number inpu
   assert.equal(legacyNumber.safeTop, 20)
 })
 
-test('getScreenMetrics applies square safeTop for target sources without runtime device dependency', async () => {
-  const { getScreenMetrics, SYSTEM_HEADER_HEIGHT_SQUARE } = await import(
-    '../utils/screen-utils.js'
-  )
+test('getScreenMetrics detects all supported screen families from runtime dimensions', async () => {
+  const {
+    getScreenMetrics,
+    SCREEN_FAMILY_W390_S,
+    SCREEN_FAMILY_W454_R,
+    SCREEN_FAMILY_W466_R,
+    SCREEN_FAMILY_W480_R,
+    SYSTEM_HEADER_HEIGHT_SQUARE
+  } = await import('../utils/screen-utils.js')
   const originalHmSetting = globalThis.hmSetting
 
   try {
-    globalThis.hmSetting = {
-      getDeviceInfo() {
-        return { width: 390, height: 450, deviceSource: 224 }
+    const scenarios = [
+      {
+        deviceInfo: { width: 390, height: 450, screenShape: 'square' },
+        expectedFamily: SCREEN_FAMILY_W390_S,
+        expectedSafeTop: SYSTEM_HEADER_HEIGHT_SQUARE,
+        expectedStatusBarHeight: SYSTEM_HEADER_HEIGHT_SQUARE,
+        expectedIsRound: false
+      },
+      {
+        deviceInfo: { width: 454, height: 454, screenShape: 'round' },
+        expectedFamily: SCREEN_FAMILY_W454_R,
+        expectedSafeTop: 0,
+        expectedStatusBarHeight: 0,
+        expectedIsRound: true
+      },
+      {
+        deviceInfo: { width: 466, height: 466, screenShape: 'round' },
+        expectedFamily: SCREEN_FAMILY_W466_R,
+        expectedSafeTop: 0,
+        expectedStatusBarHeight: 0,
+        expectedIsRound: true
+      },
+      {
+        deviceInfo: { width: 480, height: 480, screenShape: 'round' },
+        expectedFamily: SCREEN_FAMILY_W480_R,
+        expectedSafeTop: 0,
+        expectedStatusBarHeight: 0,
+        expectedIsRound: true
       }
-    }
+    ]
 
-    const targetSquare = getScreenMetrics()
-    assert.equal(targetSquare.safeTop, SYSTEM_HEADER_HEIGHT_SQUARE)
-
-    globalThis.hmSetting = {
-      getDeviceInfo() {
-        return { width: 390, height: 450, deviceSource: 227 }
+    scenarios.forEach((scenario) => {
+      globalThis.hmSetting = {
+        getDeviceInfo() {
+          return scenario.deviceInfo
+        }
       }
-    }
 
-    const nonTargetSource = getScreenMetrics()
-    assert.equal(nonTargetSource.safeTop, 0)
-
-    globalThis.hmSetting = {
-      getDeviceInfo() {
-        return { width: 454, height: 454, deviceSource: 227 }
-      }
-    }
-
-    const roundMetrics = getScreenMetrics()
-    assert.equal(roundMetrics.isRound, true)
-    assert.equal(roundMetrics.safeTop, 0)
+      const metrics = getScreenMetrics()
+      assert.equal(metrics.screenFamily, scenario.expectedFamily)
+      assert.equal(metrics.safeTop, scenario.expectedSafeTop)
+      assert.equal(metrics.statusBarHeight, scenario.expectedStatusBarHeight)
+      assert.equal(metrics.isRound, scenario.expectedIsRound)
+    })
   } finally {
     if (originalHmSetting === undefined) {
       delete globalThis.hmSetting
@@ -99,6 +145,47 @@ test('getScreenMetrics applies square safeTop for target sources without runtime
       globalThis.hmSetting = originalHmSetting
     }
   }
+})
+
+test('getStatusBarHeight follows family defaults and explicit overrides', async () => {
+  const { getStatusBarHeight, SYSTEM_HEADER_HEIGHT_SQUARE } = await import(
+    '../utils/screen-utils.js'
+  )
+
+  assert.equal(
+    getStatusBarHeight({ width: 390, height: 450, screenShape: 'square' }),
+    SYSTEM_HEADER_HEIGHT_SQUARE
+  )
+  assert.equal(
+    getStatusBarHeight({ width: 454, height: 454, screenShape: 'round' }),
+    0
+  )
+  assert.equal(
+    getStatusBarHeight({
+      width: 390,
+      height: 450,
+      screenShape: 'square',
+      statusBarHeight: 24
+    }),
+    24
+  )
+})
+
+test('getScreenMetrics does not force w390-s for square device sources with mismatched dimensions', async () => {
+  const { getScreenMetrics, SCREEN_FAMILY_UNKNOWN } = await import(
+    '../utils/screen-utils.js'
+  )
+
+  const metrics = getScreenMetrics({
+    width: 400,
+    height: 400,
+    screenShape: 'square',
+    deviceSource: 224
+  })
+
+  assert.equal(metrics.screenFamily, SCREEN_FAMILY_UNKNOWN)
+  assert.equal(metrics.statusBarHeight, 0)
+  assert.equal(metrics.safeTop, 0)
 })
 
 // ============================================
@@ -263,6 +350,31 @@ test('no duplicate ensureNumber in design-tokens', async () => {
   assert.ok(
     content.includes("from './screen-utils.js'"),
     'should import from screen-utils.js'
+  )
+})
+
+test('platform-adapters reuses resolveScreenShape from screen-utils', async () => {
+  const fs = await import('node:fs/promises')
+  const path = await import('node:path')
+
+  const platformAdaptersPath = path.join(
+    process.cwd(),
+    'utils/platform-adapters.js'
+  )
+  const content = await fs.readFile(platformAdaptersPath, 'utf-8')
+
+  assert.ok(
+    content.includes('resolveScreenShape'),
+    'platform-adapters should reference resolveScreenShape'
+  )
+  assert.match(
+    content,
+    /from '\.\/screen-utils\.js'/,
+    'platform-adapters should import from screen-utils.js'
+  )
+  assert.ok(
+    !content.includes('function resolveScreenShape('),
+    'platform-adapters should not define a duplicate resolveScreenShape helper'
   )
 })
 

@@ -304,6 +304,20 @@ test('schema safeTop from presets affects resolveLayout when metrics omit safeTo
   assert.equal(layout.sections.header.y, 30)
 })
 
+test('square-family metrics safeTop offsets preset sections without extra page changes', () => {
+  const layout = resolveLayout(createStandardPageLayout(), {
+    width: 390,
+    height: 450,
+    isRound: false,
+    screenFamily: 'w390-s',
+    statusBarHeight: 48,
+    safeTop: 48
+  })
+
+  assert.equal(layout.sections.header.y, 48)
+  assert.equal(layout.sections.body.y >= layout.sections.header.y, true)
+})
+
 // ============================================
 // Test 7: Resolution with layout-engine
 // ============================================

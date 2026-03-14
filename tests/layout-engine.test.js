@@ -16,13 +16,18 @@ const mockMetrics = {
 const mockRoundMetrics = {
   width: 466,
   height: 466,
-  isRound: true
+  isRound: true,
+  screenFamily: 'w466-r',
+  statusBarHeight: 0,
+  safeTop: 0
 }
 
 const mockSafeTopMetrics = {
   width: 400,
   height: 500,
   isRound: false,
+  screenFamily: 'w390-s',
+  statusBarHeight: 48,
   safeTop: 48
 }
 

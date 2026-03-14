@@ -1,4 +1,4 @@
-import { getScreenMetrics } from './screen-utils.js'
+import { getScreenMetrics, resolveScreenShape } from './screen-utils.js'
 
 const KEEP_AWAKE_DURATION = 2147483
 const DEFAULT_TOAST_DURATION = 2000
@@ -803,28 +803,6 @@ function applyModernKeepAwake(displayApi, enabled) {
   } catch {
     return false
   }
-}
-
-function resolveScreenShape(screenShape, width, height) {
-  if (typeof screenShape === 'string') {
-    const normalizedShape = screenShape.trim().toLowerCase()
-
-    if (normalizedShape === 'round' || normalizedShape === 'square') {
-      return normalizedShape
-    }
-
-    if (normalizedShape === 'r') {
-      return 'round'
-    }
-
-    if (normalizedShape === 's') {
-      return 'square'
-    }
-  }
-
-  return Math.abs(width - height) <= Math.round(width * 0.04)
-    ? 'round'
-    : 'square'
 }
 
 function normalizePositiveInteger(value, fallback) {
