@@ -1,24 +1,7 @@
-import {
-  clearHapticFeedbackEnabled,
-  HAPTIC_FEEDBACK_STORAGE_KEY
-} from './haptic-feedback-settings.js'
-import {
-  clearMatchHistory,
-  HISTORY_STORAGE_KEY
-} from './match-history-storage.js'
+import { clearHapticFeedbackEnabled } from './haptic-feedback-settings.js'
+import { clearMatchHistory } from './match-history-storage.js'
 import { clearMatchState } from './match-storage.js'
-import {
-  clearStateKeys,
-  STORAGE_SCHEMA_META_KEY,
-  STORAGE_SCHEMA_VERSION_KEY
-} from './persistence.js'
-
-const APP_STORAGE_KEYS = [
-  HISTORY_STORAGE_KEY,
-  HAPTIC_FEEDBACK_STORAGE_KEY,
-  STORAGE_SCHEMA_VERSION_KEY,
-  STORAGE_SCHEMA_META_KEY
-]
+import { clearAllState } from './persistence.js'
 
 export function clearAllAppData() {
   let success = true
@@ -48,7 +31,7 @@ export function clearAllAppData() {
   }
 
   try {
-    if (clearStateKeys(APP_STORAGE_KEYS) !== true) {
+    if (clearAllState() !== true) {
       success = false
     }
   } catch {

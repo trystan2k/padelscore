@@ -39,10 +39,7 @@ function normalizeHistoryPayload(value) {
 
   return {
     matches: value.matches,
-    schemaVersion:
-      value.schemaVersion === MATCH_HISTORY_SCHEMA_VERSION
-        ? MATCH_HISTORY_SCHEMA_VERSION
-        : MATCH_HISTORY_SCHEMA_VERSION
+    schemaVersion: MATCH_HISTORY_SCHEMA_VERSION
   }
 }
 

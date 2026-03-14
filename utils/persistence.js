@@ -69,10 +69,13 @@ export function ensureStorageSchema() {
   while (nextVersion < CURRENT_STORAGE_SCHEMA_VERSION) {
     const migrateStep = storageSchemaMigrations.get(nextVersion)
 
-    if (typeof migrateStep === 'function') {
-      migrateStep()
+    if (typeof migrateStep !== 'function') {
+      throw new Error(
+        `Missing storage schema migration for version ${nextVersion}`
+      )
     }
 
+    migrateStep()
     nextVersion += 1
   }
 
