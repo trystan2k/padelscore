@@ -4,6 +4,7 @@ import test from 'node:test'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { matchStorage } from '../utils/match-storage.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { toProjectFileUrl } from './helpers/project-paths.js'
 
@@ -743,7 +744,7 @@ test('home screen keeps header and actions within supported family bounds', asyn
     {
       name: 'w390-s',
       deviceInfo: { width: 390, height: 450, screenShape: 'square' },
-      minimumTopY: 48
+      minimumTopY: SYSTEM_HEADER_HEIGHT_SQUARE
     },
     {
       name: 'w454-r',

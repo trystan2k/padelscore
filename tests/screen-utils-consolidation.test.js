@@ -364,10 +364,13 @@ test('platform-adapters reuses resolveScreenShape from screen-utils', async () =
   const content = await fs.readFile(platformAdaptersPath, 'utf-8')
 
   assert.ok(
-    content.includes(
-      "import { getScreenMetrics, resolveScreenShape } from './screen-utils.js'"
-    ),
-    'platform-adapters should import resolveScreenShape from screen-utils.js'
+    content.includes('resolveScreenShape'),
+    'platform-adapters should reference resolveScreenShape'
+  )
+  assert.match(
+    content,
+    /from '\.\/screen-utils\.js'/,
+    'platform-adapters should import from screen-utils.js'
   )
   assert.ok(
     !content.includes('function resolveScreenShape('),

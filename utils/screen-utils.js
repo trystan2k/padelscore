@@ -67,6 +67,7 @@ const SUPPORTED_SCREEN_FAMILIES = Object.freeze(
  * @param {number} [overrides.height] - Explicit height override
  * @param {string} [overrides.screenFamily] - Explicit screen family override
  * @param {string} [overrides.screenShape] - Explicit screen shape override ('round' or 'square')
+ * @param {number} [overrides.deviceSource] - Explicit square-device source override used by family detection
  * @param {Object} [overrides.deviceInfo] - Explicit device info override
  * @returns {{width: number, height: number, isRound: boolean, safeTop: number, statusBarHeight: number, screenFamily: string, screenShape: string}} Screen metrics object
  *

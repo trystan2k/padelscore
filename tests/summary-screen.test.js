@@ -4,6 +4,7 @@ import test from 'node:test'
 import { createInitialMatchState } from '../utils/match-state.js'
 import { STORAGE_KEY as ACTIVE_MATCH_SESSION_STORAGE_KEY } from '../utils/match-state-schema.js'
 import { matchStorage } from '../utils/match-storage.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { startNewMatchFlow as runStartNewMatchFlow } from '../utils/start-new-match-flow.js'
 import { toProjectFileUrl } from './helpers/project-paths.js'
 
@@ -668,7 +669,7 @@ test('summary screen keeps title below the square-family top inset', async () =>
       )
 
       assert.equal(textWidgets.length > 0, true)
-      assert.equal(topMostTextY >= 48, true)
+      assert.equal(topMostTextY >= SYSTEM_HEADER_HEIGHT_SQUARE, true)
     }
   )
 })

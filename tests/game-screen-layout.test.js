@@ -16,6 +16,7 @@ import {
 } from '../utils/match-state-schema.js'
 import { SCORE_POINTS } from '../utils/scoring-constants.js'
 import { addPoint } from '../utils/scoring-engine.js'
+import { SYSTEM_HEADER_HEIGHT_SQUARE } from '../utils/screen-utils.js'
 import { createHmFsMock } from './helpers/hmfs-mock.js'
 import {
   createLocalStorageMock,
@@ -560,7 +561,7 @@ test('game screen keeps square-family header text below the reserved top inset',
       )
 
       assert.equal(textWidgets.length > 0, true)
-      assert.equal(topMostTextY >= 48, true)
+      assert.equal(topMostTextY >= SYSTEM_HEADER_HEIGHT_SQUARE, true)
     },
     {
       deviceInfo: { width: 390, height: 450, screenShape: 'square' }
