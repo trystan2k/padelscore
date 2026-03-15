@@ -1,4 +1,5 @@
 import { getText as gettext } from '@zos/i18n'
+import { KEY_BACK, KEY_EVENT_CLICK, offKey, onKey } from '@zos/interaction'
 import * as hmUI from '@zos/ui'
 import { flushHomeFeedbackMessage } from '../utils/app-feedback.js'
 import { TOKENS, toPercentage } from '../utils/design-tokens.js'
@@ -231,10 +232,21 @@ Page({
       router.goHome()
       return true
     })
+
+    onKey({
+      callback: (key, event) => {
+        if (key === KEY_BACK && event === KEY_EVENT_CLICK) {
+          router.goHome()
+          return true
+        }
+        return false
+      }
+    })
   },
 
   unregisterGestureHandler() {
     gesture.unregisterGesture(this, 'RIGHT')
+    offKey()
   },
 
   clearWidgets() {
