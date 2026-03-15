@@ -60,19 +60,31 @@ jobs:
       - name: Check for releasable changes
         id: check-changes
         run: |
-          # Get list of changed files in this commit
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          # Get the latest release tag (semantic version tags like v1.0.0)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
           # Define releasable paths (code that affects the app)
           RELEASABLE="page/|app.js|app.json|utils/|assets/|shared/"
 
-          # Check if any releasable files changed
-          if echo "$CHANGED_FILES" | grep -qE "^($RELEASABLE)"; then
-            echo "Releasable changes detected"
+          if [ -z "$LAST_TAG" ]; then
+            # No tags exist, this is the first release
+            echo "No previous tags found - proceeding with first release"
             echo "has_changes=true" >> $GITHUB_OUTPUT
           else
-            echo "No releasable changes - skipping release"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            # Compare all changes since last release tag
+            CHANGED_FILES=$(git diff --name-only $LAST_TAG HEAD)
+
+            echo "Checking changes since last release ($LAST_TAG):"
+            echo "$CHANGED_FILES" | head -20
+
+            # Check if any releasable files changed
+            if echo "$CHANGED_FILES" | grep -qE "^($RELEASABLE)"; then
+              echo "Releasable changes detected since $LAST_TAG"
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "No releasable changes since $LAST_TAG - skipping release"
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Create Release
