@@ -105,15 +105,6 @@ App({
   },
 
   onCreate(_options) {
-    // App-level lifecycle keep-awake remains on hmApp intentionally.
-    // Task 78 migration scope covers page-level APIs, not App() hooks.
-    if (
-      typeof hmApp !== 'undefined' &&
-      typeof hmApp.setScreenKeep === 'function'
-    ) {
-      hmApp.setScreenKeep(true)
-    }
-
     try {
       ensureStorageSchema()
     } catch {

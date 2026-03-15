@@ -1,6 +1,6 @@
 # Padel Buddy
 
-A padel score tracking app for Amazfit watches running Zepp OS. Track match scores directly from your wrist with an intuitive interface designed for padel players.
+A padel score tracking app for Amazfit watches running Zepp OS API Level 3.6+. Track match scores directly from your wrist with an intuitive interface designed for padel players.
 
 ## Features
 
@@ -11,12 +11,16 @@ A padel score tracking app for Amazfit watches running Zepp OS. Track match scor
 - **Match summary screen** with scrollable match history
 - **Screen keep-awake** during active games to prevent interruptions
 - **Traditional padel scoring** including deuce, advantage, and tie-break at 6-6
-- **Responsive design** optimized for round (GTR-3) and square (GTS-3) watch faces
+- **Responsive design** optimized for the supported square and round Zepp OS 3.6+ screen families
 
 ## Supported Devices
 
-- Amazfit GTR 3 / GTR 3 Pro (gtr3, gtr3-w)
-- Amazfit GTS 3 / GTS 3 Pro (Zurich, ZurichW)
+Mainline targets Zepp OS API Level `3.6+` screen families configured in `app.json`:
+
+- Square: `w390`
+- Round: `w454`, `w466`, `w480`
+
+Device support is determined by the current Zepp OS API level and screen family matrix, not by legacy Zepp OS 1.x device-specific branches.
 
 ## Screens
 
@@ -179,7 +183,7 @@ This project uses an automated quality gate stack to enforce consistent code sty
 
 Configuration is in [`biome.json`](./biome.json). Key settings:
 - Single quotes, no semicolons, 2-space indentation, LF line endings
-- Zepp OS globals declared (`hmUI`, `hmApp`, `hmSensor`, etc.) to suppress false-positive "undeclared variable" errors
+- Build-time globals are kept minimal; mainline production code should prefer `@zos/*` module imports over legacy `hm*` globals
 - `noConsole` disabled — intentional Zepp OS lifecycle logging is allowed
 
 #### Husky
@@ -243,4 +247,4 @@ The app implements traditional padel/tennis scoring:
 ### Other Resources
 
 - [Development Logs](docs/development-logs/)
-- [Zepp OS Official Documentation](https://docs.zepp.com/docs/1.0/intro/)
+- [Zepp OS Official Documentation](https://docs.zepp.com/docs/intro/)

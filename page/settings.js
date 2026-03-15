@@ -1,4 +1,5 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { clearAllAppData } from '../utils/app-data-clear.js'
 import { queueHomeFeedbackMessage } from '../utils/app-feedback.js'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
@@ -90,7 +91,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       return
     }
@@ -101,7 +102,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -198,7 +199,7 @@ Page({
   },
 
   renderSettingsScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 

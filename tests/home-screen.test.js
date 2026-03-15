@@ -143,6 +143,7 @@ async function loadHomePageDefinition() {
   const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
+  const gameWakeRestoreUrl = toProjectFileUrl('utils/game-wake-restore.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
   const layoutPresetsUrl = toProjectFileUrl('utils/layout-presets.js')
   const platformAdaptersUrl = toProjectFileUrl('utils/platform-adapters.js')
@@ -155,7 +156,6 @@ async function loadHomePageDefinition() {
   )
 
   let source = await readFile(sourceUrl, 'utf8')
-
   source = source
     .replace(
       "import { gettext } from 'i18n'\n",
@@ -187,6 +187,10 @@ async function loadHomePageDefinition() {
       `from '${designTokensUrl.href}'`
     )
     .replace("from '../utils/screen-utils.js'", `from '${screenUtilsUrl.href}'`)
+    .replace(
+      "from '../utils/game-wake-restore.js'",
+      `from '${gameWakeRestoreUrl.href}'`
+    )
     .replace(
       "from '../utils/layout-engine.js'",
       `from '${layoutEngineUrl.href}'`
@@ -556,7 +560,7 @@ test('home screen start button requires confirmation before running hard reset f
       assert.deepEqual(app.globalData.matchState, createInitialMatchState())
       assert.equal(app.globalData.matchHistory.clearCalls, 1)
       assert.equal(startNewMatchFlowCalls, 1)
-      assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+      assert.deepEqual(navigationCalls, [{ url: 'page/setup', params: {} }])
     }
   )
 })
@@ -664,7 +668,7 @@ test('home resume click reloads active session, restores runtime manager, and na
       await resumeButton.properties.click_func()
 
       assert.equal(loadedMatchStorageKeys.length, 2)
-      assert.deepEqual(navigationCalls, [{ url: 'page/game' }])
+      assert.deepEqual(navigationCalls, [{ url: 'page/game', params: {} }])
       assert.equal(app.globalData.matchHistory.clearCalls, 1)
 
       const restoredState = app.globalData.matchState

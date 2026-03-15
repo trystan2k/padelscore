@@ -1,3 +1,24 @@
+import { getDeviceInfo } from '@zos/device'
+import {
+  pauseDropWristScreenOff,
+  pausePalmScreenOff,
+  resetDropWristScreenOff,
+  resetPageBrightTime,
+  resetPalmScreenOff,
+  setPageBrightTime
+} from '@zos/display'
+import {
+  GESTURE_DOWN,
+  GESTURE_LEFT,
+  GESTURE_RIGHT,
+  GESTURE_UP,
+  offGesture,
+  onGesture,
+  showToast
+} from '@zos/interaction'
+import { back, exit, home, push, replace } from '@zos/router'
+import { checkSensor, Vibrator } from '@zos/sensor'
+import { LocalStorage } from '@zos/storage'
 import { getScreenMetrics, resolveScreenShape } from './screen-utils.js'
 
 const KEEP_AWAKE_DURATION = 2147483
@@ -9,13 +30,17 @@ const STORAGE_VALUE_INVALID = Symbol('storage-value-invalid')
 
 const fallbackStorage = createInMemoryStorage()
 const gestureRegistrations = []
+const GESTURE_TYPE_MAP = Object.freeze({
+  [GESTURE_UP]: 'UP',
+  [GESTURE_DOWN]: 'DOWN',
+  [GESTURE_LEFT]: 'LEFT',
+  [GESTURE_RIGHT]: 'RIGHT'
+})
 
-let legacyGestureDispatcherRegistered = false
+let gestureDispatcherRegistered = false
 let keepAwakeEnabled = false
-let legacyVibrateSensor = null
-let legacyVibrateSensorResolved = false
-let cachedLocalStorageConstructor = null
 let cachedLocalStorageInstance = null
+let cachedVibratorInstance = null
 
 const fallbackToastState = {
   visible: false,
@@ -25,129 +50,49 @@ const fallbackToastState = {
 
 export const router = {
   navigateTo(pagePath, params) {
-    const payload = createNavigationPayload(pagePath, params)
-    const modernRouter = resolveModernRouter()
-
-    if (modernRouter && typeof modernRouter.push === 'function') {
-      try {
-        modernRouter.push(payload)
-        return true
-      } catch {
-        // Ignore runtime navigation failures.
-      }
+    try {
+      push(createNavigationPayload(pagePath, params))
+      return true
+    } catch {
+      return false
     }
-
-    const legacyApp = resolveLegacyApp()
-
-    if (legacyApp && typeof legacyApp.gotoPage === 'function') {
-      try {
-        legacyApp.gotoPage(createLegacyNavigationPayload(payload))
-        return true
-      } catch {
-        // Ignore runtime navigation failures.
-      }
-    }
-
-    return false
   },
 
   redirectTo(pagePath, params) {
-    const payload = createNavigationPayload(pagePath, params)
-    const modernRouter = resolveModernRouter()
-
-    if (modernRouter) {
-      const redirect =
-        resolveFunction(modernRouter, 'replace') ||
-        resolveFunction(modernRouter, 'redirectTo') ||
-        resolveFunction(modernRouter, 'replacePage') ||
-        resolveFunction(modernRouter, 'push')
-
-      if (redirect) {
-        try {
-          redirect(payload)
-          return true
-        } catch {
-          // Ignore runtime navigation failures.
-        }
-      }
+    try {
+      replace(createNavigationPayload(pagePath, params))
+      return true
+    } catch {
+      return false
     }
-
-    const legacyApp = resolveLegacyApp()
-
-    if (legacyApp && typeof legacyApp.gotoPage === 'function') {
-      try {
-        legacyApp.gotoPage(createLegacyNavigationPayload(payload))
-        return true
-      } catch {
-        // Ignore runtime navigation failures.
-      }
-    }
-
-    return false
   },
 
   navigateBack(delta = 1) {
     const normalizedDelta = normalizePositiveInteger(delta, 1)
-    const modernRouter = resolveModernRouter()
 
-    if (modernRouter && typeof modernRouter.back === 'function') {
-      try {
-        modernRouter.back({ delta: normalizedDelta })
-        return true
-      } catch {
-        try {
-          modernRouter.back(normalizedDelta)
-          return true
-        } catch {
-          // Ignore runtime navigation failures.
-        }
+    try {
+      for (let index = 0; index < normalizedDelta; index += 1) {
+        back()
       }
+
+      return true
+    } catch {
+      return false
     }
-
-    const legacyApp = resolveLegacyApp()
-
-    if (legacyApp && typeof legacyApp.goBack === 'function') {
-      try {
-        for (let index = 0; index < normalizedDelta; index += 1) {
-          legacyApp.goBack()
-        }
-        return true
-      } catch {
-        // Ignore runtime navigation failures.
-      }
-    }
-
-    return false
   },
 
   goHome() {
-    const modernRouter = resolveModernRouter()
-    const modernGoHome =
-      resolveFunction(modernRouter, 'home') ||
-      resolveFunction(modernRouter, 'goHome') ||
-      resolveFunction(modernRouter, 'exit')
-
-    if (modernGoHome) {
+    try {
+      home()
+      return true
+    } catch {
       try {
-        modernGoHome()
+        exit()
         return true
       } catch {
-        // Ignore runtime navigation failures.
+        return false
       }
     }
-
-    const legacyApp = resolveLegacyApp()
-
-    if (legacyApp && typeof legacyApp.gotoHome === 'function') {
-      try {
-        legacyApp.gotoHome()
-        return true
-      } catch {
-        // Ignore runtime navigation failures.
-      }
-    }
-
-    return false
   }
 }
 
@@ -158,98 +103,51 @@ export const gesture = {
     }
 
     const normalizedType = normalizeGestureType(gestureType)
-    const registration = {
+    removeGestureRegistration(element, normalizedType, callback)
+
+    gestureRegistrations.push({
       element,
       gestureType: normalizedType,
-      callback,
-      runtime: 'fallback'
+      callback
+    })
+
+    if (gestureDispatcherRegistered) {
+      return true
     }
 
-    removeGestureRegistration(element, normalizedType, callback)
-    gestureRegistrations.push(registration)
-
-    const interactionApi = resolveInteractionApi()
-
-    if (interactionApi && typeof interactionApi.onGesture === 'function') {
-      try {
-        interactionApi.onGesture(normalizedType, callback)
-        registration.runtime = 'modern'
-        return true
-      } catch {
-        // Keep the in-memory registration as a fallback.
-      }
+    try {
+      onGesture({ callback: dispatchGesture })
+      gestureDispatcherRegistered = true
+      return true
+    } catch {
+      removeGestureRegistration(element, normalizedType, callback)
+      return false
     }
-
-    const legacyApp = resolveLegacyApp()
-
-    if (
-      legacyApp &&
-      typeof legacyApp.registerGestureEvent === 'function' &&
-      !legacyGestureDispatcherRegistered
-    ) {
-      try {
-        legacyApp.registerGestureEvent((event) => dispatchLegacyGesture(event))
-        legacyGestureDispatcherRegistered = true
-        registration.runtime = 'legacy'
-        return true
-      } catch {
-        // Keep the in-memory registration as a fallback.
-      }
-    }
-
-    return legacyGestureDispatcherRegistered
   },
 
   unregisterGesture(element, gestureType) {
     const normalizedType = normalizeGestureType(gestureType)
-    const matchingRegistrations = gestureRegistrations.filter(
-      (registration) => {
-        return (
-          registration.element === element &&
-          registration.gestureType === normalizedType
-        )
-      }
-    )
+    const hadRegistration = gestureRegistrations.some((registration) => {
+      return (
+        registration.element === element &&
+        registration.gestureType === normalizedType
+      )
+    })
 
-    if (matchingRegistrations.length === 0) {
+    if (!hadRegistration) {
       return false
-    }
-
-    const interactionApi = resolveInteractionApi()
-
-    if (interactionApi && typeof interactionApi.offGesture === 'function') {
-      for (let index = 0; index < matchingRegistrations.length; index += 1) {
-        const registration = matchingRegistrations[index]
-
-        try {
-          interactionApi.offGesture(normalizedType, registration.callback)
-        } catch {
-          try {
-            interactionApi.offGesture(normalizedType)
-          } catch {
-            // Ignore runtime gesture cleanup failures.
-          }
-        }
-      }
     }
 
     removeGestureRegistration(element, normalizedType)
 
-    const legacyApp = resolveLegacyApp()
-
-    if (
-      legacyApp &&
-      typeof legacyApp.unregisterGestureEvent === 'function' &&
-      gestureRegistrations.length === 0 &&
-      legacyGestureDispatcherRegistered
-    ) {
+    if (gestureRegistrations.length === 0 && gestureDispatcherRegistered) {
       try {
-        legacyApp.unregisterGestureEvent()
+        offGesture()
       } catch {
         // Ignore runtime gesture cleanup failures.
       }
 
-      legacyGestureDispatcherRegistered = false
+      gestureDispatcherRegistered = false
     }
 
     return true
@@ -265,67 +163,17 @@ export const toast = {
       DEFAULT_TOAST_DURATION
     )
 
-    const interactionApi = resolveInteractionApi()
-
-    if (interactionApi && typeof interactionApi.showToast === 'function') {
-      try {
-        interactionApi.showToast({
-          content: fallbackToastState.message,
-          text: fallbackToastState.message,
-          duration: fallbackToastState.duration
-        })
-        return true
-      } catch {
-        // Keep local state only.
-      }
+    try {
+      showToast({ content: fallbackToastState.message })
+      return true
+    } catch {
+      return false
     }
-
-    const legacyUi = resolveLegacyUi()
-
-    if (legacyUi && typeof legacyUi.showToast === 'function') {
-      try {
-        legacyUi.showToast({
-          text: fallbackToastState.message,
-          duration: fallbackToastState.duration
-        })
-        return true
-      } catch {
-        // Keep local state only.
-      }
-    }
-
-    return false
   },
 
   hideToast() {
     fallbackToastState.visible = false
-
-    const interactionApi = resolveInteractionApi()
-    const hideInteractionToast =
-      resolveFunction(interactionApi, 'hideToast') ||
-      resolveFunction(interactionApi, 'closeToast')
-
-    if (hideInteractionToast) {
-      try {
-        hideInteractionToast()
-        return true
-      } catch {
-        // Keep local state only.
-      }
-    }
-
-    const legacyUi = resolveLegacyUi()
-
-    if (legacyUi && typeof legacyUi.hideToast === 'function') {
-      try {
-        legacyUi.hideToast()
-        return true
-      } catch {
-        // Keep local state only.
-      }
-    }
-
-    return false
+    return true
   }
 }
 
@@ -361,28 +209,7 @@ export const deviceInfo = {
 export const keepAwake = {
   setKeepAwake(enabled) {
     keepAwakeEnabled = enabled === true
-
-    const displayApi = resolveDisplayApi()
-
-    if (displayApi && applyModernKeepAwake(displayApi, keepAwakeEnabled)) {
-      return keepAwakeEnabled
-    }
-
-    const legacySetting = resolveLegacySetting()
-
-    if (legacySetting) {
-      try {
-        if (keepAwakeEnabled) {
-          legacySetting.setBrightScreen?.(KEEP_AWAKE_DURATION)
-        } else {
-          legacySetting.setBrightScreenCancel?.()
-        }
-      } catch {
-        // Ignore runtime display failures.
-      }
-    }
-
-    return keepAwakeEnabled
+    return applyKeepAwake(keepAwakeEnabled)
   },
 
   getKeepAwakeStatus() {
@@ -454,26 +281,12 @@ export const storage = {
 
     fallbackStorage.removeItem(normalizedKey)
 
-    if (!runtimeStorage) {
+    if (!runtimeStorage || typeof runtimeStorage.removeItem !== 'function') {
       return true
     }
 
-    const hasRemoveItem = typeof runtimeStorage.removeItem === 'function'
-    const hasDeleteItem = typeof runtimeStorage.deleteItem === 'function'
-
-    if (!hasRemoveItem && !hasDeleteItem) {
-      return false
-    }
-
     try {
-      if (hasRemoveItem) {
-        runtimeStorage.removeItem(normalizedKey)
-      }
-
-      if (hasDeleteItem) {
-        runtimeStorage.deleteItem(normalizedKey)
-      }
-
+      runtimeStorage.removeItem(normalizedKey)
       return true
     } catch {
       return false
@@ -485,12 +298,8 @@ export const storage = {
 
     fallbackStorage.clear()
 
-    if (!runtimeStorage) {
+    if (!runtimeStorage || typeof runtimeStorage.clear !== 'function') {
       return true
-    }
-
-    if (typeof runtimeStorage.clear !== 'function') {
-      return false
     }
 
     try {
@@ -503,127 +312,125 @@ export const storage = {
 }
 
 export const haptics = {
+  vibrateLight() {
+    const vibrator = resolveModernVibrator()
+
+    if (!vibrator) {
+      return false
+    }
+
+    try {
+      const types =
+        typeof vibrator.getType === 'function' ? vibrator.getType() : null
+
+      if (types && typeof types.GENTLE_SHORT !== 'undefined') {
+        vibrator.start([
+          {
+            type: types.GENTLE_SHORT,
+            duration: 10
+          }
+        ])
+        return true
+      }
+    } catch {
+      // Fall through to mode-based vibration.
+    }
+
+    try {
+      vibrator.start({
+        mode: vibrator.VIBRATOR_SCENE_SHORT_LIGHT
+      })
+      return true
+    } catch {
+      try {
+        vibrator.start()
+        return true
+      } catch {
+        return false
+      }
+    }
+  },
+
+  vibrateStrongReminder() {
+    const vibrator = resolveModernVibrator()
+
+    if (!vibrator) {
+      return false
+    }
+
+    try {
+      vibrator.start({
+        mode:
+          vibrator.VIBRATOR_SCENE_STRONG_REMINDER ??
+          vibrator.VIBRATOR_SCENE_DURATION_LONG ??
+          vibrator.VIBRATOR_SCENE_DURATION
+      })
+      return true
+    } catch {
+      return this.vibratePattern([120, 120, 120, 120, 120, 120, 120])
+    }
+  },
+
   vibrate(duration = DEFAULT_VIBRATION_DURATION) {
     const normalizedDuration = normalizePositiveInteger(
       duration,
       DEFAULT_VIBRATION_DURATION
     )
-    const modernHaptics = resolveModernHaptics()
+    const vibrator = resolveModernVibrator()
 
-    if (modernHaptics) {
-      const vibrateOnce =
-        resolveFunction(modernHaptics, 'vibrate') ||
-        resolveFunction(modernHaptics, 'start')
-
-      if (vibrateOnce) {
-        try {
-          vibrateOnce(normalizedDuration)
-          return true
-        } catch {
-          // Fall through to legacy vibration.
-        }
-      }
+    if (!vibrator) {
+      return false
     }
 
-    const legacySensor = resolveLegacyVibrateSensor()
+    try {
+      if (normalizedDuration >= 600) {
+        vibrator.start({
+          mode:
+            normalizedDuration >= 1000
+              ? (vibrator.VIBRATOR_SCENE_DURATION_LONG ?? undefined)
+              : (vibrator.VIBRATOR_SCENE_DURATION ?? undefined)
+        })
+      } else {
+        vibrator.start()
+      }
 
-    if (legacySensor && typeof legacySensor.start === 'function') {
+      return true
+    } catch {
       try {
-        legacySensor.stop?.()
-        legacySensor.start()
-
-        if (
-          typeof setTimeout === 'function' &&
-          typeof legacySensor.stop === 'function'
-        ) {
-          // Legacy vibrate sensors do not expose duration control.
-          // Keep this timer inside the adapter boundary so page modules stay timer-free.
-          setTimeout(() => {
-            try {
-              legacySensor.stop()
-            } catch {
-              // Ignore stop failures.
-            }
-          }, normalizedDuration)
-        }
-
+        vibrator.start()
         return true
       } catch {
-        // Ignore runtime haptic failures.
+        return false
       }
     }
-
-    return false
   },
 
   vibratePattern(pattern) {
     const normalizedPattern = normalizeVibrationPattern(pattern)
-    const modernHaptics = resolveModernHaptics()
+    const vibrator = resolveModernVibrator()
 
-    if (modernHaptics) {
-      const vibratePattern =
-        resolveFunction(modernHaptics, 'vibratePattern') ||
-        resolveFunction(modernHaptics, 'playPattern')
-
-      if (vibratePattern) {
-        try {
-          vibratePattern(normalizedPattern)
-          return true
-        } catch {
-          // Fall through to legacy vibration.
-        }
-      }
+    if (!vibrator || normalizedPattern.length === 0) {
+      return false
     }
 
-    const legacySensor = resolveLegacyVibrateSensor()
+    try {
+      const types =
+        typeof vibrator.getType === 'function' ? vibrator.getType() : null
 
-    if (
-      legacySensor &&
-      typeof legacySensor.start === 'function' &&
-      typeof legacySensor.stop === 'function' &&
-      typeof setTimeout === 'function' &&
-      normalizedPattern.length > 0
-    ) {
-      try {
-        legacySensor.stop()
+      if (types && typeof types === 'object') {
+        const actions = normalizedPattern.map((duration, index) => ({
+          type:
+            index % 2 === 0
+              ? (types.GENTLE_SHORT ?? types.STRONG_SHORT ?? types.URGENT)
+              : types.PAUSE,
+          duration
+        }))
 
-        let elapsedMs = 0
-        let shouldVibrate = true
-
-        for (let index = 0; index < normalizedPattern.length; index += 1) {
-          const stepDuration = normalizedPattern[index]
-
-          if (shouldVibrate) {
-            const startDelayMs = elapsedMs
-            setTimeout(() => {
-              try {
-                legacySensor.start()
-              } catch {
-                // Ignore start failures.
-              }
-            }, startDelayMs)
-
-            elapsedMs += stepDuration
-
-            const stopDelayMs = elapsedMs
-            setTimeout(() => {
-              try {
-                legacySensor.stop()
-              } catch {
-                // Ignore stop failures.
-              }
-            }, stopDelayMs)
-          } else {
-            elapsedMs += stepDuration
-          }
-
-          shouldVibrate = !shouldVibrate
-        }
-
+        vibrator.start(actions)
         return true
-      } catch {
-        // Fall through to single legacy vibration.
       }
+    } catch {
+      // Fall through to single vibration fallback.
     }
 
     const totalDuration = normalizedPattern.reduce((sum, step) => sum + step, 0)
@@ -635,159 +442,72 @@ export const haptics = {
 
 export function resetPlatformAdaptersState() {
   gestureRegistrations.splice(0, gestureRegistrations.length)
-  legacyGestureDispatcherRegistered = false
+  gestureDispatcherRegistered = false
   keepAwakeEnabled = false
-  legacyVibrateSensor = null
-  legacyVibrateSensorResolved = false
-  cachedLocalStorageConstructor = null
   cachedLocalStorageInstance = null
+  cachedVibratorInstance = null
   fallbackToastState.visible = false
   fallbackToastState.message = ''
   fallbackToastState.duration = DEFAULT_TOAST_DURATION
   fallbackStorage.clear()
 }
 
-function resolveRuntimeObject(...keys) {
-  if (typeof globalThis === 'undefined') {
+function resolveRuntimeDeviceInfo() {
+  try {
+    return getDeviceInfo() ?? null
+  } catch {
     return null
   }
-
-  for (let index = 0; index < keys.length; index += 1) {
-    const candidate = globalThis[keys[index]]
-
-    if (candidate) {
-      return candidate
-    }
-  }
-
-  return null
-}
-
-function resolveModernRouter() {
-  return resolveRuntimeObject('__zosRouter', 'router')
-}
-
-function resolveInteractionApi() {
-  return resolveRuntimeObject('__zosInteraction', 'interaction')
-}
-
-function resolveDisplayApi() {
-  return resolveRuntimeObject('__zosDisplay', 'display')
-}
-
-function resolveModernHaptics() {
-  return resolveRuntimeObject('__zosHaptics', 'haptics', 'vibrator')
-}
-
-function resolveDeviceApi() {
-  return resolveRuntimeObject('__zosDevice', 'device')
-}
-
-function resolveLegacyApp() {
-  return resolveRuntimeObject('hmApp')
-}
-
-function resolveLegacyUi() {
-  return resolveRuntimeObject('hmUI')
-}
-
-function resolveLegacySetting() {
-  return resolveRuntimeObject('hmSetting')
-}
-
-function resolveLegacySensorApi() {
-  return resolveRuntimeObject('hmSensor')
-}
-
-function resolveRuntimeDeviceInfo() {
-  const deviceApi = resolveDeviceApi()
-
-  if (deviceApi && typeof deviceApi.getDeviceInfo === 'function') {
-    try {
-      return deviceApi.getDeviceInfo() ?? null
-    } catch {
-      return null
-    }
-  }
-
-  const legacySetting = resolveLegacySetting()
-
-  if (legacySetting && typeof legacySetting.getDeviceInfo === 'function') {
-    try {
-      return legacySetting.getDeviceInfo() ?? null
-    } catch {
-      return null
-    }
-  }
-
-  return null
 }
 
 function resolveRuntimeStorage() {
-  const directStorage = resolveRuntimeObject('__zosStorage', 'localStorage')
-
-  if (isStorageLike(directStorage)) {
-    return directStorage
+  if (typeof LocalStorage !== 'function') {
+    return null
   }
 
-  const localStorageConstructor = resolveRuntimeObject('LocalStorage')
-
-  if (typeof localStorageConstructor === 'function') {
-    try {
-      if (cachedLocalStorageConstructor !== localStorageConstructor) {
-        cachedLocalStorageConstructor = localStorageConstructor
-        cachedLocalStorageInstance = new localStorageConstructor()
-      }
-
-      if (isStorageLike(cachedLocalStorageInstance)) {
-        return cachedLocalStorageInstance
-      }
-    } catch {
-      // Ignore constructor failures.
+  try {
+    if (!isStorageLike(cachedLocalStorageInstance)) {
+      cachedLocalStorageInstance = new LocalStorage()
     }
-  }
 
-  const settingsStorage = resolveRuntimeObject('settingsStorage')
-
-  if (isStorageLike(settingsStorage)) {
-    return settingsStorage
+    if (isStorageLike(cachedLocalStorageInstance)) {
+      return cachedLocalStorageInstance
+    }
+  } catch {
+    cachedLocalStorageInstance = null
   }
 
   return null
 }
 
-function resolveLegacyVibrateSensor() {
-  if (legacyVibrateSensorResolved) {
-    return legacyVibrateSensor
+function resolveModernVibrator() {
+  if (cachedVibratorInstance) {
+    return cachedVibratorInstance
   }
 
-  legacyVibrateSensorResolved = true
-  const sensorApi = resolveLegacySensorApi()
-
-  if (
-    !sensorApi ||
-    typeof sensorApi.createSensor !== 'function' ||
-    !sensorApi.id ||
-    typeof sensorApi.id.VIBRATE === 'undefined'
-  ) {
-    legacyVibrateSensor = null
-    return legacyVibrateSensor
+  if (typeof Vibrator !== 'function') {
+    return null
   }
 
   try {
-    legacyVibrateSensor = sensorApi.createSensor(sensorApi.id.VIBRATE) || null
+    if (typeof checkSensor === 'function' && checkSensor(Vibrator) === false) {
+      return null
+    }
   } catch {
-    legacyVibrateSensor = null
+    // Ignore availability check failures and try constructing directly.
   }
 
-  return legacyVibrateSensor
+  try {
+    cachedVibratorInstance = new Vibrator()
+    return cachedVibratorInstance
+  } catch {
+    cachedVibratorInstance = null
+    return null
+  }
 }
 
-function dispatchLegacyGesture(event) {
-  const normalizedType = normalizeGestureType(
-    event,
-    resolveLegacyApp()?.gesture ?? null
-  )
+function dispatchGesture(event) {
+  const normalizedType = normalizeGestureType(GESTURE_TYPE_MAP[event] ?? event)
   let handled = false
 
   for (let index = 0; index < gestureRegistrations.length; index += 1) {
@@ -826,39 +546,9 @@ function removeGestureRegistration(element, gestureType, callback) {
 function createNavigationPayload(pagePath, params) {
   const normalizedPath = typeof pagePath === 'string' ? pagePath : ''
   return {
-    url: buildNavigationUrl(normalizedPath, params),
+    url: normalizedPath,
     params: normalizeParams(params)
   }
-}
-
-function createLegacyNavigationPayload(payload) {
-  const normalizedParams = normalizeParams(payload?.params)
-  const legacyPayload = {
-    url: payload?.url ?? ''
-  }
-
-  if (Object.keys(normalizedParams).length > 0) {
-    legacyPayload.param = normalizedParams
-  }
-
-  return legacyPayload
-}
-
-function buildNavigationUrl(pagePath, params) {
-  const normalizedParams = normalizeParams(params)
-  const paramEntries = Object.entries(normalizedParams)
-
-  if (paramEntries.length === 0) {
-    return pagePath
-  }
-
-  const query = paramEntries
-    .map(([key, value]) => {
-      return `${encodeURIComponent(key)}=${encodeURIComponent(stringifyNavigationValue(value))}`
-    })
-    .join('&')
-
-  return `${pagePath}?${query}`
 }
 
 function normalizeParams(params) {
@@ -869,71 +559,33 @@ function normalizeParams(params) {
   return params
 }
 
-function stringifyNavigationValue(value) {
-  if (typeof value === 'string') {
-    return value
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value)
-  }
-
-  if (value === null || typeof value === 'undefined') {
-    return ''
-  }
-
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return String(value)
-  }
-}
-
-function normalizeGestureType(gestureType, gestureMap = null) {
-  if (gestureMap) {
-    const entries = Object.entries(gestureMap)
-
-    for (let index = 0; index < entries.length; index += 1) {
-      const [key, value] = entries[index]
-
-      if (gestureType === key || gestureType === value) {
-        return key
-      }
-    }
-  }
-
+function normalizeGestureType(gestureType) {
   return String(gestureType ?? '')
     .trim()
     .toUpperCase()
 }
 
-function applyModernKeepAwake(displayApi, enabled) {
+function applyKeepAwake(enabled) {
   const methods = enabled
-    ? ['setPageBrightTime', 'pauseDropWristScreenOff']
-    : ['resetPageBrightTime', 'resetDropWristScreenOff']
-  const availableMethods = methods.filter((method) => {
-    return typeof displayApi?.[method] === 'function'
-  })
+    ? [
+        () => setPageBrightTime({ brightTime: KEEP_AWAKE_DURATION }),
+        () => pauseDropWristScreenOff({}),
+        () => pausePalmScreenOff({})
+      ]
+    : [resetPageBrightTime, resetDropWristScreenOff, resetPalmScreenOff]
 
-  if (availableMethods.length === 0) {
-    return false
-  }
+  let didApply = false
 
-  try {
-    for (let index = 0; index < availableMethods.length; index += 1) {
-      const method = availableMethods[index]
-
-      if (method === 'setPageBrightTime') {
-        displayApi[method](KEEP_AWAKE_DURATION)
-      } else {
-        displayApi[method]()
-      }
+  for (let index = 0; index < methods.length; index += 1) {
+    try {
+      methods[index]()
+      didApply = true
+    } catch {
+      // Ignore partial display API availability.
     }
-
-    return true
-  } catch {
-    return false
   }
+
+  return didApply ? keepAwakeEnabled : false
 }
 
 function normalizePositiveInteger(value, fallback) {
@@ -990,14 +642,6 @@ function deserializeStorageValue(value) {
   } catch {
     return STORAGE_VALUE_INVALID
   }
-}
-
-function resolveFunction(target, key) {
-  if (!target || typeof target[key] !== 'function') {
-    return null
-  }
-
-  return target[key].bind(target)
 }
 
 function isStorageLike(value) {

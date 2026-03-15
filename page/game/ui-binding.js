@@ -1,3 +1,4 @@
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS, toPercentage } from '../../utils/design-tokens.js'
 import { resolveLayout } from '../../utils/layout-engine.js'
 import { createScorePageLayout } from '../../utils/layout-presets.js'
@@ -166,7 +167,7 @@ export const GAME_LAYOUT = {
 }
 
 export function clearWidgets(widgets) {
-  if (typeof hmUI === 'undefined' || !Array.isArray(widgets)) {
+  if (typeof hmUI?.createWidget !== 'function' || !Array.isArray(widgets)) {
     return []
   }
 
@@ -175,7 +176,7 @@ export function clearWidgets(widgets) {
 }
 
 export function createWidget(widgets, widgetType, properties) {
-  if (typeof hmUI === 'undefined' || !Array.isArray(widgets)) {
+  if (typeof hmUI?.createWidget !== 'function' || !Array.isArray(widgets)) {
     return null
   }
 
@@ -197,7 +198,7 @@ function resolveCreateWidget(options = {}) {
 }
 
 export function renderGameScreen(options = {}) {
-  if (typeof hmUI === 'undefined') {
+  if (typeof hmUI?.createWidget !== 'function') {
     return
   }
 

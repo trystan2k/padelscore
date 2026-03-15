@@ -61,6 +61,7 @@ async function loadSetupPageDefinition() {
   const layoutPresetsUrl = toProjectFileUrl('utils/layout-presets.js')
   const platformAdaptersUrl = toProjectFileUrl('utils/platform-adapters.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
+  const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
   const uiComponentsUrl = toProjectFileUrl('utils/ui-components.js')
 
   let source = await readFile(sourceUrl, 'utf8')
@@ -102,6 +103,10 @@ async function loadSetupPageDefinition() {
       `from '${platformAdaptersUrl.href}'`
     )
     .replace("from '../utils/screen-utils.js'", `from '${screenUtilsUrl.href}'`)
+    .replace(
+      "from '../utils/history-stack.js'",
+      `from '${historyStackUrl.href}'`
+    )
     .replace(
       "from '../utils/ui-components.js'",
       `from '${uiComponentsUrl.href}'`

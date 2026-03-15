@@ -7,6 +7,7 @@
  * @module utils/ui-components
  */
 
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS } from './design-tokens.js'
 import { getScreenMetrics } from './screen-utils.js'
 

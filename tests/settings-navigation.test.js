@@ -436,7 +436,9 @@ test('settings game settings row navigates to dedicated page', async () => {
 
     scrollList.properties.item_click_func(scrollList, 1)
 
-    assert.deepEqual(navigationCalls, [{ url: 'page/game-settings' }])
+    assert.deepEqual(navigationCalls, [
+      { url: 'page/game-settings', params: {} }
+    ])
   } finally {
     if (typeof originalHmUI === 'undefined') {
       delete globalThis.hmUI
@@ -803,6 +805,7 @@ test('history detail first tap enters delete confirmation mode', async () => {
       const page = { ...definition }
 
       page.onInit({ id: 'match-1' })
+      page.build()
 
       let deleteButton = findVisibleButtonByImageSrc(
         createdWidgets,
@@ -868,6 +871,7 @@ test('history detail second tap deletes match and navigates back on success', as
       const page = { ...definition }
 
       page.onInit({ id: 'match-1' })
+      page.build()
 
       let deleteButton = findVisibleButtonByImageSrc(
         createdWidgets,
@@ -937,6 +941,7 @@ test('history detail delete failure resets confirmation state and icon', async (
       const page = { ...definition }
 
       page.onInit({ id: 'match-1' })
+      page.build()
       page.matchEntry = createHistoryEntry({ id: 'missing-id' })
 
       let deleteButton = findVisibleButtonByImageSrc(
@@ -1006,6 +1011,7 @@ test('history detail onDestroy clears pending delete confirmation state', async 
       const page = { ...definition }
 
       page.onInit({ id: 'match-1' })
+      page.build()
 
       const deleteButton = findVisibleButtonByImageSrc(
         createdWidgets,

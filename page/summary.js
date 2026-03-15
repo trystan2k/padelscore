@@ -1,4 +1,5 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
 import { loadHapticFeedbackEnabled } from '../utils/haptic-feedback-settings.js'
 import { resolveLayout } from '../utils/layout-engine.js'
@@ -193,7 +194,7 @@ Page({
       return
     }
 
-    haptics.vibratePattern([50, 700, 50, 700, 50])
+    haptics.vibrateStrongReminder()
   },
 
   registerGestureHandler() {
@@ -208,7 +209,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       return
     }
@@ -218,7 +219,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -299,7 +300,6 @@ Page({
       }
     }
 
-    this.renderSummaryScreen()
     return this.finishedMatchState !== null
   },
 
@@ -316,7 +316,7 @@ Page({
   // ============================================================================
 
   renderSummaryScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 

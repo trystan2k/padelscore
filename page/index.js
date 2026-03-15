@@ -1,6 +1,11 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { flushHomeFeedbackMessage } from '../utils/app-feedback.js'
 import { TOKENS, toPercentage } from '../utils/design-tokens.js'
+import {
+  disableGameWakeRestore,
+  shouldRestoreGameOnLaunch
+} from '../utils/game-wake-restore.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createPageWithFooterButton } from '../utils/layout-presets.js'
@@ -196,12 +201,23 @@ Page({
     this.savedMatchState = null
     this.hasSavedGame = false
     this.isStartingNewGame = false
+    this.shouldAutoRestoreGame = false
     this.refreshSavedMatchState()
-    this.registerGestureHandler()
+    this.shouldAutoRestoreGame =
+      this.hasSavedGame === true && shouldRestoreGameOnLaunch() === true
     flushHomeFeedbackMessage(gettext)
   },
 
   build() {
+    if (this.shouldAutoRestoreGame === true) {
+      const didResumeGame = this.handleResumeGame({ autoRestore: true })
+
+      if (didResumeGame) {
+        return
+      }
+    }
+
+    this.registerGestureHandler()
     this.renderHomeScreen()
   },
 
@@ -222,7 +238,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       return
     }
@@ -232,7 +248,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -255,13 +271,12 @@ Page({
       ? cloneMatchState(savedMatchState)
       : null
     this.hasSavedGame = hasSavedGame
-    this.renderHomeScreen()
 
     return hasSavedGame
   },
 
   renderHomeScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 
@@ -369,7 +384,7 @@ Page({
     }
   },
 
-  handleResumeGame() {
+  handleResumeGame(options = {}) {
     let savedMatchState = null
 
     try {
@@ -382,6 +397,11 @@ Page({
     }
 
     if (!isActivePersistedMatchState(savedMatchState)) {
+      if (options?.autoRestore === true) {
+        disableGameWakeRestore()
+        this.shouldAutoRestoreGame = false
+      }
+
       this.savedMatchState = null
       this.hasSavedGame = false
       this.renderHomeScreen()
@@ -392,6 +412,11 @@ Page({
       normalizePersistedMatchStateForRuntime(savedMatchState)
 
     if (!restoredRuntimeMatchState) {
+      if (options?.autoRestore === true) {
+        disableGameWakeRestore()
+        this.shouldAutoRestoreGame = false
+      }
+
       this.savedMatchState = null
       this.hasSavedGame = false
       this.renderHomeScreen()
@@ -400,6 +425,7 @@ Page({
 
     this.savedMatchState = cloneMatchState(savedMatchState)
     this.hasSavedGame = true
+    this.shouldAutoRestoreGame = false
     this.restoreRuntimeMatchState(restoredRuntimeMatchState)
     this.navigateToGamePage()
     return true

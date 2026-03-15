@@ -1,4 +1,7 @@
-import { storage as platformStorage } from '../../utils/platform-adapters.js'
+import {
+  storage as platformStorage,
+  resetPlatformAdaptersState
+} from '../../utils/platform-adapters.js'
 
 export function createLocalStorageMock(initialEntries = {}) {
   const store = new Map(
@@ -40,6 +43,7 @@ export function withMockLocalStorage(mockStorage, callback) {
     delete globalThis.localStorage
     delete globalThis.__zosStorage
     platformStorage.clear()
+    resetPlatformAdaptersState()
 
     if (typeof originalLocalStorage !== 'undefined') {
       globalThis.localStorage = originalLocalStorage
@@ -53,7 +57,9 @@ export function withMockLocalStorage(mockStorage, callback) {
   delete globalThis.localStorage
   delete globalThis.__zosStorage
   platformStorage.clear()
+  resetPlatformAdaptersState()
   globalThis.localStorage = mockStorage
+  globalThis.__zosStorage = { localStorage: mockStorage }
 
   try {
     const result = callback()

@@ -1,5 +1,11 @@
-import { gettext } from 'i18n'
+import { setWakeUpRelaunch } from '@zos/display'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { TOKENS } from '../utils/design-tokens.js'
+import {
+  disableGameWakeRestore,
+  enableGameWakeRestore
+} from '../utils/game-wake-restore.js'
 import { loadHapticFeedbackEnabled } from '../utils/haptic-feedback-settings.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
@@ -66,6 +72,10 @@ function resolveManualFinishConfirmToastText() {
   }
 
   return manualFinishConfirmText
+}
+
+function isActiveRuntimeMatchState(matchState) {
+  return isValidRuntimeMatchState(matchState) && matchState?.status === 'active'
 }
 
 function createRuntimeStateFingerprint(matchState) {
@@ -141,7 +151,6 @@ Page({
 
   onDestroy() {
     this.resetManualFinishConfirmState()
-    this.releaseScreenOn()
     this.handleLifecycleAutoSave()
     this.clearWidgets()
     this.unregisterGestureHandler()
@@ -152,7 +161,7 @@ Page({
       return
     }
 
-    haptics.vibrate()
+    haptics.vibrateLight()
   },
 
   resetManualFinishConfirmState(options = {}) {
@@ -203,11 +212,29 @@ Page({
   },
 
   keepScreenOn() {
+    enableGameWakeRestore()
+    this.setWakeGameRelaunch(true)
     keepAwake.setKeepAwake(true)
   },
 
   releaseScreenOn() {
+    disableGameWakeRestore()
+    this.setWakeGameRelaunch(false)
     keepAwake.setKeepAwake(false)
+  },
+
+  setWakeGameRelaunch(enabled) {
+    try {
+      setWakeUpRelaunch({ relaunch: enabled === true })
+      return true
+    } catch {
+      try {
+        setWakeUpRelaunch(enabled === true)
+        return true
+      } catch {
+        return false
+      }
+    }
   },
 
   handleLifecycleAutoSave() {
@@ -224,24 +251,33 @@ Page({
     }
 
     try {
+      const app = this.getAppInstance()
+      const runtimeMatchState = app?.globalData?.matchState
       const persistedMatchState = loadState()
       const hasValidActiveSession =
         isPersistedMatchStateActive(persistedMatchState)
+      const hasValidRuntimeSession =
+        isActiveRuntimeMatchState(runtimeMatchState)
 
-      this.isSessionAccessGranted = hasValidActiveSession
-      this.persistedSessionState = hasValidActiveSession
+      const resolvedPersistedState = hasValidActiveSession
         ? cloneMatchState(persistedMatchState)
-        : null
-      this.lastPersistedRuntimeStateSignature = hasValidActiveSession
-        ? serializeMatchStateForComparison(persistedMatchState)
+        : hasValidRuntimeSession
+          ? createPersistedMatchStateSnapshot(runtimeMatchState, null)
+          : null
+
+      this.isSessionAccessGranted =
+        hasValidActiveSession || hasValidRuntimeSession
+      this.persistedSessionState = resolvedPersistedState
+      this.lastPersistedRuntimeStateSignature = resolvedPersistedState
+        ? serializeMatchStateForComparison(resolvedPersistedState)
         : null
       this.lastPersistedRuntimeStateAt = null
 
-      if (!hasValidActiveSession) {
+      if (!this.isSessionAccessGranted) {
         this.navigateToSetupPage()
       }
 
-      return hasValidActiveSession
+      return this.isSessionAccessGranted
     } catch {
       this.persistedSessionState = null
       this.isSessionAccessGranted = false
@@ -253,6 +289,7 @@ Page({
   },
 
   navigateToSetupPage() {
+    this.releaseScreenOn()
     return router.redirectTo('page/setup')
   },
 
@@ -441,6 +478,7 @@ Page({
 
   navigateToSummaryPage() {
     this.resetManualFinishConfirmState()
+    this.releaseScreenOn()
     return router.navigateTo('page/summary')
   },
 
@@ -461,6 +499,7 @@ Page({
 
   navigateToHomePage() {
     this.resetManualFinishConfirmState()
+    this.releaseScreenOn()
     return router.navigateTo('page/index')
   },
 
@@ -737,7 +776,7 @@ Page({
   },
 
   renderGameScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 

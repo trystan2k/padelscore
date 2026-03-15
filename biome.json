@@ -36,17 +36,6 @@
       "trailingCommas": "none",
       "semicolons": "asNeeded"
     },
-    "globals": [
-      "hmApp",
-      "hmUI",
-      "hmSensor",
-      "hmFS",
-      "hmBle",
-      "hmSetting",
-      "hmLogger",
-      "px",
-      "deviceName",
-      "BUILD_TYPE"
-    ]
+    "globals": ["px", "deviceName", "BUILD_TYPE"]
   }
 }

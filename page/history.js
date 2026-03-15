@@ -1,4 +1,5 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createStandardPageLayout } from '../utils/layout-presets.js'
@@ -94,7 +95,7 @@ Page({
     this.historyEntries = []
     this.scrollList = null
 
-    // Load history data during init (v1.0 compatible)
+    // Load history data during init
     try {
       this.historyEntries = loadMatchHistory()
     } catch {
@@ -111,7 +112,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       this.scrollList = null
       return
@@ -123,7 +124,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -162,7 +163,7 @@ Page({
   },
 
   renderHistoryScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 
@@ -253,7 +254,8 @@ Page({
             h: textH,
             key: 'date',
             color: TOKENS.colors.text,
-            text_size: dateTextSize
+            text_size: dateTextSize,
+            action: true
           },
           {
             x: scoreX,
@@ -262,12 +264,20 @@ Page({
             h: textH,
             key: 'score',
             color: TOKENS.colors.accent,
-            text_size: scoreTextSize
+            text_size: scoreTextSize,
+            action: true
           }
         ],
         text_view_count: 2,
         image_view: [
-          { x: iconX, y: iconY, w: iconSize, h: iconSize, key: 'icon' }
+          {
+            x: iconX,
+            y: iconY,
+            w: iconSize,
+            h: iconSize,
+            key: 'icon',
+            action: true
+          }
         ],
         image_view_count: 1
       }

@@ -7,6 +7,8 @@
  * @module utils/screen-utils
  */
 
+import { getDeviceInfo } from '@zos/device'
+
 export const SYSTEM_HEADER_HEIGHT_SQUARE = 48
 export const SCREEN_FAMILY_W390_S = 'w390-s'
 export const SCREEN_FAMILY_W454_R = 'w454-r'
@@ -58,7 +60,7 @@ const SUPPORTED_SCREEN_FAMILIES = Object.freeze(
 
 /**
  * Retrieves screen metrics including dimensions and round screen detection.
- * Uses hmSetting.getDeviceInfo() to obtain screen dimensions.
+ * Uses `@zos/device` `getDeviceInfo()` to obtain screen dimensions.
  *
  * @param {Object|number} [overrides={}] - Optional metrics overrides for testing
  * @param {number} [overrides.safeTop] - Explicit safeTop override
@@ -151,18 +153,17 @@ function resolveDeviceInfo(overrideDeviceInfo) {
     return overrideDeviceInfo
   }
 
-  if (
-    typeof hmSetting === 'undefined' ||
-    typeof hmSetting.getDeviceInfo !== 'function'
-  ) {
-    return null
-  }
-
   try {
-    return hmSetting.getDeviceInfo() ?? null
+    const modernDeviceInfo = getDeviceInfo()
+
+    if (modernDeviceInfo && typeof modernDeviceInfo === 'object') {
+      return modernDeviceInfo
+    }
   } catch {
     return null
   }
+
+  return null
 }
 
 function resolveSafeTop({ height, safeTopOverride, statusBarHeight }) {

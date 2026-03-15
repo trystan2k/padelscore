@@ -1,4 +1,5 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
 import {
   loadHapticFeedbackEnabled,
@@ -70,7 +71,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       return
     }
@@ -80,7 +81,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -105,7 +106,7 @@ Page({
   },
 
   renderGameSettingsScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 
@@ -157,7 +158,7 @@ Page({
     })
     this.createWidget(labelConfig.widgetType, labelConfig.config)
 
-    const slideSwitchWidgetType = hmUI.widget?.SLIDE_SWITCH ?? 'SLIDE_SWITCH'
+    const slideSwitchWidgetType = hmUI.widget.SLIDE_SWITCH
     const switchX = contentX + contentWidth - padding - switchWidth
     const switchY = rowTop + Math.round((rowHeight - switchHeight) / 2)
     const sliderSize = switchHeight

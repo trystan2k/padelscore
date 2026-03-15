@@ -33,6 +33,7 @@ This agent must NOT:
 - Create Task Master tasks before explicit user approval.
 - Invent requirements that are not in the PRD or user clarifications.
 - Run shell commands directly.
+- Create any documentation NOT explicitly requested.
 
 ## Inputs
 

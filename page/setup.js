@@ -1,7 +1,9 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 
 import { MATCH_SET_OPTIONS } from '../utils/constants.js'
 import { TOKENS, toPercentage } from '../utils/design-tokens.js'
+import { createHistoryStack } from '../utils/history-stack.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createPageWithFooterButton } from '../utils/layout-presets.js'
 import { initializeMatchState } from '../utils/match-session-init.js'
@@ -167,7 +169,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       return
     }
@@ -177,7 +179,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -261,6 +263,8 @@ Page({
       return false
     }
 
+    this.initializeRuntimeMatchStateForGameStart(initializedMatchState)
+
     this.isPersistingMatchState = false
     this.isNavigatingToGame = true
     this.startErrorMessage = ''
@@ -291,6 +295,23 @@ Page({
     } catch {
       return false
     }
+  },
+
+  initializeRuntimeMatchStateForGameStart(matchState) {
+    const app = this.getAppInstance()
+
+    if (!app || !isRecord(app.globalData)) {
+      return false
+    }
+
+    try {
+      app.globalData.matchState = JSON.parse(JSON.stringify(matchState))
+    } catch {
+      app.globalData.matchState = matchState
+    }
+
+    app.globalData.matchHistory = createHistoryStack()
+    return true
   },
 
   clearRuntimeMatchState() {
@@ -338,7 +359,7 @@ Page({
   },
 
   renderSetupScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 

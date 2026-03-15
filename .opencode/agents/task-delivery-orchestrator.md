@@ -36,6 +36,7 @@ This agent must NOT:
 ## Golden Rule
 
 Do exactly what was requested, nothing more and nothing less.
+**DO NOT** create any documentation you are not explicitly asked to.
 
 ## Time Tracking Requirements
 

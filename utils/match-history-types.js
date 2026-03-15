@@ -1,3 +1,5 @@
+import { Time } from '@zos/sensor'
+
 /**
  * Match History Type Definitions
  *
@@ -50,36 +52,32 @@ export function createMatchHistoryEntry(matchState) {
     winnerTeam = 'teamB'
   }
 
-  const timestamp = Date.now()
-
+  let timestamp = Date.now()
   let localTime = null
-  // Try hmSensor.id.TIME for local time (correct Zepp OS v1.0 API)
-  if (typeof hmSensor !== 'undefined' && hmSensor.createSensor && hmSensor.id) {
-    try {
-      const timeSensor = hmSensor.createSensor(hmSensor.id.TIME)
-      if (timeSensor) {
-        localTime = {
-          year: timeSensor.year,
-          month: timeSensor.month,
-          day: timeSensor.day,
-          hour: timeSensor.hour,
-          minute: timeSensor.minute
-        }
-      }
-    } catch {
-      localTime = null
+
+  try {
+    const time = new Time()
+
+    if (typeof time.getTime === 'function') {
+      timestamp = time.getTime()
     }
-  }
-  // Fallback to UTC (Date methods have broken timezone handling in Zepp OS)
-  if (!localTime) {
+
+    localTime = {
+      year: time.getFullYear(),
+      month: time.getMonth(),
+      day: time.getDate(),
+      hour: time.getHours(),
+      minute: time.getMinutes()
+    }
+  } catch {
     try {
       const now = new Date(timestamp)
       localTime = {
-        year: now.getUTCFullYear(),
-        month: now.getUTCMonth() + 1,
-        day: now.getUTCDate(),
-        hour: now.getUTCHours(),
-        minute: now.getUTCMinutes()
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        minute: now.getMinutes()
       }
     } catch {
       localTime = null

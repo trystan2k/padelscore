@@ -1,4 +1,5 @@
-import { gettext } from 'i18n'
+import { getText as gettext } from '@zos/i18n'
+import * as hmUI from '@zos/ui'
 import { getFontSize, TOKENS, toPercentage } from '../utils/design-tokens.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createStandardPageLayout } from '../utils/layout-presets.js'
@@ -113,12 +114,10 @@ Page({
     this.deleteConfirmMode = false
     this.deleteButton = null
     this.parseParams(params)
-    // Render screen after loading data (v1.0 compatible - no onShow)
-    this.renderDetailScreen()
   },
 
   build() {
-    // Don't re-render in build() - onInit already rendered
+    this.renderDetailScreen()
   },
 
   onDestroy() {
@@ -128,38 +127,24 @@ Page({
   },
 
   parseParams(params) {
-    // Zepp OS v1.0: params is passed directly from gotoPage 'param' property
-    if (!params) {
-      return
-    }
+    let parsedParams = params
 
-    let matchId = null
-
-    if (params && typeof params === 'object' && typeof params.id === 'string') {
-      matchId = params.id
-    } else if (
-      typeof params === 'string' &&
-      (params.includes('=') || params.includes('?'))
-    ) {
-      // Parse query string format
-      const queryString = params.split('?').pop() || params
-      const pairs = queryString.split('&')
-
-      for (let i = 0; i < pairs.length; i += 1) {
-        const pair = pairs[i].split('=')
-        if (pair[0] === 'id' && pair.length > 1) {
-          matchId = decodeURIComponent(pair[1])
-          break
-        }
-      }
-    } else {
-      // params IS the matchId directly
-      matchId = params
-    }
-
-    if (matchId) {
+    // Handle JSON string params (Zepp OS may pass params as stringified JSON)
+    if (typeof params === 'string') {
       try {
-        this.matchEntry = loadMatchById(matchId)
+        parsedParams = JSON.parse(params)
+      } catch {
+        return
+      }
+    }
+
+    if (
+      parsedParams !== null &&
+      typeof parsedParams === 'object' &&
+      typeof parsedParams.id === 'string'
+    ) {
+      try {
+        this.matchEntry = loadMatchById(parsedParams.id)
       } catch {
         this.matchEntry = null
       }
@@ -167,7 +152,7 @@ Page({
   },
 
   clearWidgets() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       this.widgets = []
       this.deleteButton = null
       return
@@ -179,7 +164,7 @@ Page({
   },
 
   createWidget(widgetType, properties) {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return null
     }
 
@@ -217,7 +202,7 @@ Page({
   },
 
   updateDeleteButtonIcon(isConfirmMode) {
-    if (typeof hmUI === 'undefined') return
+    if (typeof hmUI?.createWidget !== 'function') return
 
     const metrics = getScreenMetrics()
     const layout = resolveLayout(HISTORY_DETAIL_LAYOUT, metrics)
@@ -246,7 +231,7 @@ Page({
   },
 
   renderDetailScreen() {
-    if (typeof hmUI === 'undefined') {
+    if (typeof hmUI?.createWidget !== 'function') {
       return
     }
 

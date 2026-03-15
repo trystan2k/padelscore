@@ -1,105 +1,78 @@
-# MatchState Integration Notes
+# Match State Integration
 
-**Version:** 1.1 | **Updated:** 2026-03-05 | **Task:** #67
+**Version:** 1.2 | **Updated:** 2026-03-15 | **Task:** #79
 
-This document defines the integration contract for the MatchState lifecycle: when to save, when to load, when to clear, and which upcoming tasks depend on this behavior.
-
-> **Note:** This document uses Zepp OS v1.0 lifecycle semantics. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for lifecycle details.
+This document defines the integration contract for the active match lifecycle: when to save, when to load, when to clear, and which runtime assumptions mainline keeps for the Zepp OS API 3.6+ app line.
 
 ## Scope
 
-- Storage schema and APIs are provided by `utils/match-state-schema.js` and `utils/match-storage.js`.
-- Existing runtime flow in `page/game.js` and `page/index.js` remains source of truth for lifecycle timing.
-- This note is implementation guidance for Taskmaster subtask 11.7.
+- Storage schema and APIs are provided by `utils/match-state-schema.js`, `utils/active-session-storage.js`, and `utils/persistence.js`.
+- Existing runtime flow in `page/game.js` and `page/index.js` remains the source of truth for lifecycle timing.
+- This note describes the current mainline contract, not the old Zepp OS 1.0 migration path.
 
 ## Persistence Lifecycle
 
 | Lifecycle moment | API call | Why it happens | Expected behavior |
 | --- | --- | --- | --- |
-| App/page startup (home/game init) | `loadMatchState()` | Restore last active session after app relaunch/background | Return valid `MatchState` or `null`; invalid payloads fail safe (`null`) |
-| After each scoring mutation | `saveState(state)` + `saveMatchState(state)` (debounced) | Prevent point loss from interruption between taps while avoiding burst writes | Queue immediate persistence request; coalesce rapid requests; latest snapshot wins |
-| After set completion | `saveMatchState(state)` | Preserve `setsWon`, `setHistory`, and next-set reset | Persist immediately after set bookkeeping |
-| After match completion | `saveMatchState(state)` | Preserve finished status for summary/resume rules | Persist with `status: 'finished'` before navigation |
-| Lifecycle interruption (`onDestroy`) | Forced flush via persistence coordinator | Cover background/suspend/exit paths | Cancel debounce delay and persist latest pending/runtime snapshot |
-| New match flow / explicit reset | `clearMatchState()` | Remove stale session so setup starts fresh | Delete `ACTIVE_MATCH_SESSION` (or write empty fallback) |
-
-## Trigger Matrix (Task 14)
-
-- Scoring actions (`add`/`remove`) enqueue persistence immediately after runtime state mutation and render.
-- Queue window is debounced at `180ms` to reduce duplicate writes during burst interactions.
-- Lifecycle exits (`onDestroy`, back-home action) force-flush pending snapshots without waiting for debounce.
-- Writes are serialized (single in-flight save at a time) and use latest-state-wins replay if a newer snapshot arrives mid-save.
-- Runtime persistence is write-through during migration: legacy `saveState` stays active and schema `saveMatchState` is updated in the same coordinator pass.
+| App/page startup (home/game init) | `getActiveSession()` | Restore last active session after relaunch/background | Return valid `MatchState` or `null`; invalid payloads fail safe to `null` |
+| After each scoring mutation | active-session save path | Prevent point loss from interruption between taps | Persist the latest accepted active-session snapshot |
+| After set completion | active-session save path | Preserve `setsWon`, `setHistory`, and next-set reset | Persist immediately after set bookkeeping |
+| After match completion | finish + clear active-session flow | Preserve summary data while clearing stale active resume state | Finished match can move to summary/history without leaving a fake active session |
+| Lifecycle interruption (`onDestroy`) | emergency active-session persistence | Cover suspend/exit paths | Persist the latest active schema snapshot best-effort |
+| New match flow / explicit reset | `clearActiveSession()` | Remove stale session so setup starts fresh | Delete the active-session payload |
 
 ## Save/Load/Clear Rules
 
-### Save (`saveMatchState`)
+### Save
 
 Save after every state transition that changes gameplay:
-
-1. point added/removed
+1. point added or removed
 2. set completed
-3. match marked finished
-4. page lifecycle hide/destroy (forced flush path)
+3. active-session state changes that affect resume behavior
+4. lifecycle cleanup paths that must preserve the latest active state
 
-Do not defer save until navigation only. Navigation saves are a forced flush safety net, not the primary persistence trigger.
-
-### Load (`loadMatchState`)
+### Load
 
 Load at runtime bootstrap points:
-
-1. home page initialization (via `onInit`) to decide whether Resume is visible
+1. home page initialization to decide whether Resume is visible
 2. game page initialization when runtime state is missing
-3. post-undo restore flows that rebuild state from persistence (if runtime stack is unavailable)
+3. restore flows that rebuild runtime state from persisted active-session data
 
-Home Resume visibility is schema-first: show Resume only when `loadMatchState()` returns a valid session with `status === 'active'`.
-
-If `loadMatchState()` returns `null` (missing session, invalid schema, corrupt JSON, or adapter error), fail safe:
-
+If session load returns `null`, fail safe:
 - hide Resume on Home
-- do not navigate to Game from Resume handler
-- keep runtime manager unchanged
+- do not navigate to Game from Resume
+- keep runtime manager unchanged until a new match starts
 
-On Resume click, re-run `loadMatchState()` before navigation (do not trust stale Home cache). Only after an active session is revalidated should runtime state be restored into `app.globalData.matchState` and navigation to `page/game` proceed.
-
-If `loadMatchState()` returns `null`, initialize a fresh state via `createDefaultMatchState()` (or existing runtime initializer until full migration).
-
-### Clear (`clearMatchState`)
+### Clear
 
 Clear only on intentional session reset:
-
 1. user starts a new match from Home
 2. user starts a new match from Summary
-3. hard-reset/cleanup flows
+3. explicit cleanup flows
 
-Do not clear when match finishes; finished state must remain available until downstream UI (Summary/Home) consumes it.
+Do not keep old Zepp OS 1.x compatibility stores in sync with the active-session contract.
 
 ## Integration Examples
 
-### Game page scoring and lifecycle persistence
+### Game page persistence
 
 ```js
-import { saveMatchState } from '../utils/match-storage.js'
+import { saveActiveSession } from '../utils/active-session-storage.js'
 
 function persistAndRender(nextState) {
   this.updateRuntimeMatchState(nextState)
   this.renderGameScreen()
-  void saveMatchState(nextState)
-}
-
-onDestroy() {
-  const state = this.getRuntimeMatchState()
-  void saveMatchState(state)
+  saveActiveSession(nextState)
 }
 ```
 
 ### Home page resume decision
 
 ```js
-import { loadMatchState } from '../utils/match-storage.js'
+import { getActiveSession } from '../utils/active-session-storage.js'
 
-async function refreshSavedMatchState() {
-  const saved = await loadMatchState()
+function refreshSavedMatchState() {
+  const saved = getActiveSession()
   this.savedMatchState = saved
   this.hasSavedGame = saved !== null && saved.status === 'active'
 }
@@ -108,50 +81,17 @@ async function refreshSavedMatchState() {
 ### New match reset flow
 
 ```js
-import { clearMatchState } from '../utils/match-storage.js'
+import { clearActiveSession } from '../utils/match-storage.js'
 
-async function handleStartNewGame() {
-  await clearMatchState()
+function handleStartNewGame() {
+  clearActiveSession()
   this.resetRuntimeMatchState()
   this.navigateToGamePage()
 }
 ```
 
-## Dependency Mapping
+## Notes
 
-### Inbound dependencies (needed by MatchState lifecycle)
-
-- Task 3 (`Local Storage & Persistence Layer`): provides proven storage runtime access patterns and error-safe behavior.
-- Existing runtime integration points: `page/index.js` and `page/game.js` lifecycle hooks and navigation flows.
-
-### Outbound dependencies (tasks consuming this contract)
-
-- Task 12 (`Implement Core Persistence Service`): consumes save/load contract and validation behavior.
-- Task 13 (`Implement Pre-Match Setup UI and Logic`): consumes initialization + save semantics when creating a new session.
-- Task 14 (`Integrate Lifecycle Persistence Triggers`): consumes defined save trigger timing.
-- Task 15 (`Update Game Screen for Set Point Display`): consumes stable set-level fields (`setsWon`, `currentSet`).
-- Task 16 (`Implement Set Completion and Match Completion Logic`): consumes set history and match status persistence expectations.
-- Task 18 (`Implement Match Summary Screen`): consumes finished-state and `setHistory` persistence.
-- Task 19 (`Implement New Match Reset and Cleanup`): consumes clear/reset semantics and storage key stability.
-
-## State Flow Diagram
-
-```text
-User action (score/set/match) -> Runtime MatchState update -> saveMatchState()
-                                                      |
-Lifecycle hide/destroy ------------------------------+
-
-App launch/home/game init -> loadMatchState() -> valid? yes -> hydrate runtime
-                                               -> valid? no  -> create default runtime
-
-Start new match/reset -> clearMatchState() -> create fresh runtime state
-```
-
-## Notes for Incremental Adoption
-
-- Current pages still use legacy `saveState/loadState/clearState` in `utils/storage.js`.
-- Home Resume now uses schema persistence (`loadMatchState`) as the source of truth for visibility and restore decisions.
-- Runtime write-through compatibility remains intentional during migration: `page/game.js` continues dual writes (`saveState` + `saveMatchState`) so legacy runtime snapshots and schema sessions stay aligned.
-- New match/reset flows continue to clear both stores (`clearState` + `clearMatchState`) until legacy runtime storage is fully removed.
-- During transition, keep behavior equivalent: fail-safe loads, idempotent saves, explicit clears.
-- In Zepp OS v1.0, `onDestroy()` is the only lifecycle exit callback available. See [PRD-Review.md](./PRD-Review.md) Section 1, Decision 4 for details.
+- Mainline is LocalStorage-first for the Zepp OS 3.x app line.
+- New runtime code should prefer the active-session and persistence utilities already built on the Zepp OS 3.x storage path.
+- Historical docs that mention Zepp OS 1.0 lifecycle or dual-write migration behavior should be treated as archive context unless they are explicitly refreshed.

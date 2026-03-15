@@ -92,6 +92,7 @@ async function loadHomePageDefinition() {
   const validationUrl = toProjectFileUrl('utils/validation.js')
   const designTokensUrl = toProjectFileUrl('utils/design-tokens.js')
   const screenUtilsUrl = toProjectFileUrl('utils/screen-utils.js')
+  const gameWakeRestoreUrl = toProjectFileUrl('utils/game-wake-restore.js')
   const layoutEngineUrl = toProjectFileUrl('utils/layout-engine.js')
   const layoutPresetsUrl = toProjectFileUrl('utils/layout-presets.js')
   const platformAdaptersUrl = toProjectFileUrl('utils/platform-adapters.js')
@@ -130,6 +131,10 @@ async function loadHomePageDefinition() {
       `from '${designTokensUrl.href}'`
     )
     .replace("from '../utils/screen-utils.js'", `from '${screenUtilsUrl.href}'`)
+    .replace(
+      "from '../utils/game-wake-restore.js'",
+      `from '${gameWakeRestoreUrl.href}'`
+    )
     .replace(
       "from '../utils/layout-engine.js'",
       `from '${layoutEngineUrl.href}'`
@@ -190,6 +195,7 @@ async function loadGamePageDefinition() {
   const scoreViewModelUrl = toProjectFileUrl('page/score-view-model.js')
   const constantsUrl = toProjectFileUrl('utils/constants.js')
   const historyStackUrl = toProjectFileUrl('utils/history-stack.js')
+  const gameWakeRestoreUrl = toProjectFileUrl('utils/game-wake-restore.js')
   const matchStateUrl = toProjectFileUrl('utils/match-state.js')
   const scoringConstantsUrl = toProjectFileUrl('utils/scoring-constants.js')
   const scoringEngineUrl = toProjectFileUrl('utils/scoring-engine.js')
@@ -253,6 +259,10 @@ async function loadGamePageDefinition() {
     .replace(
       "from '../utils/haptic-feedback-settings.js'",
       `from '${hapticFeedbackSettingsUrl.href}'`
+    )
+    .replace(
+      "from '../utils/game-wake-restore.js'",
+      `from '${gameWakeRestoreUrl.href}'`
     )
     .replace(
       "from '../utils/layout-engine.js'",
@@ -512,6 +522,24 @@ async function runGamePageSessionScenario(options = {}, runAssertions) {
     }
   }
   globalThis.getApp = () => app
+  globalThis.localStorage = {
+    getItem() {
+      return null
+    },
+    setItem() {},
+    removeItem() {},
+    clear() {}
+  }
+  globalThis.__zosStorage = {
+    localStorage: {
+      getItem() {
+        return null
+      },
+      setItem() {},
+      removeItem() {},
+      clear() {}
+    }
+  }
 
   matchStorage.adapter = {
     save() {},
@@ -712,7 +740,7 @@ test('game screen redirects to setup when loadMatchState returns null', async ()
     },
     async ({ page, navigationCalls }) => {
       assert.equal(page.isSessionAccessGranted, false)
-      assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+      assert.deepEqual(navigationCalls, [{ url: 'page/setup', params: {} }])
     }
   )
 })
@@ -731,7 +759,7 @@ test('game screen redirects to setup when loadMatchState returns a finished stat
     },
     async ({ page, navigationCalls }) => {
       assert.equal(page.isSessionAccessGranted, false)
-      assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+      assert.deepEqual(navigationCalls, [{ url: 'page/setup', params: {} }])
     }
   )
 })
@@ -745,7 +773,7 @@ test('game screen redirects to setup when adapter.load throws', async () => {
     },
     async ({ page, navigationCalls }) => {
       assert.equal(page.isSessionAccessGranted, false)
-      assert.deepEqual(navigationCalls, [{ url: 'page/setup' }])
+      assert.deepEqual(navigationCalls, [{ url: 'page/setup', params: {} }])
     }
   )
 })
