@@ -94,6 +94,9 @@ msgstr "Error al borrar"
 msgid "settings.vibrationFeedback"
 msgstr "Retroalimentación de Vibración"
 
+msgid "settings.physicalButtons"
+msgstr "Puntuación con Botones Físicos"
+
 msgid "settings.gameSettings"
 msgstr "Ajustes del Juego"
 

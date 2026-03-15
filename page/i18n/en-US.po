@@ -94,6 +94,9 @@ msgstr "Clear failed"
 msgid "settings.vibrationFeedback"
 msgstr "Vibration Feedback"
 
+msgid "settings.physicalButtons"
+msgstr "Physical Buttons Scoring"
+
 msgid "settings.gameSettings"
 msgstr "Game Settings"
 

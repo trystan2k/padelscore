@@ -7,6 +7,10 @@ import {
 } from '../utils/haptic-feedback-settings.js'
 import { resolveLayout } from '../utils/layout-engine.js'
 import { createStandardPageLayout } from '../utils/layout-presets.js'
+import {
+  loadPhysicalButtonsEnabled,
+  savePhysicalButtonsEnabled
+} from '../utils/physical-buttons-settings.js'
 import { router } from '../utils/platform-adapters.js'
 import { clamp, getScreenMetrics } from '../utils/screen-utils.js'
 import {
@@ -60,6 +64,7 @@ Page({
   onInit() {
     this.widgets = []
     this.hapticFeedbackEnabled = loadHapticFeedbackEnabled()
+    this.physicalButtonsEnabled = loadPhysicalButtonsEnabled()
   },
 
   build() {
@@ -97,6 +102,11 @@ Page({
   handleVibrationFeedbackChange(nextValue) {
     const enabled = this.normalizeSwitchValue(nextValue)
     this.hapticFeedbackEnabled = saveHapticFeedbackEnabled(enabled)
+  },
+
+  handlePhysicalButtonsChange(nextValue) {
+    const enabled = this.normalizeSwitchValue(nextValue)
+    this.physicalButtonsEnabled = savePhysicalButtonsEnabled(enabled)
   },
 
   goBack() {
@@ -176,6 +186,35 @@ Page({
       slide_un_select_x: 0,
       checked_change_func: (_slideSwitch, checked) =>
         this.handleVibrationFeedbackChange(checked)
+    })
+
+    // Second row: Physical Buttons setting
+    const row2Top = rowTop + rowHeight
+    const label2Config = createText({
+      text: gettext('settings.physicalButtons'),
+      style: 'bodyLarge',
+      x: contentX + padding,
+      y: row2Top + Math.round((rowHeight - labelTextHeight) / 2),
+      w: contentWidth - padding * 3 - switchWidth,
+      h: labelTextHeight,
+      color: TOKENS.colors.text
+    })
+    this.createWidget(label2Config.widgetType, label2Config.config)
+
+    const switch2Y = row2Top + Math.round((rowHeight - switchHeight) / 2)
+    this.createWidget(slideSwitchWidgetType, {
+      x: switchX,
+      y: switch2Y,
+      w: switchWidth,
+      h: switchHeight,
+      checked: this.physicalButtonsEnabled,
+      select_bg: 'switch_on.png',
+      un_select_bg: 'switch_off.png',
+      slide_src: 'switch_thumb.png',
+      slide_select_x: switchWidth - sliderSize,
+      slide_un_select_x: 0,
+      checked_change_func: (_slideSwitch, checked) =>
+        this.handlePhysicalButtonsChange(checked)
     })
 
     const goBackEl = layout.elements.goBackButton

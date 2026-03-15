@@ -94,6 +94,9 @@ msgstr "Falha ao limpar"
 msgid "settings.vibrationFeedback"
 msgstr "Feedback de Vibração"
 
+msgid "settings.physicalButtons"
+msgstr "Pontuação com Botões Físicos"
+
 msgid "settings.gameSettings"
 msgstr "Configurações do Jogo"
 

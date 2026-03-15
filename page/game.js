@@ -1,5 +1,14 @@
 import { setWakeUpRelaunch } from '@zos/display'
 import { getText as gettext } from '@zos/i18n'
+import {
+  KEY_BACK,
+  KEY_DOWN,
+  KEY_EVENT_CLICK,
+  KEY_SELECT,
+  KEY_UP,
+  offKey,
+  onKey
+} from '@zos/interaction'
 import * as hmUI from '@zos/ui'
 import { TOKENS } from '../utils/design-tokens.js'
 import {
@@ -9,6 +18,7 @@ import {
 import { loadHapticFeedbackEnabled } from '../utils/haptic-feedback-settings.js'
 import { createHistoryStack } from '../utils/history-stack.js'
 import { createInitialMatchState } from '../utils/match-state.js'
+import { loadPhysicalButtonsEnabled } from '../utils/physical-buttons-settings.js'
 import {
   gesture,
   haptics,
@@ -111,6 +121,7 @@ Page({
   onInit() {
     this.widgets = []
     this.hapticFeedbackEnabled = loadHapticFeedbackEnabled()
+    this.physicalButtonsEnabled = loadPhysicalButtonsEnabled()
     this.lastAcceptedScoringInteractionAt = null
     this.hasAttemptedSummaryNavigation = false
     this.isSessionAccessGranted = false
@@ -205,10 +216,50 @@ Page({
       this.navigateToHomePage()
       return true
     })
+
+    if (this.physicalButtonsEnabled) {
+      onKey({
+        callback: (key, event) => {
+          if (event !== KEY_EVENT_CLICK) {
+            return false
+          }
+
+          if (key === KEY_UP) {
+            this.handleAddPointForTeam('teamA')
+            this.triggerHapticFeedback()
+            return true
+          }
+
+          if (key === KEY_DOWN) {
+            this.handleRemovePointForTeam('teamA')
+            this.triggerHapticFeedback()
+            return true
+          }
+
+          if (key === KEY_SELECT) {
+            this.handleAddPointForTeam('teamB')
+            this.triggerHapticFeedback()
+            return true
+          }
+
+          if (key === KEY_BACK) {
+            this.handleRemovePointForTeam('teamB')
+            this.triggerHapticFeedback()
+            return true
+          }
+
+          return false
+        }
+      })
+    }
   },
 
   unregisterGestureHandler() {
     gesture.unregisterGesture(this, 'RIGHT')
+
+    if (this.physicalButtonsEnabled) {
+      offKey()
+    }
   },
 
   keepScreenOn() {
