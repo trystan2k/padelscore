@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0](https://github.com/trystan2k/padelbuddy/compare/v3.3.0...v3.4.0) (2026-03-15)
+
+### Features
+
+* add physical buttons scoring support ([3f69992](https://github.com/trystan2k/padelbuddy/commit/3f69992adc243fac0d9e895f0ac9ee32bb057c2f))
+* migrate to Zepp OS 3.6+ APIs and add game wake restore ([eb5ac28](https://github.com/trystan2k/padelbuddy/commit/eb5ac28cdd4065eae233e5691c79fd2c18c5edc5))
+
+### Bug Fixes
+
+* add back key handler to return home ([d2904f9](https://github.com/trystan2k/padelbuddy/commit/d2904f9f2c743884b4fb32afc2f8fc7d98f6d4b9))
+
 ## [3.3.0](https://github.com/trystan2k/padelbuddy/compare/v3.2.0...v3.3.0) (2026-03-14)
 
 ### Features

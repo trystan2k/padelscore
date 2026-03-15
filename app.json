@@ -6,13 +6,16 @@
     "appType": "app",
     "version": {
       "code": 1,
-      "name": "3.3.0"
+      "name": "3.4.0"
     },
     "icon": "icon.png",
     "vender": "zepp",
     "description": "Track padel match scores on your Amazfit watch."
   },
-  "permissions": ["device:os.local_storage", "data:os.device.info"],
+  "permissions": [
+    "device:os.local_storage",
+    "data:os.device.info"
+  ],
   "runtime": {
     "apiVersion": {
       "compatible": "3.6",
