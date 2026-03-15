@@ -56,7 +56,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node scripts/sync-version.js && rm -rf dist && npm run build:all"
+        "prepareCmd": "node scripts/sync-version.js && rm -rf dist && npm run complete-check"
       }
     ],
     [

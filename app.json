@@ -12,10 +12,7 @@
     "vender": "zepp",
     "description": "Track padel match scores on your Amazfit watch."
   },
-  "permissions": [
-    "device:os.local_storage",
-    "data:os.device.info"
-  ],
+  "permissions": ["device:os.local_storage", "data:os.device.info"],
   "runtime": {
     "apiVersion": {
       "compatible": "3.6",

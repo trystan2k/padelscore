@@ -14,7 +14,7 @@
     "format": "biome format --error-on-warnings --write .",
     "format:check": "biome format --error-on-warnings .",
     "build:all": "bash scripts/build.sh",
-    "complete-check": "npm run lint:fix && npm run format && npm run test",
+    "complete-check": "npm run lint:fix && npm run format && npm run test && npm run build:all",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run"
   },
