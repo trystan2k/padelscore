@@ -17,7 +17,7 @@ msgid "game.gamesLabel"
 msgstr "JOGOS"
 
 msgid "setup.title"
-msgstr "Configurar Partida"
+msgstr "Conf. Partida"
 
 msgid "setup.selectSetsHint"
 msgstr "Número de sets"
@@ -59,13 +59,13 @@ msgid "summary.noSetHistory"
 msgstr "Nenhum set finalizado"
 
 msgid "history.title"
-msgstr "Histórico de Partidas"
+msgstr "Partidas Ant."
 
 msgid "history.empty"
 msgstr "Nenhuma partida jogada ainda"
 
 msgid "history.detail.title"
-msgstr "Detalhes da Partida"
+msgstr "Dados Partida"
 
 msgid "history.detail.notFound"
 msgstr "Partida não encontrada"
@@ -101,7 +101,7 @@ msgid "settings.gameSettings"
 msgstr "Configurações do Jogo"
 
 msgid "gameSettings.title"
-msgstr "Configurações do Jogo"
+msgstr "Conf. do Jogo"
 
 msgid "settings.version"
 msgstr "Versão:"
